@@ -501,6 +501,39 @@ p {
   margin-top: 0.25rem;
 }
 
+/* --- Donate -------------------------------------------------------------- */
+
+.donate {
+  background:
+    radial-gradient(
+      ellipse at 0% 50%,
+      rgba(255, 179, 71, 0.08),
+      transparent 65%
+    ),
+    var(--bg-raised);
+  border-bottom: 1px solid var(--line);
+}
+
+.donate .kicker,
+.site-header nav .nav-donate {
+  color: var(--gold);
+}
+
+.button-donate {
+  background: var(--gold);
+  color: var(--bg);
+}
+
+.button-donate:hover {
+  background: #ffc773;
+}
+
+.section-body .donate-note {
+  color: var(--ink-muted);
+  font-size: 0.9rem;
+  max-width: 29rem;
+}
+
 /* --- Timeline ------------------------------------------------------------ */
 
 .timeline {
