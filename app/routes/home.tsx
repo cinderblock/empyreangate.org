@@ -44,6 +44,7 @@ const NAV = [
   { href: `#${WHERE.id}`, label: "Where" },
   { href: `#${GALLERY.id}`, label: "Photos" },
   { href: `#${PEOPLE.id}`, label: "People" },
+  { href: "#donate", label: "Donate" },
 ];
 
 const STRUCTURED_DATA = {
@@ -191,7 +192,12 @@ export default function Home() {
           <ul>
             {NAV.map((n) => (
               <li key={n.href}>
-                <a href={n.href}>{n.label}</a>
+                <a
+                  href={n.href}
+                  className={n.href === "#donate" ? "nav-donate" : undefined}
+                >
+                  {n.label}
+                </a>
               </li>
             ))}
             <li>
@@ -347,6 +353,37 @@ export default function Home() {
             </External>
             {SITE.instagramTag && <> · #{SITE.instagramTag}</>}
           </p>
+        </section>
+
+        <section
+          className="section donate"
+          id="donate"
+          aria-labelledby="donate-h"
+        >
+          <header className="section-head">
+            <p className="kicker">Keep the light alive</p>
+            <h2 id="donate-h">A gift for the gate.</h2>
+          </header>
+          <div className="section-body">
+            <p>
+              Help keep this gathering place glowing. Your contribution supports
+              the care, creativity, and work that bring the Empyrean Gate to
+              life.
+            </p>
+            <div>
+              <a
+                className="button button-donate"
+                href={SITE.donate}
+                target="_blank"
+                rel="noopener"
+              >
+                Donate to the gate <span aria-hidden="true">↗</span>
+              </a>
+            </div>
+            <p className="donate-note">
+              Contributions of every size are welcome.
+            </p>
+          </div>
         </section>
 
         <section

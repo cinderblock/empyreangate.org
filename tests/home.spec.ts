@@ -37,7 +37,7 @@ test.describe("Home", () => {
       "The Empyrean Gate",
     );
     const h2s = page.getByRole("heading", { level: 2 });
-    await expect(h2s).toHaveCount(5);
+    await expect(h2s).toHaveCount(6);
   });
 
   test("section navigation points at real anchors", async ({ page }) => {
