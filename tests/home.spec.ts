@@ -85,7 +85,7 @@ test.describe("People", () => {
     await page.goto("/");
     const people = page.locator(".people");
     for (const [name, href] of [
-      ["Cameron Tacklind", "https://cameron.tacklind.com/"],
+      ['Cameron "Quadrangle" Tacklind', "https://cameron.tacklind.com/"],
       ["Theodore Wahrburg", "https://ted.wahrburg.dev/"],
       ["Allison Bellows", "https://github.com/allibell"],
       ["Anthony Fieldman", "https://www.anthonyfieldman.com/"],
@@ -102,10 +102,26 @@ test.describe("People", () => {
   test("lists people without a site as plain names", async ({ page }) => {
     await page.goto("/");
     const people = page.locator(".people");
-    await expect(people.getByText("James Tramel").first()).toBeVisible();
+    await expect(people.getByText("James Logistic")).toBeVisible();
     await expect(
-      people.getByRole("link", { name: "James Tramel" }),
+      people.getByRole("link", { name: "James Logistic" }),
     ).toHaveCount(0);
+  });
+
+  test("lists earlier contributors most recent first", async ({ page }) => {
+    await page.goto("/");
+    const roles = await page.locator(".earlier .person-role").allTextContents();
+    expect(roles[0]).toContain("unSCruz 2024");
+    expect(roles[roles.length - 1]).toContain("Original design, 2022");
+  });
+
+  test("credits James only as current crew, not with the 2022 design", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await expect(page.locator(".earlier")).not.toContainText("James Logistic");
+    await expect(page.locator(".earlier")).not.toContainText("Tramel");
+    await expect(page.locator(".crew")).toContainText("James Logistic");
   });
 });
 
