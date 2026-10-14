@@ -130,8 +130,9 @@ reduced motion. Falls back to a still SVG of 64 spokes without WebGL2.
        `worker: { previews: true }`). Verified: `https://dev.empyreangate.org`
        200 with `x-robots-tag: noindex`, robots.txt disallows all;
        empyreangate.org still the 503 stub; www still 301s.
-       8b. [ ] **← current** Launch, when Cameron decides: change the deploy command to `bunx wrangler deploy`, push or
-       retry a master build. That replaces the stub on empyreangate.org.
+       8b. [ ] **← current** Launch, when Cameron decides: fast-forward `master` to
+       `dev` and push (needs the admin bypass on `master`'s protection). The
+       deploy command is `npx wrangler deploy`, so that push publishes.
 9. [ ] Verify live: `/`, `/nope`, both `www.` hosts and the `.com` apex.
 10. [x] Photo pipeline: `photos/` originals → `bun run photos` (sharp) →
         `public/photos/` renditions + generated manifest; exercised with a
@@ -223,6 +224,21 @@ versions upload`, so the pre-launch guard did not exist. Deployment
   switched on `empyreangate-org.isozilla.workers.dev` (200) and workers.dev
   preview URLs. The custom domain and `dev.empyreangate.org` were unaffected.
   Production robots.txt is `Allow: /` with no noindex while it is up.
+  **Resolved the same day** (Cameron's choices): rolled back in the dashboard
+  to `10afe06f` ("Undo accidental PR #1 publish"; empyreangate.org back to
+  503), production workers.dev route turned off (`enabled: false`; workers.dev
+  preview URLs left on), `master` merged into `dev` (`70fc9f5`; no
+  conflicts, so `master` is an ancestor of `dev` and launch is a
+  fast-forward). Not done, deliberately: reverting the merge on `master`, and
+  changing the deploy command. Cameron keeps `npx wrangler deploy` on master,
+  so **any push to master publishes**. GitHub: default branch is now `dev`
+  (PRs target it), and `master` is protected (1 approving review, admin
+  bypass allowed, no force-push, no deletion). Cameron plans to switch the
+  default back to `master` within a couple of days; drop the protection then
+  too if it gets in the way.
+- **Git wrote CRLF files on Windows** (merge, checkout) despite oxfmt needing
+  LF, failing fmt:check and the hook. `.gitattributes` `* text=auto eol=lf`
+  (`c018b6b`) fixes it.
 
 ## Open questions for the user
 
