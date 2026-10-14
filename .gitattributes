@@ -1,0 +1,4 @@
+# oxfmt enforces LF, so the working tree must be LF whatever core.autocrlf says.
+# Without this, every file Git writes on Windows (merge, checkout) comes out
+# CRLF and fails `bun run fmt:check` and the pre-commit hook.
+* text=auto eol=lf
