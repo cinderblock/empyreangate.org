@@ -395,10 +395,10 @@ export default function Home() {
                     </span>
                     <span className="person-role">
                       {credit.role}
-                      {credit.studio && (
+                      {credit.byline && (
                         <>
                           {" · "}
-                          <PersonName person={credit.studio} />
+                          <PersonName person={credit.byline} />
                         </>
                       )}
                     </span>

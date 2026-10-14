@@ -23,8 +23,8 @@ export const CREW: Person[] = [
 export interface EarlierCredit {
   role: string;
   people: Person[];
-  /** A studio or shop credited for the work as a whole. */
-  studio?: Person;
+  /** The studio, shop or project credited for the work as a whole. */
+  byline?: Person;
 }
 
 /**
@@ -35,11 +35,15 @@ export const EARLIER: EarlierCredit[] = [
   {
     role: "Light software for unSCruz 2024",
     people: [{ name: "Eric Vicenti", href: "https://eric.vicenti.net/" }],
+    byline: {
+      name: "Uprising",
+      href: "https://github.com/ericvicenti/uprising",
+    },
   },
   {
     role: "Lighting, 2022",
     people: [{ name: "Andris Kasparovics" }],
-    studio: {
+    byline: {
       name: "Sight Unseen Studios",
       href: "https://www.sightunseenstudios.com/",
     },
@@ -47,7 +51,7 @@ export const EARLIER: EarlierCredit[] = [
   {
     role: "Fabrication, 2022",
     people: [{ name: "Michael Kennedy" }, { name: "James Scott" }],
-    studio: {
+    byline: {
       name: "Kennedy Fabrications",
       href: "https://www.kennedyfabrications.com/",
     },

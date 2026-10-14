@@ -58,7 +58,9 @@ interactive, locally rendered version of the gate's light patterns.
   fabrication and lighting credits link their studios (Kennedy
   Fabrications, Sight Unseen Studios), as Entheos' own gate page does. James
   Tramel and the fabricators individually have no site of their own found.
-  This supersedes "original-design credit is one line of names".
+  This supersedes "original-design credit is one line of names". Eric's
+  line also links his unSCruz 2024 software, Uprising
+  (github.com/ericvicenti/uprising), as its byline (Cameron, 2026-10-14).
 - **People:** a names-only "The gate today" list (The Entheos Community, James
   Tramel, Cameron Tacklind, Allison Bellows, Theodore Wahrburg) and an
   "Earlier contributors" list with roles, where Eric Vicenti is credited for

@@ -92,6 +92,7 @@ test.describe("People", () => {
       ["Eric Vicenti", "https://eric.vicenti.net/"],
       ["Kennedy Fabrications", "https://www.kennedyfabrications.com/"],
       ["Sight Unseen Studios", "https://www.sightunseenstudios.com/"],
+      ["Uprising", "https://github.com/ericvicenti/uprising"],
     ]) {
       const link = people.getByRole("link", { name });
       await expect(link).toHaveAttribute("href", href);
