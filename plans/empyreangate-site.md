@@ -210,6 +210,20 @@ preview` (Wrangler ≥ 4.135, open beta, launched 2026-09-22) gives a stable
   logic mirrors Wrangler's `sanitizeBranchName`, exact for plain names.
   Chat apps cache link previews, so re-check with a fresh message.
 
+- **Accidental publish, 2026-10-14 18:00 UTC.** PR #1 (Allison's
+  `codex/donate-section`) targeted `master`, the repo's default branch, and
+  was merged. Workers Builds built `master@03e00ca` and ran **`npx wrangler
+deploy`**: the dashboard deploy command was never changed to `bunx wrangler
+versions upload`, so the pre-launch guard did not exist. Deployment
+  `53944ab2` put version `a4fd0dcf` at 100%, replacing ops' stub (version
+  `10afe06f`, deployment `d889a059`). What went live is `master`'s copy,
+  14 commits behind `dev` (James Tramel beside Anthony on "Original design",
+  no contributor links, no fire/month copy) plus the Donate section. Because
+  `master`'s wrangler.jsonc predates `workers_dev: false`, the deploy also
+  switched on `empyreangate-org.isozilla.workers.dev` (200) and workers.dev
+  preview URLs. The custom domain and `dev.empyreangate.org` were unaffected.
+  Production robots.txt is `Allow: /` with no noindex while it is up.
+
 ## Open questions for the user
 
 None. Cameron, 2026-10-12: "stop asking." Remaining work waits on things he
