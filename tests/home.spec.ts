@@ -112,7 +112,7 @@ test.describe("People", () => {
     await page.goto("/");
     const roles = await page.locator(".earlier .person-role").allTextContents();
     expect(roles[0]).toContain("unSCruz 2024");
-    expect(roles[roles.length - 1]).toContain("Original design, 2022");
+    expect(roles[roles.length - 1]).toContain("Design, 2022");
   });
 
   test("credits James only as current crew, not with the 2022 design", async ({

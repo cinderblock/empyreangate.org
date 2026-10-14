@@ -47,8 +47,10 @@ interactive, locally rendered version of the gate's light patterns.
   Burn Feb) with an ISO `date` for the first day.
 - **Names and ordering** (Cameron, 2026-10-14): crew shows "James
   Logistic" and 'Cameron "Quadrangle" Tacklind'. Earlier contributors run
-  most recent first, and the 2022 original-design credit names Anthony
-  Fieldman alone: James is still involved and is credited only as crew.
+  most recent first, and the 2022 design credit names Anthony Fieldman
+  alone: James is still involved and is credited only as crew. The earlier
+  roles don't say "original" (Cameron, 2026-10-14): "Lighting, 2022",
+  "Design, 2022".
 - **Contributor links** (Cameron, 2026-10-12): each person links to their own
   site where they have one: Cameron, Ted, Allison (GitHub `allibell`, the
   gate software's second-largest contributor), Anthony Fieldman, Eric

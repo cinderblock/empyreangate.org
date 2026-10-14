@@ -37,7 +37,7 @@ export const EARLIER: EarlierCredit[] = [
     people: [{ name: "Eric Vicenti", href: "https://eric.vicenti.net/" }],
   },
   {
-    role: "Original lighting, 2022",
+    role: "Lighting, 2022",
     people: [{ name: "Andris Kasparovics" }],
     studio: {
       name: "Sight Unseen Studios",
@@ -53,7 +53,7 @@ export const EARLIER: EarlierCredit[] = [
     },
   },
   {
-    role: "Original design, 2022",
+    role: "Design, 2022",
     people: [
       { name: "Anthony Fieldman", href: "https://www.anthonyfieldman.com/" },
     ],
