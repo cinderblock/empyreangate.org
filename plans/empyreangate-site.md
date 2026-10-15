@@ -236,6 +236,11 @@ versions upload`, so the pre-launch guard did not exist. Deployment
   bypass allowed, no force-push, no deletion). Cameron plans to switch the
   default back to `master` within a couple of days; drop the protection then
   too if it gets in the way.
+- **Allison's PR #2** (favicon as a full circle of 64 spokes; sticky section
+  headings no longer slide over cards) was retargeted from `master` to `dev`
+  and merged there (`15bdfde`, 2026-10-14) after checks passed. Her branch
+  `codex/favicon-previews` only holds screenshots for that PR's description
+  and is deliberately not merged.
 - **Git wrote CRLF files on Windows** (merge, checkout) despite oxfmt needing
   LF, failing fmt:check and the hook. `.gitattributes` `* text=auto eol=lf`
   (`c018b6b`) fixes it.
