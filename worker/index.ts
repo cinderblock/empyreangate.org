@@ -42,7 +42,8 @@ export interface Env {
 
 /** Limits, generous for any real patch (the gate caps a patch at 256 nodes). */
 export const LIMITS = {
-  bodyBytes: 256 * 1024,
+  // Patches carry up to 4 Still images (≤ 600 KB data URLs each).
+  bodyBytes: 3 * 1024 * 1024,
   name: 80,
   contact: 200,
   message: 2000,

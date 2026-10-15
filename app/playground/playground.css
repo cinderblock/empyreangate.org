@@ -359,3 +359,28 @@
   opacity: 0.45;
   cursor: default;
 }
+
+/* The Video in node's stand-in picker, in the editor's side panel. */
+.pg-video-in {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 12px;
+}
+
+.pg-video-in .pg-file {
+  font-size: 12px;
+  color: var(--ink);
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  border-radius: 0.45rem;
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+}
+
+.pg-video-in .pg-file input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}

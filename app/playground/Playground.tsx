@@ -526,21 +526,12 @@ export default function Playground() {
             </fieldset>
 
             <fieldset>
-              <legend>Video and motion</legend>
+              <legend>Motion</legend>
               <div className="pg-row pg-wrap">
-                <label className="pg-file">
-                  <input
-                    type="file"
-                    accept="video/*,image/*"
-                    disabled={!runtime}
-                    onChange={(e) => pickMedia(e.target.files?.[0] ?? null)}
-                  />
-                  {mediaName ? `Video: ${mediaName}` : "Video or image file…"}
-                </label>
-                {mediaName && (
-                  <button type="button" onClick={() => pickMedia(null)}>
-                    Clear
-                  </button>
+                {!hasMotion && (
+                  <span className="pg-check">
+                    No motion sensors in this browser.
+                  </span>
                 )}
                 {hasMotion && (
                   <button
@@ -595,6 +586,34 @@ export default function Playground() {
             minis={runtime}
             showActivate={false}
             onDocChange={onDocChange}
+            nodeExtras={(node) =>
+              node.kind === "video_in" ? (
+                <div className="pg-video-in">
+                  <p className="hint">
+                    On the gate, Video in shows the gate's live video. Here,
+                    pick a video file to stand in for it (it stays on this
+                    computer and isn't saved in the patch). For a fixed picture,
+                    use a Still image node instead: it carries its own image.
+                  </p>
+                  <div className="patch-param-row">
+                    <label className="pg-file">
+                      <input
+                        type="file"
+                        accept="video/*,image/*"
+                        disabled={!runtime}
+                        onChange={(e) => pickMedia(e.target.files?.[0] ?? null)}
+                      />
+                      {mediaName ? `Playing: ${mediaName}` : "Stand-in video…"}
+                    </label>
+                    {mediaName && (
+                      <button type="button" onClick={() => pickMedia(null)}>
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ) : null
+            }
             toolbarExtra={({ doc: open, open: load }) => (
               <>
                 <button
