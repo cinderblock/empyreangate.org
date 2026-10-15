@@ -425,8 +425,46 @@ p {
   cursor: default;
 }
 
-.chip-quiet[aria-pressed="true"] {
-  background: transparent;
+/* Pause / play sits on the animation itself, in the stage's bottom-right
+ * corner: the ring is a circle, so the square's corners are empty. */
+.gate-playpause {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
+  color: var(--ink-muted);
+  cursor: pointer;
+  opacity: 0.75;
+  transition:
+    opacity 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.gate-playpause svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  fill: currentColor;
+}
+
+.gate-playpause:hover,
+.gate-playpause:focus-visible {
+  opacity: 1;
+  color: var(--ink);
+  border-color: var(--ink-faint);
+}
+
+/* Paused reads as a state worth noticing: gold, like the "Next" pill. */
+.gate-playpause[aria-pressed="true"] {
+  opacity: 1;
   color: var(--gold);
   border-color: var(--gold);
 }

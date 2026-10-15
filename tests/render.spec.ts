@@ -59,10 +59,31 @@ test.describe("Gate render", () => {
     );
     const state = await render.getAttribute("data-render-state");
     test.skip(state !== "running", "needs a running render");
-    await page.getByRole("button", { name: "Pause" }).click();
+    await page.getByRole("button", { name: "Pause animation" }).click();
     await expect(render).toHaveAttribute("data-render-state", "paused");
-    await page.getByRole("button", { name: "Play" }).click();
+    await page.getByRole("button", { name: "Play animation" }).click();
     await expect(render).toHaveAttribute("data-render-state", "running");
+  });
+
+  test("pause sits on the animation, apart from the scene chips", async ({
+    page,
+  }) => {
+    const render = page.locator(".gate-render");
+    await expect(render).toHaveAttribute(
+      "data-render-state",
+      /running|paused|fallback/,
+      { timeout: 10_000 },
+    );
+    const state = await render.getAttribute("data-render-state");
+    test.skip(state === "fallback", "no pause control without WebGL");
+    const button = page.getByRole("button", { name: /animation$/ });
+    await expect(button).toHaveCount(1);
+    await expect(page.locator(".gate-stage .gate-playpause")).toHaveCount(1);
+    await expect(
+      page.getByRole("group", { name: "Light scenes" }).getByRole("button", {
+        name: /pause|play/i,
+      }),
+    ).toHaveCount(0);
   });
 
   test("respects prefers-reduced-motion by starting paused", async ({

@@ -365,6 +365,26 @@ export default function GateRender({ className }: { className?: string }) {
           a ring, animating in the browser. Tap or click the ring to send a
           ripple through it.
         </p>
+        {live && (
+          <button
+            type="button"
+            className="gate-playpause"
+            aria-label={paused ? "Play animation" : "Pause animation"}
+            aria-pressed={paused}
+            onClick={togglePause}
+          >
+            {paused ? (
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M8 5.5v13l10.5-6.5z" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <rect x="6.5" y="5.5" width="4" height="13" rx="1" />
+                <rect x="13.5" y="5.5" width="4" height="13" rx="1" />
+              </svg>
+            )}
+          </button>
+        )}
       </div>
       <div className="gate-controls" role="group" aria-label="Light scenes">
         <div className="gate-chips">
@@ -381,16 +401,6 @@ export default function GateRender({ className }: { className?: string }) {
               {s.name}
             </button>
           ))}
-          {live && (
-            <button
-              type="button"
-              className="chip chip-quiet"
-              aria-pressed={paused}
-              onClick={togglePause}
-            >
-              {paused ? "Play" : "Pause"}
-            </button>
-          )}
         </div>
         {state === "fallback" && (
           <p className="gate-note">
