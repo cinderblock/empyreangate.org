@@ -1,6 +1,7 @@
 # Pattern playground — the gate's node editor, in the browser
 
-Status: **proposal, not started.** Waiting on the open questions below.
+Status: **in progress.** Decisions locked 2026-10-14; current step is marked
+below.
 
 ## Goal
 
@@ -13,97 +14,140 @@ press **Submit** to send it to us for possible use on the real gate.
 
 | What                  | Where / value                                                                                                                                |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Gate software         | `C:\Users\camer\git\Personal Projects\Empyrean` (`github.com/TomSawyerLabs/empyrean-gate`), v0.14.0                                          |
+| Gate software         | `C:\Users\camer\git\Personal Projects\Empyrean` (`github.com/TomSawyerLabs/empyrean-gate`, public), v0.14.0, commits straight to `master`    |
+| Gate work happens in  | worktree `C:\Users\camer\.t3\worktrees\Empyrean\playground`, branch `patch-crate`, PR into gate `master`                                     |
 | Editor UI             | `src/Patch.tsx` (780 lines, React Flow `@xyflow/react`)                                                                                      |
 | Patch format          | `PatchDoc` JSON, `src-tauri/src/patch/mod.rs:63-153`, TS mirror `src/types.ts:1032-1115`                                                     |
 | Node definitions      | `src-tauri/src/patch/registry.rs` (1009 lines); palette JSON served at `GET /patch/registry`                                                 |
 | Evaluation            | Rust only: `patch/eval.rs` (CPU scalar/event nodes) + `patch/codegen.rs` (graph → one WGSL compute shader) + `engine/shaders/patch_lib.wgsl` |
+| GPU ABI               | `engine/mod.rs:30` `Globals`, `:93` `AudioUniform`; `layers.rs:531` `GpuDab`, `:548` `GpuEffect`; `MAX_EFFECTS` 32, `MAX_DABS` 512           |
+| Effects lifecycle     | `engine/mod.rs:~3044-3080`: emitted effects are aged by wall clock, dropped after `duration` (or kind default), packed to `GpuEffect`        |
 | Layout                | 64 spokes × 378 px = 24,192 LEDs, radial, parametric (`config.rs:17-50`)                                                                     |
 | Site's current render | WebGL2 port of the _layer_ shader (`app/gate/shaders.ts`, `engine.ts`, `GateRender.tsx`), not the patch path                                 |
 | Site hosting          | Cloudflare Workers static assets, **no Worker script**, provisioned by the ops repo                                                          |
+
+## Decisions already made (don't re-ask)
+
+- **WASM build of the real Rust compiler/evaluator**, not a TS port (Cameron,
+  2026-10-14). One source of truth; nodes added to the gate appear in the
+  playground on the next build.
+- **The site consumes the gate's web package as a git dependency**, not an
+  npm package (Cameron: "npm seems heavy"). Because the package contains
+  built artifacts (wasm, JS), the gate repo's CI builds it and commits it to
+  a `web-dist` branch (append-only, never force-pushed); the site pins a
+  `web-dist` commit in `bun.lock`.
+- **Submit = Worker + R2/D1 + Turnstile** (Cameron: "sounds great"). Still
+  needs per-change approval for the ops-repo / Cloudflare part.
+- **Restructuring the gate repo is fine** (Cameron: "yes. boil the ocean").
+  Do it properly: crate split, shared editor package, gate-side import.
+- **WebGPU-only** for the playground (Cameron: "yes"). The home page's
+  WebGL2 render stays.
 
 ## Findings that shape the design
 
 - **The patch compiler is already pure Rust.** `registry.rs`, `validate.rs`
   and `codegen.rs` depend only on `std` and `serde`. `eval.rs` pulls in three
   small types from the engine (`AudioUniform`, `EffectCfg`/`EffectKind`,
-  `DJ_EVENT_COUNT`). Moving the `patch` module into its own crate that
-  compiles to `wasm32` is a small refactor, not a rewrite.
-- **The output is WGSL**, which WebGPU runs natively. The same generated
-  shader that drives the real gate can drive the browser preview, so the
-  preview is exact, not an approximation.
+  `DJ_EVENT_COUNT`). `presets.rs` is `include_str!` of JSON. All portable.
+- **The output is WGSL**, which WebGPU runs natively, and `patch_lib.wgsl`
+  is self-contained: bindings 0 (Globals uniform), 1 (4× AudioU uniform),
+  3 (FX), 4 (OUT, packed RGB u32), 5 (DABS), 6 (SCOPE: 4 × (256 wave + 64
+  spectrum) f32), 7 (VIDEO u32), 8 (P, the param slab). Entry point `main`,
+  `@workgroup_size(256)`, one invocation per LED. The preview module (one
+  thumbnail per field node, up to 32) uses the same bindings.
+- **WGSL `Globals` names two fields `_pad_game0/1`** where Rust has
+  `game_style`/`game_turn`. Same layout, harmless.
 - **The editor is barely coupled to Tauri.** `Patch.tsx` makes no `invoke()`
-  calls; it talks to `GateClient` (WebSocket messages `patch_list/get/save/
-delete/activate/param`) and fetches `/patch/registry` and `/patch/presets`.
-  An adapter that implements those against local storage is enough.
+  calls; it uses `useGate()` (`client`, `config`, `status`, `connected`),
+  `GateClient` messages `patch_list/get/save/delete/activate/param`, fetches
+  `/patch/registry` and `/patch/presets`, and `MiniViz`/`miniPreview` for
+  thumbnails fed by a binary preview stream.
 - **Patches are data, not code.** A submission is bounded JSON (≤256 nodes,
-  ≤1024 edges) that the gate re-validates before use. Accepting them from
-  strangers carries no code-execution risk.
+  ≤1024 edges) that the gate re-validates before use.
 - **Host-tied inputs** need browser stand-ins: `audio` / `waveform` /
   `spectrum` (mic via Web Audio; the gate app already does browser-mic
   feature extraction in `src/Media.tsx`), `imu` (DeviceOrientation, or
-  sliders on desktop), `dj_link` (a fake deck with BPM/phrase sliders),
-  `video_in` / `image_in` (local file only; no yt-dlp proxy), and
-  `tap` / `effects_in` / `touch_dabs` (local buttons and touches).
-- **The gate app has no patch import/export UI today.** Copying a JSON file
-  into `%APPDATA%/EmpyreanGate/patches/` is the only import path.
+  sliders on desktop), `dj_link` (a fake deck), `video_in` / `image_in`
+  (local file only), `tap` / `effects_in` / `touch_dabs` (local input).
+- **The gate app has no patch import/export UI today.**
 - **Side note, not this task:** `presets/dj-stereo-master-flow.json` is not
-  listed in `presets.rs` `SOURCES`, so it never ships. Belongs in the gate
+  listed in `presets.rs` `SOURCES`, so it never ships. Goes in the gate
   repo's ISSUES.md.
 
-## Proposed architecture (recommended)
+## Architecture
 
-1. **`empyrean-patch` crate** in the gate repo: `mod.rs` types, `registry`,
-   `validate`, `codegen`, `eval`, with no engine/Tauri dependencies. The
-   desktop app depends on it; a `wasm-bindgen` build exposes `registry()`,
-   `validate(doc)`, `compile(doc) -> {wgsl, layout}` and a stepping `eval`.
-   One source of truth: a new node added to the gate appears in the
-   playground on the next build.
-2. **Shared editor package** extracted from `Patch.tsx`, taking a storage /
-   runtime adapter instead of `useGate()`. The gate app and the site both
-   consume it.
-3. **Browser runtime** on the site: WebGPU device, the generated compute
-   shader plus `patch_lib.wgsl`, the same param/global buffer layout, and the
-   site's existing soft-dot point renderer drawing the 24,192 LEDs.
-   WebGPU-only with a clear message elsewhere (the editor is a desktop-class
-   tool; the site's existing WebGL2 render stays for the home page).
-4. **Persistence:** autosave to IndexedDB (a library of patches, not one
-   slot); **Save to disk** via the File System Access API where available,
-   download fallback elsewhere; **Open from disk** via file picker / drag-drop.
-   Files are the exact `PatchDoc` JSON the gate reads, so a saved file drops
-   straight into the gate's `patches/` folder.
-5. **Submit:** needs a server, which the site does not have. Recommended: a
-   small Worker route (POST JSON + name/contact + Turnstile) storing to R2 or
-   D1 as a moderation queue, with a notification to us. This is an
-   infrastructure change through the ops repo and needs explicit approval
-   when we get there.
-6. **Gate-side import:** an "Import patch" in the gate app (file or pasted
-   JSON), so reviewing a submission is one click.
+Gate repo (`empyrean-gate`):
 
-## Open questions for the user
+1. **`crates/empyrean-patch`** (pure Rust, no engine/Tauri deps): document
+   types, `registry`, `validate`, `codegen` (+ `patch_lib.wgsl`), `eval`,
+   `presets`, the effect types (`EffectKind`, `EffectCfg`), and the GPU ABI
+   structs the patch shader reads (`Globals`, `AudioUniform`, `GpuEffect`,
+   `GpuDab`, limits). The app's `src-tauri` depends on it by path and
+   re-exports, so nothing else in the engine changes shape. The on-disk store
+   (`store.rs`) stays in the app.
+2. **`crates/empyrean-patch-wasm`** (`wasm-bindgen`): `registry()`,
+   `presets()`, `validate(doc)`, and a `Sim` that owns a compiled patch, the
+   evaluator, the live effect list and the frame packing. Each frame JS calls
+   `sim.frame(dt, inputs)` and uploads the returned byte views (Globals,
+   audio, FX, slab) as-is, so **Rust owns every GPU layout**.
+3. **`packages/patch-web`** (TS, built with Vite library mode): the WebGPU
+   runtime (device, pipelines for main + preview modules, buffers, point
+   renderer), browser input adapters (mic, orientation, fake DJ deck, local
+   video), and the editor extracted from `Patch.tsx` behind a
+   `PatchHost` adapter interface (list/load/save/delete/activate, registry,
+   presets, mini-preview frames, param play). Ships the wasm.
+4. **The gate app consumes `packages/patch-web`'s editor** through a
+   `GateClient`-backed `PatchHost`. Adds **Import / Export patch** (file,
+   paste).
+5. **CI** builds the wasm + package and appends a commit to `web-dist`.
 
-1. **Single source of truth via WASM, or a hand-written TS port?**
-   Recommend WASM: a TS port of `codegen.rs` (1406 lines) would drift every
-   time a node is added.
-2. **How should the site consume the editor and the WASM build?** Options: a
-   published npm package from the gate repo, a git dependency, or a build
-   step that pulls a release artifact. Recommend an npm package published from
-   the gate repo's CI (versioned alongside the app).
-3. **Submission backend:** Worker + R2/D1 + Turnstile (recommended), versus
-   something with no server of ours (pre-filled GitHub issue, email link).
-4. **Is the gate repo (TomSawyerLabs org) OK to restructure** into a crate +
-   shared package? Allison is a major contributor there.
-5. **WebGPU-only acceptable?** Desktop Chrome/Edge/Safari and recent
-   Firefox have it; older phones won't. Recommend yes.
+Site repo (`empyreangate.org`):
+
+6. **`/playground` route**: the editor with a local `PatchHost` (IndexedDB
+   library, autosave), the browser runtime for the live preview and mini
+   thumbnails, Save to disk (File System Access API, download fallback),
+   Open from disk (picker / drag-drop), presets as starting points, WebGPU
+   check with a clear message.
+7. **Submit**: Worker route `POST /api/submit` (JSON + name + optional
+   contact + Turnstile token) → validate (size, schema; full validation via
+   the same wasm if practical) → R2 object + D1 row as moderation queue →
+   notification. Needs ops changes, staged for approval.
+
+## Plan / steps
+
+1. **[current]** Gate: extract `crates/empyrean-patch`; app builds and all
+   existing Rust tests pass unchanged.
+2. Gate: `crates/empyrean-patch-wasm` with `Sim`; a Rust test that the
+   packed byte layouts match the engine's structs.
+3. Gate: `packages/patch-web` runtime — render a preset in a bare test page
+   with WebGPU, compare against the engine's output if practical (the
+   `engine-smoke` binary can dump frames).
+4. Gate: extract the editor into `packages/patch-web`, switch the app to it,
+   behavior specs (`test:behavior`, patch-zoom etc.) still pass.
+5. Gate: Import / Export in the app.
+6. Gate: CI job → `web-dist` branch. README. PR to gate `master`.
+7. Site: `/playground` route with local storage, disk save/open, presets.
+8. Site: Submit UI + Worker (stage ops change, wait for approval).
+9. Site: README, tests, preview deploy check.
 
 ## Progress log
 
 - [x] Survey gate repo's patch system and the site's render (2026-10-14)
-- [ ] Answers to the open questions
-- [ ] Everything else
+- [x] Decisions on the five open questions (2026-10-14)
+- [ ] Step 1: patch crate
+- [ ] Steps 2–9
+
+## Open questions for the user
+
+None right now. The ops change for Submit will need an explicit yes when
+staged.
 
 ## Things not to do
 
-- Don't hand-port the shader codegen to TypeScript without a decision on Q1.
+- Don't hand-port codegen or the evaluator to TypeScript. Everything that
+  knows a GPU layout lives in Rust and crosses to JS as bytes.
+- Don't force-push `web-dist`; CI appends.
 - Don't touch Cloudflare/ops for the submit endpoint without per-change
   approval.
+- Don't do the gate work in the main Empyrean checkout; it's shared with
+  other threads. Use the `playground` worktree.
