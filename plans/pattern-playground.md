@@ -184,7 +184,9 @@ Not in ops today: Turnstile widgets (no schema support) and worker secrets.
 - [x] Push gate `patch-crate` and a locally built `web-dist` (2026-10-15)
 - [x] Site dependency to `web-dist`; `playground` merged into `dev`, pushed
 - [x] `dev` Preview checked (dev.empyreangate.org/playground): Workers Builds green, editor + WebGPU render + thumbnails live, wasm 222 KB over the wire, `/api/submit` answers 503 as designed
-- [ ] Gate PR into `master` (Cameron's call)
+- [x] Gate work on gate `master` (`3b5cc85`, 2026-10-15; Cameron: app master
+      is fine to push). CI green; web-dist now built by CI (`f3c3891`), and
+      the site depends on that build.
 - [ ] Ops: submissions bucket (staged above; needs a yes)
 - [ ] Turnstile widget + `TURNSTILE_SECRET` + site key
 - [ ] Uncomment the R2 binding once the bucket exists
@@ -210,8 +212,9 @@ playground's IndexedDB, files) migrated on load. Site `107e84c` (web-dist
 
 ## Open questions for the user
 
-1. **Open the gate PR** into TomSawyerLabs/empyrean-gate `master`? The
-   branch is pushed; merging also starts CI publishing of `web-dist`.
+1. **Cut a gate release?** The work is on gate `master`, but running gates
+   only get it from a version tag (they self-update). Decompression is
+   2026-10-17, so holding off until after is my recommendation.
 2. **Apply the staged ops change** (the R2 bucket above)? It has to wait for
    or sit on top of the other thread's uncommitted `empyreangate.yaml` edit.
 3. **Turnstile widget**: create it in the dashboard (hostname
