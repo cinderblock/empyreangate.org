@@ -20,3 +20,20 @@ one by marking it `in progress — <thread/branch>` before working on it.
 - **To decide first:** which view is "right" (the gate is overhead; seen from
   beneath it is mirrored relative to a top-down drawing). Possibly the gate's
   preview should be the one to change.
+
+## Right after a deploy, a page can hang because its build manifest 404s
+
+- **What:** twice on the `dev` Preview (2026-10-15, builds `b8afb20` and
+  `62a756a`), a browser load within a minute or two of Workers Builds
+  reporting success got `404` for `/assets/manifest-<hash>.js` — the hash the
+  freshly served HTML referenced — while other requests for the same URL
+  already got `200`. React Router never hydrates without it, so the page
+  stays on its prerendered shell (the playground: "Loading the gate's editor
+  and render engine…") until reloaded. A reload a minute later worked both
+  times.
+- **Why it matters:** any visitor landing in that window after any deploy
+  (production too, presumably) sees a page that never finishes loading, with
+  no error and no retry.
+- **To look at:** whether new HTML can reach an edge before its assets do,
+  and whether that 404 gets cached; and a client-side safeguard (e.g. retry
+  or reload once when the manifest / entry module fails to load).
