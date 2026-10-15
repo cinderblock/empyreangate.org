@@ -198,6 +198,16 @@ nodes, raw touch from every gate surface and the playground, a patch with
 touch nodes owns the surface, preset Touch Ripples. Site `b8afb20` (web-dist
 `23e0ea7`) is on the dev Preview and checked there.
 
+### Nothing reaches the output unless wired (2026-10-15)
+
+Cameron noticed Touch Ripples' Event effect isn't wired to the Output yet its
+bursts showed: the Output silently added every effect and pen stroke. Now
+(his choice, "everything explicit", gate `plans/explicit-output.md`) effects
+and strokes reach the output only through wired Render effects / Render
+points; patch format 2, with older patches (gate store, presets, the
+playground's IndexedDB, files) migrated on load. Site `107e84c` (web-dist
+`dae67de`) on the dev Preview, checked there.
+
 ## Open questions for the user
 
 1. **Open the gate PR** into TomSawyerLabs/empyrean-gate `master`? The
