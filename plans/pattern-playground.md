@@ -1,9 +1,11 @@
 # Pattern playground — the gate's node editor, in the browser
 
-Status: **built and tested locally, nothing pushed.** Waiting on Cameron for
-the pushes, the ops change and two wording/channel choices (see "Open
-questions"). Gate branch `patch-crate` (8 commits), site branch `playground`
-(3 commits), both in their own worktrees.
+Status: **on the site's `dev` Preview (2026-10-15); Submit not live yet.**
+Cameron: never push either repo's `master` (the site's production is not to
+be published yet); `dev` is where to see it on the real deploy. Gate branches
+`patch-crate` and `web-dist` are pushed (not merged); the site's `playground`
+work is merged into and pushed with `dev`. Waiting on the ops change and two
+wording/channel choices (see "Open questions").
 
 ## Goal
 
@@ -14,20 +16,20 @@ press **Submit** to send it to us for possible use on the real gate.
 
 ## Environment / context
 
-| What                  | Where / value                                                                                                                                   |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Gate software         | `C:\Users\camer\git\Personal Projects\Empyrean` (`github.com/TomSawyerLabs/empyrean-gate`, public), v0.14.0, commits straight to `master`       |
-| Gate work happens in  | worktree `C:\Users\camer\.t3\worktrees\Empyrean\playground`, branch `patch-crate`, PR into gate `master`                                        |
-| Site work happens in  | worktree `C:\Users\camer\.t3\worktrees\empyreangate.org\playground`, branch `playground` (off `dev`); `dev` itself only has plan/ISSUES commits |
-| Editor UI             | `src/Patch.tsx` (780 lines, React Flow `@xyflow/react`)                                                                                         |
-| Patch format          | `PatchDoc` JSON, `src-tauri/src/patch/mod.rs:63-153`, TS mirror `src/types.ts:1032-1115`                                                        |
-| Node definitions      | `src-tauri/src/patch/registry.rs` (1009 lines); palette JSON served at `GET /patch/registry`                                                    |
-| Evaluation            | Rust only: `patch/eval.rs` (CPU scalar/event nodes) + `patch/codegen.rs` (graph → one WGSL compute shader) + `engine/shaders/patch_lib.wgsl`    |
-| GPU ABI               | `engine/mod.rs:30` `Globals`, `:93` `AudioUniform`; `layers.rs:531` `GpuDab`, `:548` `GpuEffect`; `MAX_EFFECTS` 32, `MAX_DABS` 512              |
-| Effects lifecycle     | `engine/mod.rs:~3044-3080`: emitted effects are aged by wall clock, dropped after `duration` (or kind default), packed to `GpuEffect`           |
-| Layout                | 64 spokes × 378 px = 24,192 LEDs, radial, parametric (`config.rs:17-50`)                                                                        |
-| Site's current render | WebGL2 port of the _layer_ shader (`app/gate/shaders.ts`, `engine.ts`, `GateRender.tsx`), not the patch path                                    |
-| Site hosting          | Cloudflare Workers static assets, **no Worker script**, provisioned by the ops repo                                                             |
+| What                  | Where / value                                                                                                                                |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Gate software         | `C:\Users\camer\git\Personal Projects\Empyrean` (`github.com/TomSawyerLabs/empyrean-gate`, public), v0.14.0, commits straight to `master`    |
+| Gate work happens in  | worktree `C:\Users\camer\.t3\worktrees\Empyrean\playground`, branch `patch-crate`, PR into gate `master`                                     |
+| Site work happens in  | worktree `C:\Users\camer\.t3\worktrees\empyreangate.org\playground`, branch `playground`, now merged into `dev` (pushed)                     |
+| Editor UI             | `src/Patch.tsx` (780 lines, React Flow `@xyflow/react`)                                                                                      |
+| Patch format          | `PatchDoc` JSON, `src-tauri/src/patch/mod.rs:63-153`, TS mirror `src/types.ts:1032-1115`                                                     |
+| Node definitions      | `src-tauri/src/patch/registry.rs` (1009 lines); palette JSON served at `GET /patch/registry`                                                 |
+| Evaluation            | Rust only: `patch/eval.rs` (CPU scalar/event nodes) + `patch/codegen.rs` (graph → one WGSL compute shader) + `engine/shaders/patch_lib.wgsl` |
+| GPU ABI               | `engine/mod.rs:30` `Globals`, `:93` `AudioUniform`; `layers.rs:531` `GpuDab`, `:548` `GpuEffect`; `MAX_EFFECTS` 32, `MAX_DABS` 512           |
+| Effects lifecycle     | `engine/mod.rs:~3044-3080`: emitted effects are aged by wall clock, dropped after `duration` (or kind default), packed to `GpuEffect`        |
+| Layout                | 64 spokes × 378 px = 24,192 LEDs, radial, parametric (`config.rs:17-50`)                                                                     |
+| Site's current render | WebGL2 port of the _layer_ shader (`app/gate/shaders.ts`, `engine.ts`, `GateRender.tsx`), not the patch path                                 |
+| Site hosting          | Cloudflare Workers static assets, **no Worker script**, provisioned by the ops repo                                                          |
 
 ## Decisions already made (don't re-ask)
 
@@ -141,15 +143,19 @@ Site repo (`empyreangate.org`):
 9. Site: README (`011f82a`) and tests (`tests/playground.spec.ts`; 156/156
    across three browsers). **Done.**
 10. **[current, blocked on Cameron]** Ship, in this order:
-    a. Push gate `patch-crate`, open the PR, merge; CI publishes `web-dist`.
-    b. Site: switch the dependency to
-    `github:TomSawyerLabs/empyrean-gate#web-dist`, re-run checks, push
-    `playground`, check its Preview at `playground.empyreangate.org`.
+    a. **Done, partly**: gate `patch-crate` pushed (no PR yet; merging to
+    gate `master` is Cameron's call). `web-dist` pushed, **built locally**
+    (`83461fb`) because the publishing workflow only runs from gate
+    `master`; once it is there CI appends to the same branch.
+    b. **Done**: site depends on `github:TomSawyerLabs/empyrean-gate#web-dist`
+    (lock pins `83461fb`); `playground` rebased onto `dev`, fast-forwarded,
+    pushed (`b89bb39`). The R2 binding is commented out in wrangler.jsonc
+    until the bucket exists.
     c. Ops: create the bucket (below); Turnstile widget; set
     `TURNSTILE_SECRET` on the worker; put the site key in
     `app/content/site.ts`.
-    d. Merge `playground` into `dev`. The R2 binding makes `wrangler deploy`
-    fail until the bucket exists, so c comes before d.
+    d. Uncomment the R2 binding in wrangler.jsonc once the bucket exists.
+    Production (`master`) stays unpublished until Cameron says so.
 
 ### Staged ops change (not applied; needs an explicit yes)
 
@@ -175,16 +181,18 @@ Not in ops today: Turnstile widgets (no schema support) and worker secrets.
 - [x] Steps 1–6 in the gate worktree (branch `patch-crate`, not pushed)
 - [x] Gate README / node-graph plan paths updated
 - [x] Steps 7–9 on the site (branch `playground`, not pushed)
-- [ ] Push `patch-crate` + PR (needs Cameron's OK)
-- [ ] Site dependency to `web-dist`, push `playground` (after the gate merge)
+- [x] Push gate `patch-crate` and a locally built `web-dist` (2026-10-15)
+- [x] Site dependency to `web-dist`; `playground` merged into `dev`, pushed
+- [x] `dev` Preview checked (dev.empyreangate.org/playground): Workers Builds green, editor + WebGPU render + thumbnails live, wasm 222 KB over the wire, `/api/submit` answers 503 as designed
+- [ ] Gate PR into `master` (Cameron's call)
 - [ ] Ops: submissions bucket (staged above; needs a yes)
 - [ ] Turnstile widget + `TURNSTILE_SECRET` + site key
-- [ ] Merge `playground` into `dev`
+- [ ] Uncomment the R2 binding once the bucket exists
 
 ## Open questions for the user
 
-1. **Push the gate branch and open the PR** into TomSawyerLabs/empyrean-gate
-   `master`? (8 commits; restructures the repo as agreed.) Recommend yes.
+1. **Open the gate PR** into TomSawyerLabs/empyrean-gate `master`? The
+   branch is pushed; merging also starts CI publishing of `web-dist`.
 2. **Apply the staged ops change** (the R2 bucket above)? It has to wait for
    or sit on top of the other thread's uncommitted `empyreangate.yaml` edit.
 3. **Turnstile widget**: create it in the dashboard (hostname
@@ -246,4 +254,5 @@ Not in ops today: Turnstile widgets (no schema support) and worker secrets.
   playground stays on its own branch/worktree until its dependency points at
   `web-dist`, because a `file:` path would break CI and Workers Builds.
 - Don't run `cargo fmt` over `src-tauri`; format only new files.
-- Don't merge the site's `playground` branch before the R2 bucket exists.
+- **Don't push `master` in either repo** (Cameron, 2026-10-15). Use `dev`.
+- Don't add the R2 binding back before the bucket exists.
