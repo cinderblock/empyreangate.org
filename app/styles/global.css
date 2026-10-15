@@ -457,6 +457,11 @@ p {
     align-items: start;
   }
 
+  .section-heading-track {
+    /* Bound the sticky heading to its row, before full-width cards or photos. */
+    align-self: stretch;
+  }
+
   .section-head {
     position: sticky;
     top: 5rem;

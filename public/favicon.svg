@@ -1,29 +1,78 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="-50 -50 100 100">
   <defs>
-    <radialGradient id="g">
+    <radialGradient id="g" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="44">
       <stop offset="30%" stop-color="#ffb5d7"/>
       <stop offset="70%" stop-color="#32d5d2"/>
-      <stop offset="100%" stop-color="#413f92"/>
+      <stop offset="100%" stop-color="#8a87e0"/>
     </radialGradient>
+    <path id="spoke" d="M0 -14V-44"/>
   </defs>
   <circle r="50" fill="#06060f"/>
-  <g stroke="url(#g)" stroke-width="3.2" stroke-linecap="round" fill="none">
-    <line x1="0" y1="-14" x2="0" y2="-44"/>
-    <line x1="9.9" y1="-9.9" x2="31.1" y2="-31.1"/>
-    <line x1="14" y1="0" x2="44" y2="0"/>
-    <line x1="9.9" y1="9.9" x2="31.1" y2="31.1"/>
-    <line x1="0" y1="14" x2="0" y2="44"/>
-    <line x1="-9.9" y1="9.9" x2="-31.1" y2="31.1"/>
-    <line x1="-14" y1="0" x2="-44" y2="0"/>
-    <line x1="-9.9" y1="-9.9" x2="-31.1" y2="-31.1"/>
-    <line x1="5.4" y1="-12.9" x2="16.8" y2="-40.6"/>
-    <line x1="12.9" y1="-5.4" x2="40.6" y2="-16.8"/>
-    <line x1="12.9" y1="5.4" x2="40.6" y2="16.8"/>
-    <line x1="5.4" y1="12.9" x2="16.8" y2="40.6"/>
-    <line x1="-5.4" y1="12.9" x2="-16.8" y2="40.6"/>
-    <line x1="-12.9" y1="5.4" x2="-40.6" y2="16.8"/>
-    <line x1="-12.9" y1="-5.4" x2="-40.6" y2="-16.8"/>
-    <line x1="-5.4" y1="-12.9" x2="-16.8" y2="-40.6"/>
+  <g stroke="url(#g)" stroke-width="1.3" stroke-linecap="round" fill="none">
+    <use href="#spoke" transform="rotate(0)"/>
+    <use href="#spoke" transform="rotate(5.625)"/>
+    <use href="#spoke" transform="rotate(11.25)"/>
+    <use href="#spoke" transform="rotate(16.875)"/>
+    <use href="#spoke" transform="rotate(22.5)"/>
+    <use href="#spoke" transform="rotate(28.125)"/>
+    <use href="#spoke" transform="rotate(33.75)"/>
+    <use href="#spoke" transform="rotate(39.375)"/>
+    <use href="#spoke" transform="rotate(45)"/>
+    <use href="#spoke" transform="rotate(50.625)"/>
+    <use href="#spoke" transform="rotate(56.25)"/>
+    <use href="#spoke" transform="rotate(61.875)"/>
+    <use href="#spoke" transform="rotate(67.5)"/>
+    <use href="#spoke" transform="rotate(73.125)"/>
+    <use href="#spoke" transform="rotate(78.75)"/>
+    <use href="#spoke" transform="rotate(84.375)"/>
+    <use href="#spoke" transform="rotate(90)"/>
+    <use href="#spoke" transform="rotate(95.625)"/>
+    <use href="#spoke" transform="rotate(101.25)"/>
+    <use href="#spoke" transform="rotate(106.875)"/>
+    <use href="#spoke" transform="rotate(112.5)"/>
+    <use href="#spoke" transform="rotate(118.125)"/>
+    <use href="#spoke" transform="rotate(123.75)"/>
+    <use href="#spoke" transform="rotate(129.375)"/>
+    <use href="#spoke" transform="rotate(135)"/>
+    <use href="#spoke" transform="rotate(140.625)"/>
+    <use href="#spoke" transform="rotate(146.25)"/>
+    <use href="#spoke" transform="rotate(151.875)"/>
+    <use href="#spoke" transform="rotate(157.5)"/>
+    <use href="#spoke" transform="rotate(163.125)"/>
+    <use href="#spoke" transform="rotate(168.75)"/>
+    <use href="#spoke" transform="rotate(174.375)"/>
+    <use href="#spoke" transform="rotate(180)"/>
+    <use href="#spoke" transform="rotate(185.625)"/>
+    <use href="#spoke" transform="rotate(191.25)"/>
+    <use href="#spoke" transform="rotate(196.875)"/>
+    <use href="#spoke" transform="rotate(202.5)"/>
+    <use href="#spoke" transform="rotate(208.125)"/>
+    <use href="#spoke" transform="rotate(213.75)"/>
+    <use href="#spoke" transform="rotate(219.375)"/>
+    <use href="#spoke" transform="rotate(225)"/>
+    <use href="#spoke" transform="rotate(230.625)"/>
+    <use href="#spoke" transform="rotate(236.25)"/>
+    <use href="#spoke" transform="rotate(241.875)"/>
+    <use href="#spoke" transform="rotate(247.5)"/>
+    <use href="#spoke" transform="rotate(253.125)"/>
+    <use href="#spoke" transform="rotate(258.75)"/>
+    <use href="#spoke" transform="rotate(264.375)"/>
+    <use href="#spoke" transform="rotate(270)"/>
+    <use href="#spoke" transform="rotate(275.625)"/>
+    <use href="#spoke" transform="rotate(281.25)"/>
+    <use href="#spoke" transform="rotate(286.875)"/>
+    <use href="#spoke" transform="rotate(292.5)"/>
+    <use href="#spoke" transform="rotate(298.125)"/>
+    <use href="#spoke" transform="rotate(303.75)"/>
+    <use href="#spoke" transform="rotate(309.375)"/>
+    <use href="#spoke" transform="rotate(315)"/>
+    <use href="#spoke" transform="rotate(320.625)"/>
+    <use href="#spoke" transform="rotate(326.25)"/>
+    <use href="#spoke" transform="rotate(331.875)"/>
+    <use href="#spoke" transform="rotate(337.5)"/>
+    <use href="#spoke" transform="rotate(343.125)"/>
+    <use href="#spoke" transform="rotate(348.75)"/>
+    <use href="#spoke" transform="rotate(354.375)"/>
   </g>
   <circle r="4" fill="#ffb347"/>
 </svg>

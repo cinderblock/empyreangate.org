@@ -138,10 +138,12 @@ function SectionHead({
   section: Pick<Section, "kicker" | "heading">;
 }) {
   return (
-    <header className="section-head">
-      <p className="kicker">{section.kicker}</p>
-      <h2 id={`${id}-h`}>{section.heading}</h2>
-    </header>
+    <div className="section-heading-track">
+      <header className="section-head">
+        <p className="kicker">{section.kicker}</p>
+        <h2 id={`${id}-h`}>{section.heading}</h2>
+      </header>
+    </div>
   );
 }
 
