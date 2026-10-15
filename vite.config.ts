@@ -26,7 +26,11 @@ export default defineConfig({
   },
   // The patch core's wasm is located with `new URL(..., import.meta.url)`,
   // which pre-bundling would break by moving the JS away from the .wasm.
+  // Excluding it also hides its imports from the dependency scan, so its
+  // React Flow (whose zustand needs a CommonJS shim converted) is pre-bundled
+  // by name.
   optimizeDeps: {
     exclude: ["@empyrean-gate/patch-web"],
+    include: ["@xyflow/react"],
   },
 });

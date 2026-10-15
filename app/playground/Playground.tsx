@@ -150,6 +150,7 @@ export default function Playground() {
     const errors = core.validate(doc);
     setStatus({
       active: false,
+      touch: false,
       error: errors.length ? errors.join("; ") : null,
     });
   }, [runtime, core, doc]);
@@ -244,6 +245,24 @@ export default function Playground() {
       brightness: 1,
     });
   };
+  // A patch with Touch nodes owns the surface: every pointer goes to it raw.
+  const ownsTouch = status?.touch === true;
+  /** Pointers currently down on the canvas (raw-touch mode). */
+  const held = useRef(new Set<number>());
+  const rawTouch = (
+    e: React.PointerEvent<HTMLCanvasElement>,
+    phase: "down" | "move" | "up",
+  ) => {
+    if (phase === "down") held.current.add(e.pointerId);
+    else if (phase === "up" && !held.current.delete(e.pointerId)) return;
+    runtime?.touch(
+      e.pointerId,
+      phase,
+      screenToPolar(e.currentTarget, e.clientX, e.clientY),
+      { hue, saturation: 0.85 },
+    );
+  };
+
   const paint = (id: number, clientX: number, clientY: number) => {
     if (tool.mode !== "draw" || !canvasRef.current) return;
     const p = screenToPolar(canvasRef.current, clientX, clientY);
@@ -351,12 +370,22 @@ export default function Playground() {
           ) : (
             <canvas
               ref={canvasRef}
-              className={`pg-gate pg-gate-${tool.mode}`}
-              aria-label="The gate, running your pattern. Tap to fire effects or draw, depending on the tool."
+              className={`pg-gate pg-gate-${ownsTouch ? "draw" : tool.mode}`}
+              aria-label={
+                ownsTouch
+                  ? "The gate, running your pattern. Your patch decides what a touch does."
+                  : "The gate, running your pattern. Tap to fire effects or draw, depending on the tool."
+              }
               style={{ touchAction: "none" }}
               onPointerDown={(e) => {
-                e.currentTarget.setPointerCapture(e.pointerId);
-                if (tool.mode === "tap") {
+                try {
+                  e.currentTarget.setPointerCapture(e.pointerId);
+                } catch {
+                  // Not a pointer the browser tracks (a synthetic event).
+                }
+                if (ownsTouch) {
+                  rawTouch(e, "down");
+                } else if (tool.mode === "tap") {
                   const p = screenToPolar(
                     e.currentTarget,
                     e.clientX,
@@ -368,50 +397,70 @@ export default function Playground() {
                 }
               }}
               onPointerMove={(e) => {
-                if (tool.mode === "draw" && strokes.current.has(e.pointerId)) {
+                if (ownsTouch) {
+                  if (held.current.has(e.pointerId)) rawTouch(e, "move");
+                } else if (
+                  tool.mode === "draw" &&
+                  strokes.current.has(e.pointerId)
+                ) {
                   paint(e.pointerId, e.clientX, e.clientY);
                 }
               }}
-              onPointerUp={(e) => strokes.current.delete(e.pointerId)}
-              onPointerCancel={(e) => strokes.current.delete(e.pointerId)}
+              onPointerUp={(e) => {
+                if (ownsTouch) rawTouch(e, "up");
+                strokes.current.delete(e.pointerId);
+              }}
+              onPointerCancel={(e) => {
+                if (ownsTouch) rawTouch(e, "up");
+                strokes.current.delete(e.pointerId);
+              }}
             />
           )}
 
           <div className="pg-inputs">
             <fieldset>
               <legend>Your finger</legend>
+              {ownsTouch && (
+                <p className="pg-owns-touch">
+                  This patch has Touch nodes, so it decides what a finger does:
+                  no tap effect or pen is applied. The color below is the
+                  toucher's color its Touch nodes see.
+                </p>
+              )}
               <div className="pg-row">
-                <select
-                  aria-label="Tool"
-                  value={
-                    tool.mode === "tap"
-                      ? `fx:${tool.effect}`
-                      : `pen:${tool.pen}`
-                  }
-                  onChange={(e) => {
-                    const [mode, name] = e.target.value.split(":");
-                    setTool(
-                      mode === "fx"
-                        ? { mode: "tap", effect: name }
-                        : { mode: "draw", pen: name },
-                    );
-                  }}
-                >
-                  <optgroup label="Tap an effect">
-                    {effects.map((k) => (
-                      <option key={k} value={`fx:${k}`}>
-                        {label(k)}
-                      </option>
-                    ))}
-                  </optgroup>
-                  <optgroup label="Draw with a pen">
-                    {PENS.map((p) => (
-                      <option key={p} value={`pen:${p}`}>
-                        {label(p)} pen
-                      </option>
-                    ))}
-                  </optgroup>
-                </select>
+                {!ownsTouch && (
+                  <select
+                    aria-label="Tool"
+                    value={
+                      tool.mode === "tap"
+                        ? `fx:${tool.effect}`
+                        : `pen:${tool.pen}`
+                    }
+                    onChange={(e) => {
+                      const [mode, name] = e.target.value.split(":");
+                      setTool(
+                        mode === "fx"
+                          ? { mode: "tap", effect: name }
+                          : { mode: "draw", pen: name },
+                      );
+                    }}
+                  >
+                    <optgroup label="Tap an effect">
+                      {effects.map((k) => (
+                        <option key={k} value={`fx:${k}`}>
+                          {label(k)}
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Draw with a pen">
+                      {PENS.map((p) => (
+                        <option key={p} value={`pen:${p}`}>
+                          {label(p)} pen
+                        </option>
+                      ))}
+                    </optgroup>
+                  </select>
+                )}
                 <input
                   type="range"
                   className="pg-hue"

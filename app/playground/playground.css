@@ -136,6 +136,12 @@
   color: var(--ink-faint);
 }
 
+.pg-owns-touch {
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--teal);
+}
+
 .pg-row {
   display: flex;
   align-items: center;

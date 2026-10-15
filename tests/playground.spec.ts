@@ -58,4 +58,30 @@ test.describe("Pattern playground", () => {
     await expect(page.locator(".pnode")).toHaveCount(4);
     await expect(page.locator(".patch-status.error")).toContainText("Output");
   });
+
+  test("a patch with Touch nodes owns the preview's touch", async ({
+    page,
+  }) => {
+    const stage = page.locator(".pg-stage");
+    await expect(stage).toHaveAttribute(
+      "data-preview",
+      /^(running|unavailable)$/,
+      {
+        timeout: 20_000,
+      },
+    );
+    test.skip(
+      (await stage.getAttribute("data-preview")) !== "running",
+      "no WebGPU here, so no preview to touch",
+    );
+    await expect(page.locator(".pnode")).toHaveCount(5, { timeout: 20_000 });
+    // The starter patch has no touch nodes: the tool picker is there.
+    await expect(page.getByLabel("Tool")).toBeVisible();
+    await page
+      .locator(".patch-toolbar select")
+      .nth(1)
+      .selectOption({ label: "Touch Ripples" });
+    await expect(page.locator(".pg-owns-touch")).toBeVisible();
+    await expect(page.getByLabel("Tool")).toHaveCount(0);
+  });
 });
