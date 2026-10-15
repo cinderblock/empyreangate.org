@@ -9,8 +9,9 @@ gateway, and a fire beneath it. The gate's own software lives at
 
 Built from [cinderblock/ssg-base](https://github.com/cinderblock/ssg-base):
 React 19 + React Router 8, Vite, TypeScript, Bun, Playwright, oxfmt + lefthook.
-Fully prerendered; there is no server at runtime. The one piece of live code is
-the WebGL render of the array on the home page.
+Fully prerendered. Two pieces of live code: the WebGL render of the array on the
+home page, and the [pattern playground](#the-pattern-playground). The only
+server code is the playground's Submit endpoint (`worker/index.ts`).
 
 ## Getting started
 
@@ -38,7 +39,9 @@ app/
   root.tsx                HTML shell
   routes.ts               Route table: / and a real /404
   routes/home.tsx         The single page
+  routes/playground.tsx   Shell for the playground (loads it after hydration)
   routes/404.tsx          Not found
+  playground/             The pattern playground: page, IndexedDB store, Submit
   content/                Everything editable without touching layout:
     site.ts                 names, URLs, the next event, the array in numbers
     story.ts                prose, the timeline of appearances
@@ -57,7 +60,8 @@ photos/                   High-resolution originals, committed (see its README)
 scripts/photos.ts         Resizes photos/ into public/photos/ (gitignored) + manifest
 scripts/postbuild.ts      404.html + sitemap.xml from the prerendered routes
 scripts/og.ts             Screenshots the hero into public/og.png
-tests/                    Playwright: content, render states, responsiveness
+worker/index.ts           The Worker: POST /api/submit only; assets serve the rest
+tests/                    Playwright: content, render states, responsiveness, playground
 plans/                    Working notes; start with empyreangate-site.md
 wrangler.jsonc            Cloudflare Workers static-assets config
 ```
@@ -75,6 +79,39 @@ synthetic beat clock. Pointer movement tilts the fields; a tap drops a ripple.
 It pauses when off-screen, when the tab is hidden, and under
 `prefers-reduced-motion` (with a Play button to override), and falls back to a
 still SVG of the ring where WebGL2 isn't available.
+
+## The pattern playground
+
+`/playground` is the gate's own node editor and render engine in the browser,
+from [`@empyrean-gate/patch-web`](https://github.com/TomSawyerLabs/empyrean-gate/tree/master/packages/patch-web)
+(a git dependency on the gate repo's `web-dist` branch). The gate's Rust patch
+compiler and evaluator run as wasm and the generated WGSL runs on WebGPU, so a
+pattern looks here as it will on the gate. Patches are kept in IndexedDB; Save
+to disk / Open file use the gate's own patch JSON, which its Patch tab imports.
+Without WebGPU the editor still works and validates; only the preview is
+missing.
+
+**Submit** posts the patch, a name, an optional contact and note to
+`/api/submit` (`worker/index.ts`), which checks Cloudflare Turnstile and the
+patch's shape and stores one JSON object per submission in the R2 bucket
+`empyreangate-submissions` (`submissions/<date>/<time>-<id>.json`). The Worker
+needs the secret `TURNSTILE_SECRET` (and optionally `NOTIFY_WEBHOOK`, a
+Discord/Slack-style webhook); the page needs the Turnstile site key in
+`PLAYGROUND.turnstileSiteKey` (`app/content/site.ts`). Until both exist Submit
+is hidden and the endpoint answers 503. Previews never get the bucket.
+
+To try Submit locally, with Turnstile's always-pass test keys:
+
+```sh
+echo TURNSTILE_SECRET=1x0000000000000000000000000000000AA > .dev.vars
+VITE_TURNSTILE_SITE_KEY=1x00000000000000000000AA bun run build
+bunx wrangler dev --local     # submissions land in .wrangler/state (local R2)
+```
+
+To develop against a local gate checkout instead of `web-dist`, point the
+dependency at its `packages/patch-web` (`file:`), run `bun run build:wasm`
+there, and start the dev server with `PATCH_WEB_DIR=<that path>` so Vite may
+serve the wasm from outside this repo.
 
 ## Photos
 
@@ -120,7 +157,7 @@ install step can't pick a different package manager) and `BUN_VERSION`
 matching the Bun that wrote `bun.lock` (the image's default Bun is older);
 preview builds enabled.
 
-The worker, the custom domain, and the redirects (`www.`, and both
+The worker, the submissions bucket, the custom domain, and the redirects (`www.`, and both
 `empyreangate.com` hostnames, all to `https://empyreangate.org/`) are managed
 in [cinderblock/ops](https://github.com/cinderblock/ops).
 
