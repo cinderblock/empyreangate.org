@@ -1,9 +1,11 @@
 {
-  // Cloudflare Workers static-assets deploy, run by Workers Builds. There is no
-  // Worker script: the whole site is prerendered HTML and the host
-  // canonicalisation (www, .com → empyreangate.org) is a zone redirect rule
-  // owned by github.com/cinderblock/ops, which also provisions this worker and
-  // attaches the custom domain. The name here must match that worker.
+  // Cloudflare Workers static-assets deploy, run by Workers Builds. The site is
+  // prerendered HTML; the one Worker script (worker/index.ts) handles only
+  // `/api/*` — the playground's Submit — and everything else is served from
+  // assets without waking it. Host canonicalisation (www, .com →
+  // empyreangate.org) is a zone redirect rule owned by github.com/cinderblock/ops,
+  // which also provisions this worker, the submissions bucket, and attaches the
+  // custom domain. The name here must match that worker.
   //
   // Branches other than master build a Worker Preview at
   // https://<branch>.empyreangate.org (ops turns on preview routing for the
@@ -12,8 +14,12 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "empyreangate-org",
   "compatibility_date": "2026-10-01",
+  "main": "./worker/index.ts",
   "assets": {
     "directory": "./build/client",
+    "binding": "ASSETS",
+    // Only the API reaches the Worker; pages and files never invoke it.
+    "run_worker_first": ["/api/*"],
     // Every route is prerendered to its own index.html, so a miss is a real
     // miss and should get the 404 page rather than an SPA shell.
     "not_found_handling": "404-page",
@@ -25,8 +31,17 @@
   "workers_dev": false,
   "preview_urls": true,
   // Required for `wrangler preview`, even empty. Previews don't inherit
-  // production settings; there are none to give them (no bindings, no vars).
+  // production settings, and get no bindings on purpose: a preview's Submit
+  // answers 503 instead of writing into the real submissions bucket.
   "previews": {},
+  // Playground submissions, one JSON object each, for us to review. The bucket
+  // is created by ops (wrangler deploy fails on a missing bucket rather than
+  // creating one). Secrets, set on the worker rather than here:
+  // TURNSTILE_SECRET (required to accept submissions) and NOTIFY_WEBHOOK
+  // (optional). Without them the endpoint answers 503.
+  "r2_buckets": [
+    { "binding": "SUBMISSIONS", "bucket_name": "empyreangate-submissions" },
+  ],
   "observability": {
     "enabled": true,
   },

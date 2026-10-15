@@ -9,7 +9,7 @@
     "og": "bun run scripts/og.ts",
     "photos": "bun run scripts/photos.ts",
     "test": "playwright test",
-    "test:unit": "bun test app scripts",
+    "test:unit": "bun test app scripts worker",
     "test:ui": "playwright test --ui",
     "fmt": "oxfmt --write .",
     "fmt:check": "oxfmt --check .",

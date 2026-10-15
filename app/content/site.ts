@@ -32,8 +32,8 @@ export const SITE = {
    * until a tag is chosen the page only points at the Entheos account.
    */
   instagramTag: null as string | null,
-  /** Where the full engine will be playable in a browser. Not built yet. */
-  interactiveUrl: null as string | null,
+  /** The pattern playground: the gate's editor and engine, in the browser. */
+  playground: "/playground",
   nextEvent: {
     name: "Burning Man Decompression",
     venue: "The Loom, Oakland",
@@ -56,4 +56,19 @@ export const ARRAY = {
   canopyDiameterFt: 60,
   canopyHeightFt: 21,
   gatewayHeightFt: 13,
+} as const;
+
+/** The pattern playground's submissions. */
+export const PLAYGROUND = {
+  /**
+   * Cloudflare Turnstile site key (public). Empty until the widget exists,
+   * and Submit stays hidden until then. `VITE_TURNSTILE_SITE_KEY` overrides it,
+   * e.g. with Turnstile's always-pass test key (1x00000000000000000000AA) in
+   * development.
+   */
+  turnstileSiteKey:
+    (import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined) ?? "",
+  /** What a submitter agrees to. Draft wording; to be confirmed. */
+  terms:
+    "I made this pattern (or have the right to share it), and I'm happy for the Entheos crew to play it on The Empyrean Gate and to share it, credited to me.",
 } as const;

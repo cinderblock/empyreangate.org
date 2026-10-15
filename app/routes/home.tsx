@@ -1,4 +1,5 @@
 import type { MetaFunction } from "react-router";
+import { Link } from "react-router";
 import GateRender from "../components/GateRender";
 import { CREW, EARLIER, type Person } from "../content/credits";
 import { PHOTOS } from "../content/gallery";
@@ -283,18 +284,11 @@ export default function Home() {
           <SectionHead id={LIGHT.id} section={LIGHT} />
           <div className="section-body">
             <Prose paragraphs={LIGHT.paragraphs} />
-            {SITE.interactiveUrl ? (
-              <p>
-                <External href={SITE.interactiveUrl}>
-                  Play with the full engine in your browser ↗
-                </External>
-              </p>
-            ) : (
-              <p className="muted">
-                A site where you can play with the full engine in your browser
-                is in the works.
-              </p>
-            )}
+            <p>
+              <Link to={SITE.playground}>
+                Build your own pattern with the gate's full engine →
+              </Link>
+            </p>
           </div>
           <dl className="facts" aria-label="The array in numbers">
             <div>

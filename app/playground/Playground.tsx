@@ -23,7 +23,9 @@ import {
 } from "@empyrean-gate/patch-web/runtime";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
+import { PLAYGROUND } from "../content/site";
 import { BPM, syntheticAudio } from "../gate/engine";
+import SubmitDialog from "./SubmitDialog";
 import { LocalPatchStore } from "./store";
 import "./playground.css";
 
@@ -54,6 +56,7 @@ export default function Playground() {
   const [status, setStatus] = useState<RuntimeStatus | null>(null);
   const [doc, setDoc] = useState<PatchDoc | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const [tool, setTool] = useState<Tool>({ mode: "tap", effect: "burst" });
   const [hue, setHue] = useState(0.52);
@@ -572,11 +575,29 @@ export default function Playground() {
                     Save to disk…
                   </button>
                 )}
+                {open && PLAYGROUND.turnstileSiteKey && (
+                  <button
+                    type="button"
+                    className="pg-submit"
+                    title="Send this pattern to the gate's crew"
+                    onClick={() => setSubmitting(true)}
+                  >
+                    Submit…
+                  </button>
+                )}
               </>
             )}
           />
         </section>
       </div>
+
+      {submitting && doc && (
+        <SubmitDialog
+          doc={doc}
+          problem={status?.error ?? null}
+          onClose={() => setSubmitting(false)}
+        />
+      )}
     </div>
   );
 }
