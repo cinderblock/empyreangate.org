@@ -115,32 +115,48 @@ Site repo (`empyreangate.org`):
 
 ## Plan / steps
 
-1. **[current]** Gate: extract `crates/empyrean-patch`; app builds and all
-   existing Rust tests pass unchanged.
-2. Gate: `crates/empyrean-patch-wasm` with `Sim`; a Rust test that the
-   packed byte layouts match the engine's structs.
-3. Gate: `packages/patch-web` runtime — render a preset in a bare test page
-   with WebGPU, compare against the engine's output if practical (the
-   `engine-smoke` binary can dump frames).
-4. Gate: extract the editor into `packages/patch-web`, switch the app to it,
-   behavior specs (`test:behavior`, patch-zoom etc.) still pass.
-5. Gate: Import / Export in the app.
-6. Gate: CI job → `web-dist` branch. README. PR to gate `master`.
-7. Site: `/playground` route with local storage, disk save/open, presets.
+1. Gate: extract `crates/empyrean-patch`. **Done** (`4a44e9d`).
+2. Gate: `crates/empyrean-patch-wasm` + `sim::Sim`. **Done** (`dfb40f0`);
+   audio analysis + `MINI_PIXELS` moved into the crate too (`93cf750`).
+3. Gate: `packages/patch-web` runtime. **Done** (`832abe5`); verified in
+   Chrome via `bun run demo`: all 14 presets compile, animate, effects
+   flash and decay, thumbnails/meters fill.
+4. Gate: editor extracted behind `PatchStore`, app switched. **Done**
+   (`832abe5`); layout gate + patch-zoom + live-preview specs pass.
+5. Gate: Import / Export in the Patch tab. **Done** (`832abe5`).
+6. Gate: CI job + `web-dist` publishing workflow. **Done** (`1b39f46`).
+   Gate README/plan docs still to update; PR to gate `master` needs
+   Cameron's OK to push.
+7. **[current]** Site: `/playground` route with local storage, disk
+   save/open, presets. Developed against the worktree package until
+   `web-dist` exists.
 8. Site: Submit UI + Worker (stage ops change, wait for approval).
 9. Site: README, tests, preview deploy check.
-
-## Progress log
-
-- [x] Survey gate repo's patch system and the site's render (2026-10-14)
-- [x] Decisions on the five open questions (2026-10-14)
-- [ ] Step 1: patch crate
-- [ ] Steps 2–9
 
 ## Open questions for the user
 
 None right now. The ops change for Submit will need an explicit yes when
 staged.
+
+## Findings / gotchas
+
+- **`cargo fmt` in `src-tauri` reformats dozens of untouched files**: the
+  gate repo is not rustfmt-clean and has no rustfmt.toml. Format only new
+  files with `rustfmt <file>`.
+- **A revert loop over `git diff --name-only` also hits staged renames** and
+  wipes edits in moved files. Recovered via the safety stash.
+- **The machine's cargo `build-dir` is shared** (`~/.cargo/build`), so the
+  worktree reuses the main checkout's compiled deps; no
+  `CARGO_TARGET_DIR` games needed.
+- **A hidden Chrome tab runs no `requestAnimationFrame` and throttles
+  timers to ~1 Hz.** When testing the runtime from the extension, drive
+  frames by hand (`rt.frame(t)` with a synthetic 60 fps clock); otherwise
+  effects look broken because each frame's dt clamps to 0.5 s.
+- **WebGPU `layout: "auto"` drops bindings the shader doesn't use**, so the
+  runtime uses an explicit bind group layout with all eight bindings.
+- **The wasm is ~790 KB uncompressed** (rustfft is most of the growth).
+  Fine for now; `wasm-opt` is an easy later win.
+- The TS `PatchShape` was missing `effects`; fixed in the package types.
 
 ## Things not to do
 
