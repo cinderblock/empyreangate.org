@@ -34,14 +34,16 @@
   // production settings, and get no bindings on purpose: a preview's Submit
   // answers 503 instead of writing into the real submissions bucket.
   "previews": {},
-  // Playground submissions, one JSON object each, for us to review. The bucket
-  // is created by ops (wrangler deploy fails on a missing bucket rather than
-  // creating one). Secrets, set on the worker rather than here:
-  // TURNSTILE_SECRET (required to accept submissions) and NOTIFY_WEBHOOK
-  // (optional). Without them the endpoint answers 503.
-  "r2_buckets": [
-    { "binding": "SUBMISSIONS", "bucket_name": "empyreangate-submissions" },
-  ],
+  // Playground submissions go to an R2 bucket bound as SUBMISSIONS
+  // (bucket_name "empyreangate-submissions"). Not bound yet: the bucket is
+  // created by ops, and wrangler deploy fails on a missing bucket rather than
+  // creating one. Add here once it exists:
+  //   "r2_buckets": [
+  //     { "binding": "SUBMISSIONS", "bucket_name": "empyreangate-submissions" },
+  //   ],
+  // Secrets, set on the worker rather than here: TURNSTILE_SECRET (required
+  // to accept submissions) and NOTIFY_WEBHOOK (optional). Until the bucket and
+  // the secret exist the endpoint answers 503.
   "observability": {
     "enabled": true,
   },
