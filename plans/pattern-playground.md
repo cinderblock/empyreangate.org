@@ -189,6 +189,15 @@ Not in ops today: Turnstile widgets (no schema support) and worker secrets.
 - [ ] Turnstile widget + `TURNSTILE_SECRET` + site key
 - [ ] Uncomment the R2 binding once the bucket exists
 
+### Touch as nodes (2026-10-15)
+
+Cameron: taps need their own representation in the nodes; users define their
+own touch interactions, in the web editor and on the real gate. Built on the
+gate branch (`plans/touch-nodes.md` there): Touch / Touch mask / Touch glow
+nodes, raw touch from every gate surface and the playground, a patch with
+touch nodes owns the surface, preset Touch Ripples. Site `b8afb20` (web-dist
+`23e0ea7`) is on the dev Preview and checked there.
+
 ## Open questions for the user
 
 1. **Open the gate PR** into TomSawyerLabs/empyrean-gate `master`? The
