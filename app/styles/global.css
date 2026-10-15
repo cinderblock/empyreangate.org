@@ -783,3 +783,14 @@ p {
   margin: 0 auto;
   padding: 4rem var(--gutter);
 }
+
+/* The playground's prerendered shell; the tool's own styles load with it
+   (app/playground/playground.css). */
+.pg-loading {
+  min-height: 100vh;
+  display: grid;
+  place-content: center;
+  gap: 0.5rem;
+  padding: var(--gutter);
+  text-align: center;
+}

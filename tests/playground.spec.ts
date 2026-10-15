@@ -1,0 +1,61 @@
+import { expect, test } from "@playwright/test";
+
+/**
+ * The pattern playground. Headless browsers may or may not have WebGPU; the
+ * editor must work either way (the preview is the only thing that needs it).
+ */
+test.describe("Pattern playground", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/playground");
+  });
+
+  test("opens the starter patch in the gate's editor", async ({ page }) => {
+    await expect(
+      page.getByRole("heading", { name: "Pattern playground" }),
+    ).toBeVisible();
+    // A first visit gets a copy of a built-in preset, already open.
+    await expect(page.locator(".pnode")).toHaveCount(5, { timeout: 20_000 });
+    await expect(page.locator(".patch-name")).toHaveValue("Rainbow Sparkle");
+    // The palette is the gate's registry, not a copy of it.
+    await expect(page.locator(".palette-item").first()).toBeVisible();
+    expect(await page.locator(".palette-item").count()).toBeGreaterThan(30);
+  });
+
+  test("previews live, or says why it can't", async ({ page }) => {
+    const stage = page.locator(".pg-stage");
+    await expect(stage).toHaveAttribute(
+      "data-preview",
+      /^(running|unavailable)$/,
+      {
+        timeout: 20_000,
+      },
+    );
+    if ((await stage.getAttribute("data-preview")) === "running") {
+      await expect(page.locator("canvas.pg-gate")).toBeVisible();
+      await expect(page.locator(".patch-status.ok")).toHaveText(
+        "patch rendering",
+      );
+    } else {
+      await expect(page.locator(".pg-nogpu")).toContainText("WebGPU");
+    }
+  });
+
+  test("edits are kept in the browser across reloads", async ({ page }) => {
+    await expect(page.locator(".pnode")).toHaveCount(5, { timeout: 20_000 });
+    await page.locator(".palette-item", { hasText: "Plasma" }).click();
+    await expect(page.locator(".pnode")).toHaveCount(6);
+    // Saves are debounced (600 ms), as on the gate.
+    await page.waitForTimeout(1200);
+    await page.reload();
+    await expect(page.locator(".pnode")).toHaveCount(6, { timeout: 20_000 });
+  });
+
+  test("a patch that cannot run says so", async ({ page }) => {
+    await expect(page.locator(".pnode")).toHaveCount(5, { timeout: 20_000 });
+    // Without an Output node there is nothing to render.
+    await page.locator(".pnode", { hasText: "Output" }).click();
+    await page.keyboard.press("Delete");
+    await expect(page.locator(".pnode")).toHaveCount(4);
+    await expect(page.locator(".patch-status.error")).toContainText("Output");
+  });
+});

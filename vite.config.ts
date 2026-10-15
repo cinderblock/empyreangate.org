@@ -1,5 +1,5 @@
 import { reactRouter } from "@react-router/dev/vite";
-import { defineConfig } from "vite";
+import { defineConfig, searchForWorkspaceRoot } from "vite";
 import { siteOrigin } from "./scripts/build-context";
 
 export default defineConfig({
@@ -12,5 +12,21 @@ export default defineConfig({
   server: {
     host: "0.0.0.0",
     allowedHosts: ["noook", "noook.tsl"],
+    // Developing the playground against a local gate checkout (a `file:` or
+    // `link:` dependency on its packages/patch-web): let the dev server read
+    // that directory too, or the wasm fetch is refused. See README.
+    fs: process.env.PATCH_WEB_DIR
+      ? {
+          allow: [
+            searchForWorkspaceRoot(process.cwd()),
+            process.env.PATCH_WEB_DIR,
+          ],
+        }
+      : undefined,
+  },
+  // The patch core's wasm is located with `new URL(..., import.meta.url)`,
+  // which pre-bundling would break by moving the JS away from the .wasm.
+  optimizeDeps: {
+    exclude: ["@empyrean-gate/patch-web"],
   },
 });

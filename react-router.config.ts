@@ -5,5 +5,5 @@ export default {
   // Listed explicitly rather than `true`: the catch-all route has no concrete
   // path, so `true` prerenders everything *and* warns about `*` on every
   // build. `/404` is what the host serves on a miss.
-  prerender: ["/", "/404"],
+  prerender: ["/", "/playground", "/404"],
 } satisfies Config;
