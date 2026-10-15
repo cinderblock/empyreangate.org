@@ -87,6 +87,7 @@ export default function Playground() {
         return;
       }
       if (!live) return;
+      store.migrate = c.migrate;
       if (await store.isEmpty()) {
         const starter =
           c.presets.find((p) => p.name === STARTER) ?? c.presets[0];
@@ -601,7 +602,7 @@ export default function Playground() {
                   title="Open a patch file from your computer"
                   onClick={() =>
                     openPatchFromDisk()
-                      .then((d) => d && load(d, true))
+                      .then((d) => d && load(core ? core.migrate(d) : d, true))
                       .catch((e: unknown) =>
                         setNotice(e instanceof Error ? e.message : String(e)),
                       )

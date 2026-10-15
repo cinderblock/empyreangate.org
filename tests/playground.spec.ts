@@ -14,8 +14,16 @@ test.describe("Pattern playground", () => {
       page.getByRole("heading", { name: "Pattern playground" }),
     ).toBeVisible();
     // A first visit gets a copy of a built-in preset, already open.
-    await expect(page.locator(".pnode")).toHaveCount(5, { timeout: 20_000 });
-    await expect(page.locator(".patch-name")).toHaveValue("Rainbow Sparkle");
+    await expect(page.locator(".patch-name")).toHaveValue("Rainbow Sparkle", {
+      timeout: 20_000,
+    });
+    // Its graph, explicit: the effects and strokes it shows are wired in too.
+    await expect(
+      page.locator(".pnode", { hasText: "Render effects" }),
+    ).toHaveCount(1);
+    await expect(
+      page.locator(".pnode", { hasText: "Render points" }),
+    ).toHaveCount(1);
     // The palette is the gate's registry, not a copy of it.
     await expect(page.locator(".palette-item").first()).toBeVisible();
     expect(await page.locator(".palette-item").count()).toBeGreaterThan(30);
@@ -41,21 +49,29 @@ test.describe("Pattern playground", () => {
   });
 
   test("edits are kept in the browser across reloads", async ({ page }) => {
-    await expect(page.locator(".pnode")).toHaveCount(5, { timeout: 20_000 });
+    await expect(page.locator(".patch-name")).toHaveValue("Rainbow Sparkle", {
+      timeout: 20_000,
+    });
+    const before = await page.locator(".pnode").count();
     await page.locator(".palette-item", { hasText: "Plasma" }).click();
-    await expect(page.locator(".pnode")).toHaveCount(6);
+    await expect(page.locator(".pnode")).toHaveCount(before + 1);
     // Saves are debounced (600 ms), as on the gate.
     await page.waitForTimeout(1200);
     await page.reload();
-    await expect(page.locator(".pnode")).toHaveCount(6, { timeout: 20_000 });
+    await expect(page.locator(".pnode")).toHaveCount(before + 1, {
+      timeout: 20_000,
+    });
   });
 
   test("a patch that cannot run says so", async ({ page }) => {
-    await expect(page.locator(".pnode")).toHaveCount(5, { timeout: 20_000 });
+    await expect(page.locator(".patch-name")).toHaveValue("Rainbow Sparkle", {
+      timeout: 20_000,
+    });
+    const before = await page.locator(".pnode").count();
     // Without an Output node there is nothing to render.
     await page.locator(".pnode", { hasText: "Output" }).click();
     await page.keyboard.press("Delete");
-    await expect(page.locator(".pnode")).toHaveCount(4);
+    await expect(page.locator(".pnode")).toHaveCount(before - 1);
     await expect(page.locator(".patch-status.error")).toContainText("Output");
   });
 
@@ -74,7 +90,9 @@ test.describe("Pattern playground", () => {
       (await stage.getAttribute("data-preview")) !== "running",
       "no WebGPU here, so no preview to touch",
     );
-    await expect(page.locator(".pnode")).toHaveCount(5, { timeout: 20_000 });
+    await expect(page.locator(".patch-name")).toHaveValue("Rainbow Sparkle", {
+      timeout: 20_000,
+    });
     // The starter patch has no touch nodes: the tool picker is there.
     await expect(page.getByLabel("Tool")).toBeVisible();
     await page

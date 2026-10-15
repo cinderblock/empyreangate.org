@@ -5,11 +5,12 @@
  * saves a file or submits.
  */
 
-import type {
-  PatchDoc,
-  PatchStore,
-  PatchStoreEvent,
-  PatchSummary,
+import {
+  PATCH_FORMAT,
+  type PatchDoc,
+  type PatchStore,
+  type PatchStoreEvent,
+  type PatchSummary,
 } from "@empyrean-gate/patch-web/editor";
 
 const DB_NAME = "empyrean-playground";
@@ -50,6 +51,10 @@ export class LocalPatchStore implements PatchStore {
   private listeners = new Set<(e: PatchStoreEvent) => void>();
   private activeListeners = new Set<(id: string | null) => void>();
   active: string | null;
+  /** Upgrades an older document to the current format (the patch core's
+   * `migrate`, set once it has loaded). Applied to everything read back, so
+   * a patch saved before a format change opens as it renders. */
+  migrate: (doc: PatchDoc) => PatchDoc = (doc) => doc;
 
   constructor() {
     this.db = openDb();
@@ -104,7 +109,7 @@ export class LocalPatchStore implements PatchStore {
         ),
       )
       .then((doc) => {
-        if (doc) this.emit({ type: "patch", patch: doc });
+        if (doc) this.emit({ type: "patch", patch: this.migrate(doc) });
       });
   }
 
@@ -113,8 +118,8 @@ export class LocalPatchStore implements PatchStore {
    * stored document. */
   async put(doc: PatchDoc): Promise<PatchDoc> {
     const stored: PatchDoc = {
-      ...structuredClone(doc),
-      format: 1,
+      ...this.migrate(structuredClone(doc)),
+      format: PATCH_FORMAT,
       id: doc.id || crypto.randomUUID(),
       name: doc.name.trim() ? doc.name : "Untitled",
     };
