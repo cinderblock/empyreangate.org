@@ -66,8 +66,10 @@
     },
   ],
   // Secrets, set on the worker rather than here: TURNSTILE_SECRET (required
-  // to accept submissions) and NOTIFY_WEBHOOK (optional). Until the secret
-  // exists the endpoint answers 503.
+  // to accept submissions), NOTIFY_WEBHOOK (optional), and for the crew's
+  // push notifications (/admin, worker/webpush.ts) VAPID_PUBLIC_KEY,
+  // VAPID_PRIVATE_KEY and ADMIN_TOKEN (`bun run vapid` prints a set). Until
+  // a secret exists its endpoint answers 503.
   "observability": {
     "enabled": true,
   },

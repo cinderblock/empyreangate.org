@@ -4,9 +4,11 @@
   "type": "module",
   "scripts": {
     "dev": "react-router dev",
-    "build": "bun run photos && react-router build && bun run scripts/postbuild.ts",
+    "build": "bun run photos && bun run icons && react-router build && bun run scripts/postbuild.ts",
     "preview": "vite preview --outDir build/client --port 4180 --strictPort",
     "og": "bun run scripts/og.ts",
+    "icons": "bun run scripts/icons.ts",
+    "vapid": "bun run scripts/vapid.ts",
     "submissions": "bun run scripts/submissions.ts",
     "photos": "bun run scripts/photos.ts",
     "test": "playwright test",

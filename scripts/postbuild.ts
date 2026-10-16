@@ -19,7 +19,7 @@ const OUT = "build/client";
 const SITE = "https://empyreangate.org";
 
 /** Routes deliberately kept out of the sitemap. */
-const EXCLUDE = new Set(["/404"]);
+const EXCLUDE = new Set(["/404", "/admin"]);
 
 await copyFile(join(OUT, "404/index.html"), join(OUT, "404.html"));
 console.log(`Emitted ${join(OUT, "404.html")}`);

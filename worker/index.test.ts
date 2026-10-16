@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import worker, { checkSubmission, LIMITS, type Env } from "./index";
+import worker, { checkSubmission, deps, LIMITS, type Env } from "./index";
+import { generateVapidKeys } from "./webpush";
 
 const patch = {
   format: 1,
@@ -17,17 +18,29 @@ const patch = {
 };
 
 function env(overrides: Partial<Env> = {}) {
+  // A bucket in memory: `puts` is every object written (tests read it), kept
+  // in order; get/list/delete behave like R2 over the same objects.
   const puts: { key: string; value: string }[] = [];
   const e: Env = {
     ASSETS: { fetch: async () => new Response("asset") },
     SUBMISSIONS: {
       put: async (key: string, value: string) => {
-        puts.push({ key, value });
+        const i = puts.findIndex((p) => p.key === key);
+        if (i >= 0) puts[i] = { key, value };
+        else puts.push({ key, value });
       },
       // Lists what this test stored under the prefix, like the real bucket.
       list: async ({ prefix, limit = 1000 }) => {
         const all = puts.filter((p) => p.key.startsWith(prefix));
         return { objects: all.slice(0, limit), truncated: all.length > limit };
+      },
+      get: async (key: string) => {
+        const hit = puts.find((p) => p.key === key);
+        return hit ? { text: async () => hit.value } : null;
+      },
+      delete: async (key: string) => {
+        const i = puts.findIndex((p) => p.key === key);
+        if (i >= 0) puts.splice(i, 1);
       },
     },
     SUBMIT_LIMIT: { limit: async () => ({ success: true }) },
@@ -170,6 +183,197 @@ describe("caps", () => {
       expect(puts).toHaveLength(LIMITS.perDay + 1);
     } finally {
       globalThis.fetch = realFetch;
+    }
+  });
+});
+
+describe("crew notifications", () => {
+  const subscription = {
+    endpoint: "https://push.example/send/device-1",
+    keys: {
+      // A real P-256 point and 16-byte auth secret are only needed to send;
+      // storing checks shape alone.
+      p256dh: "BH" + "A".repeat(85),
+      auth: "A".repeat(22),
+    },
+  };
+  async function pushEnv(overrides: Partial<Env> = {}) {
+    const keys = await generateVapidKeys();
+    return env({
+      VAPID_PUBLIC_KEY: keys.publicKey,
+      VAPID_PRIVATE_KEY: keys.privateKey,
+      ADMIN_TOKEN: "letmein",
+      ...overrides,
+    });
+  }
+  function call(path: string, init: RequestInit & { token?: string } = {}) {
+    const headers: Record<string, string> = {
+      "content-type": "application/json",
+    };
+    if (init.token) headers.authorization = `Bearer ${init.token}`;
+    return new Request(`https://empyreangate.org${path}`, { ...init, headers });
+  }
+
+  test("the key is public once set up; everything else needs the admin token", async () => {
+    const { env: e } = env();
+    expect((await worker.fetch(call("/api/notify/key"), e, ctx)).status).toBe(
+      503,
+    );
+    const { env: p } = await pushEnv();
+    const key = await worker.fetch(call("/api/notify/key"), p, ctx);
+    expect(key.status).toBe(200);
+    expect(((await key.json()) as { key: string }).key).toBe(
+      p.VAPID_PUBLIC_KEY!,
+    );
+    const body = JSON.stringify({ subscription });
+    expect(
+      (
+        await worker.fetch(
+          call("/api/notify/subscribe", { method: "POST", body }),
+          p,
+          ctx,
+        )
+      ).status,
+    ).toBe(401);
+    expect(
+      (
+        await worker.fetch(
+          call("/api/notify/subscribe", {
+            method: "POST",
+            body,
+            token: "wrong",
+          }),
+          p,
+          ctx,
+        )
+      ).status,
+    ).toBe(401);
+  });
+
+  test("subscribe stores the device under notify/, and DELETE removes it", async () => {
+    const { env: p, puts } = await pushEnv();
+    const bad = await worker.fetch(
+      call("/api/notify/subscribe", {
+        method: "POST",
+        body: JSON.stringify({ subscription: { endpoint: "http://x" } }),
+        token: "letmein",
+      }),
+      p,
+      ctx,
+    );
+    expect(bad.status).toBe(400);
+    const ok = await worker.fetch(
+      call("/api/notify/subscribe", {
+        method: "POST",
+        body: JSON.stringify({ subscription, label: "Ada's phone" }),
+        token: "letmein",
+      }),
+      p,
+      ctx,
+    );
+    expect(ok.status).toBe(200);
+    expect(puts).toHaveLength(1);
+    expect(puts[0].key).toMatch(/^notify\/[0-9a-f]{32}\.json$/);
+    expect(JSON.parse(puts[0].value).label).toBe("Ada's phone");
+    // Subscribing the same endpoint again replaces, not duplicates.
+    await worker.fetch(
+      call("/api/notify/subscribe", {
+        method: "POST",
+        body: JSON.stringify({ subscription }),
+        token: "letmein",
+      }),
+      p,
+      ctx,
+    );
+    expect(puts).toHaveLength(1);
+    const gone = await worker.fetch(
+      call("/api/notify/subscribe", {
+        method: "DELETE",
+        body: JSON.stringify({ endpoint: subscription.endpoint }),
+        token: "letmein",
+      }),
+      p,
+      ctx,
+    );
+    expect(gone.status).toBe(200);
+    expect(puts).toHaveLength(0);
+  });
+
+  test("a submission pushes to every device; devices the push service reports gone are dropped", async () => {
+    const realFetch = globalThis.fetch;
+    const realPush = deps.fetch;
+    globalThis.fetch = (async () =>
+      Response.json({ success: true })) as unknown as typeof fetch;
+    const pushed: string[] = [];
+    deps.fetch = async (input) => {
+      const url = String(input);
+      pushed.push(url);
+      return new Response(null, { status: url.endsWith("gone") ? 410 : 201 });
+    };
+    try {
+      const { env: p, puts } = await pushEnv();
+      // Two real-looking subscriptions (the keys must be valid points to
+      // encrypt for), one of them stale.
+      const pair = await crypto.subtle.generateKey(
+        { name: "ECDH", namedCurve: "P-256" },
+        true,
+        ["deriveBits"],
+      );
+      const raw = new Uint8Array(
+        await crypto.subtle.exportKey("raw", pair.publicKey),
+      );
+      const b64 = (b: Uint8Array) =>
+        btoa(String.fromCharCode(...b))
+          .replace(/\+/g, "-")
+          .replace(/\//g, "_")
+          .replace(/=+$/, "");
+      const keys = {
+        p256dh: b64(raw),
+        auth: b64(crypto.getRandomValues(new Uint8Array(16))),
+      };
+      for (const endpoint of [
+        "https://push.example/send/live",
+        "https://push.example/send/gone",
+      ]) {
+        await worker.fetch(
+          call("/api/notify/subscribe", {
+            method: "POST",
+            body: JSON.stringify({ subscription: { endpoint, keys } }),
+            token: "letmein",
+          }),
+          p,
+          ctx,
+        );
+      }
+      expect(puts.filter((x) => x.key.startsWith("notify/"))).toHaveLength(2);
+
+      const waits: Promise<unknown>[] = [];
+      const res = await worker.fetch(post(good), p, {
+        waitUntil: (w: Promise<unknown>) => waits.push(w),
+      });
+      expect(res.status).toBe(200);
+      await Promise.all(waits);
+      expect(pushed.sort()).toEqual([
+        "https://push.example/send/gone",
+        "https://push.example/send/live",
+      ]);
+      expect(puts.filter((x) => x.key.startsWith("notify/"))).toHaveLength(1);
+
+      // The test button reports how many devices accepted.
+      pushed.length = 0;
+      const t = await worker.fetch(
+        call("/api/notify/test", {
+          method: "POST",
+          body: "{}",
+          token: "letmein",
+        }),
+        p,
+        ctx,
+      );
+      expect(((await t.json()) as { sent: number }).sent).toBe(1);
+    } finally {
+      globalThis.fetch = realFetch;
+      deps.fetch = realPush;
     }
   });
 });

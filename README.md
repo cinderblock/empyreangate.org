@@ -104,6 +104,19 @@ limit (the `previews` block in `wrangler.jsonc`) so Submit can be tried on
 `dev.empyreangate.org` before launch; their secret is set separately, with
 `wrangler preview secret put TURNSTILE_SECRET --name dev`.
 
+**Notifications for the crew** are Web Push to an installed PWA, with no
+third party in between: `/admin` (noindex) asks for the admin token, registers
+`public/sw.js` and subscribes the device through `POST /api/notify/subscribe`;
+subscriptions live in the same bucket under `notify/` (at most 50). Each
+accepted submission is pushed to every device (`worker/webpush.ts`: RFC 8291
+`aes128gcm` encryption and RFC 8292 VAPID, WebCrypto only), and "Send a test"
+on the page (`POST /api/notify/test`) proves a device. The Worker needs three
+more secrets, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `ADMIN_TOKEN` (`bun
+run vapid` prints a fresh set); until then the page says notifications aren't
+set up. `public/manifest.webmanifest` and the icons `bun run icons` renders
+from the favicon make the site installable (on an iPhone, Add to Home Screen is
+required before push is offered at all).
+
 Growth is capped in the Worker, not in R2 (which has no quota): a visitor may
 send five a minute (a `ratelimits` binding, per IP, nothing to provision), and
 the bucket takes `LIMITS.perDay` (100) a day in all, checked with one list
