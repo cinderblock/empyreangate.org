@@ -1,0 +1,188 @@
+# Playground on phones, and the submission system
+
+Status: **in progress** (2026-10-16). Companion to `pattern-playground.md`,
+which holds the architecture and the history; this doc is the mobile layout
+round plus getting Submit live.
+
+## Goal
+
+The playground is usable on a phone: nothing covers the screen without a way
+out, the live gate stays in view while you scroll through the controls and
+the node graph, and a visitor is told up front that a desktop is the better
+tool. And the submission system goes from "code done" to live, or as far as
+it can go without Cloudflare changes Cameron has to approve one by one.
+
+Cameron (2026-10-16): "do it all. boil the ocean. just don't publish the full
+site yet." Push the site's `dev` only (never its `master`); the gate app's
+`master` is fine.
+
+## Environment / context
+
+| What           | Where                                                                                                                                              |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Site checkout  | `C:\Users\camer\git\Personal Projects\empyreangate.org`, branch `dev` (shared with another agent; see `.agents.txt`, uncommitted)                  |
+| Gate worktree  | `C:\Users\camer\.t3\worktrees\Empyrean\playground`, branch `patch-crate` (== gate `master`); push with `git push origin patch-crate:master`        |
+| Editor package | gate `packages/patch-web/src/editor/{PatchEditor.tsx,editor.css}`; the site gets it via the CI-built `web-dist` branch pinned in `bun.lock`        |
+| Dev Preview    | `https://dev.empyreangate.org/playground` (Workers Builds on every push to `dev`)                                                                  |
+| Ops repo       | `C:\Users\camer\git\Personal Projects\ops` (another thread has large uncommitted edits there, including `empyreangate.yaml` and the worker schema) |
+
+## Decisions already made (don't re-ask)
+
+- **Breakpoint** stays the playground's 52rem (832px): below it the page
+  stacks (gate, controls, editor).
+- **Toast**: "works best on a desktop", narrow screens only, dismissable,
+  remembered in localStorage, never on desktop.
+- **Editor side panels on narrow screens become full-screen sheets** with a
+  Done button: the palette opens from an "Add node" toolbar button; a node's
+  settings open on double-tap (Cameron's suggestion) and from a floating
+  "Settings" pill shown while a node is selected. Single tap still only
+  selects. Wide layouts are unchanged.
+- **The dock**: on narrow screens the live gate is sticky at the top; as you
+  scroll it shrinks (a transform, so the canvas and its WebGPU context are
+  never re-created) into a bar with controls on either side (tool + color on
+  the left, brightness + speed on the right). A "Keep the gate in view"
+  toggle turns it off; default on, remembered.
+- **Tap mode lets the page scroll** from the canvas (`touch-action: pan-y`);
+  draw mode and Touch-node patches keep `none`.
+- **Submit stays hidden until the Turnstile site key exists** (as designed).
+  No Cloudflare resource is created or changed without Cameron's explicit yes
+  for that change (global rule).
+
+## Plan / steps
+
+1. [x] Read both repos; write this plan; `.agents.txt` introduction.
+2. [x] Gate: compact mode in the shared editor (sheets, Add
+       node button, double-tap settings, floating pill). Typecheck, layout
+       gate, behaviour tests. Push to gate `master`; CI appends `web-dist`.
+3. [x] Site: dock + scroll shrink, side controls, toggle; toast; pan-y in
+       tap mode; compact header. Local dev against the gate worktree via
+       `PATCH_WEB_DIR` (Vite alias, no lockfile change).
+4. [x] Site: tests (`tests/playground-mobile.spec.ts`: playground at phone widths: no horizontal overflow, the
+       dock shrinks and stays, the toast shows and stays dismissed).
+5. [x] Site: `bun.lock` → web-dist `685745d` (`1965de5`).
+6. [x] Submit: Worker tests green; `scripts/submissions.ts` (`3d944c8`) to pull submissions out of the bucket for
+       review; README; the exact ops/Cloudflare steps staged for approval.
+7. [ ] **← current** Push `dev`; check the Preview on a phone-sized viewport.
+
+## Findings / gotchas
+
+- The other ops thread's uncommitted diff **removes `previews` from the
+  worker schema and provider** (replaced by `generated_secrets`). If that
+  lands as-is, `dev.empyreangate.org` preview routing is no longer declared
+  in ops. Flagged to Cameron; not touched here.
+- `wrangler` on this machine is logged out ("auth token has expired");
+  nothing Cloudflare-side can be read from here without a login or
+  `CLOUDFLARE_API_TOKEN`.
+
+## Open questions for the user
+
+1. The three Cloudflare steps for Submit (bucket via ops, Turnstile widget,
+   `TURNSTILE_SECRET`): each needs a yes; exact changes under "Submit: what
+   is done and what needs a yes" below.
+2. Should the dev Preview get the bucket binding and secret too, so Submit
+   can be tried end to end before launch? Recommend yes, temporarily.
+3. The ops thread removing `previews` from the worker schema: intended?
+   `dev.empyreangate.org` depends on preview routing.
+4. Still open from `pattern-playground.md`: the terms wording / licence, and
+   where submissions should notify.
+
+## Things not to do
+
+- Don't push the site's `master`. Don't force-push `web-dist`.
+- Don't resize the WebGPU canvas per scroll frame; scale it with a transform.
+- Don't touch the other agent's hunks in this checkout; stage only mine.
+
+## Submit: what is done and what needs a yes
+
+Done and verified (2026-10-16):
+
+- Worker, dialog and Turnstile flow unchanged since `7bdbe7a`; the Worker's
+  unit tests pass (`bun run test:unit`).
+- `bun run submissions` (`scripts/submissions.ts`): pulls every submission
+  out of the bucket through the Cloudflare API (read-only), keeps the records
+  in `submissions/` (gitignored) and writes each patch on its own in
+  `submissions/patches/` so the gate's Patch tab can open it with Open file.
+  Prints the queue. Needs `CLOUDFLARE_API_TOKEN` (Workers R2 Storage: Read)
+  and `CLOUDFLARE_ACCOUNT_ID`. Untested against the real bucket (none yet);
+  its pure parts have tests.
+
+Three Cloudflare steps remain, each needing an explicit yes (global rule):
+
+1. **Bucket, through ops** (staged, not applied). In the ops checkout,
+   `cloudflare/config/projects/empyreangate.yaml`, a new top-level list
+   entry, on top of whatever the other thread's uncommitted edit there
+   becomes:
+
+   ```yaml
+   # Pattern-playground submissions: one JSON object per submission, written
+   # by the site's Worker (worker/index.ts in the site repo, binding
+   # SUBMISSIONS). wrangler deploy fails on a missing bucket rather than
+   # creating one, so this must exist before the site's wrangler.jsonc
+   # carrying the binding deploys.
+   - r2: empyreangate-submissions
+   ```
+
+   Then `bun sync` (dry run) to see only that bucket added, `APPLY=1 bun
+sync`, commit, push.
+
+2. **Turnstile widget.** Dashboard: Turnstile → Add widget, name
+   "empyreangate.org playground", hostnames `empyreangate.org` and
+   `dev.empyreangate.org`, mode Managed. Or the API (token with Account →
+   Turnstile → Edit):
+
+   ```sh
+   curl -X POST "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/challenges/widgets" \
+     -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json" \
+     --data '{"name":"empyreangate.org playground","domains":["empyreangate.org","dev.empyreangate.org"],"mode":"managed"}'
+   ```
+
+   The answer carries `sitekey` (goes in `PLAYGROUND.turnstileSiteKey`,
+   `app/content/site.ts`) and `secret` (next step).
+
+3. **Worker secret.** `wrangler login` (the token on this machine has
+   expired), then in the site checkout:
+
+   ```sh
+   bunx wrangler secret put TURNSTILE_SECRET --name empyreangate-org
+   ```
+
+   Optional: `NOTIFY_WEBHOOK` the same way, once a Discord/Slack channel is
+   chosen.
+
+After those: uncomment the `r2_buckets` binding in `wrangler.jsonc`, commit
+the site key, push `dev`. Note that **Previews carry no bindings on purpose**
+(`"previews": {}`), so on `dev.empyreangate.org` Submit keeps answering 503
+and the end-to-end path is only exercised on production, which is not
+published. If Cameron wants to see a real submission land before launch, the
+preview environment can be given the same bucket binding and secret for a
+while (`"previews": { "r2_buckets": [...] }` plus the secret on the preview
+environment); test objects in a moderation queue do no harm.
+
+### More findings (2026-10-16, later)
+
+- **Verifying the dock needs WebGPU, which headless Chromium lacks.**
+  Playwright's `chromium.launch({ channel: "chrome" })` (installed Chrome,
+  headless) has it on this machine; the dock test skips itself otherwise.
+- **Playwright empties `test-results/` when a run starts.** Keep scratch
+  scripts and logs elsewhere.
+- **Port 5174 was already FarmSlicer's dev server** (another project), so
+  `localhost:5174` in Chrome showed that app. The playground dev server ran
+  on 5180 with `PATCH_WEB_DIR` pointing at the gate worktree.
+- **Chrome's zoom defeats `resize_window`** for phone layouts: the window
+  will not go below ~516 px outer, and at the page's zoom that was 868 CSS
+  px, above the 52rem breakpoint. Playwright viewports instead.
+- **Gate CI caught a real timing bug**: on a fast runner, select → pill →
+  sheet → Done fit inside the 400 ms double-tap window, so the next tap
+  opened the sheet again. Fixed in `159dc55` (a sheet opening or closing
+  resets the tap timer).
+- **Absolutely positioned children don't take grid cells**: the canvas in
+  the dock grid is `position: absolute`, so the right-hand controls landed
+  in the middle column until given `grid-column: 3` explicitly.
+
+## Progress log
+
+- [x] 2026-10-16 survey, plan, `.agents.txt`
+- [x] gate `64ccf3a` compact editor; `159dc55` tap-timer fix; CI web-dist `685745d`
+- [x] site `137d32c` PATCH_WEB_DIR alias, `1965de5` web-dist bump, `3d944c8` submissions script
+- [x] site `78c0c5e` preview trailing slash, `11eaab1` test:gpu, `e78c60f` phone layout; full suite 171 passed / 6 skipped (WebGPU) in chromium, firefox, webkit; `bun run test:gpu` 11/11
+- [ ] push `dev`; dev Preview checked at phone size

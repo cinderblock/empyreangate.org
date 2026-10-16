@@ -1,6 +1,8 @@
 # Pattern playground — the gate's node editor, in the browser
 
-Status: **on the site's `dev` Preview (2026-10-15); Submit not live yet.**
+Status: **on the site's `dev` Preview; Submit not live yet.** The phone layout
+round (2026-10-16) is in `playground-mobile.md`, which also lists exactly
+what Submit still needs.
 Cameron: never push either repo's `master` (the site's production is not to
 be published yet); `dev` is where to see it on the real deploy. Gate branches
 `patch-crate` and `web-dist` are pushed (not merged); the site's `playground`
