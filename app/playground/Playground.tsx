@@ -70,6 +70,17 @@ export default function Playground() {
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
+  // Phones: the gate docks at the top as you scroll (unless turned off), and
+  // a one-time toast says a desktop is the better tool for building.
+  const stageRef = useRef<HTMLElement>(null);
+  const dockRef = useRef<HTMLDivElement>(null);
+  const spacerRef = useRef<HTMLDivElement>(null);
+  const narrow = useMediaQuery(NARROW);
+  const [keepInView, setKeepInView] = useStoredFlag(DOCK_KEY, true);
+  const [toastSeen, setToastSeen] = useStoredFlag(TOAST_KEY, false);
+  const [docked, setDocked] = useState(false);
+  const dockActive = narrow && keepInView && !gpuError;
+
   // Patch core (always) and a GPU runtime (where WebGPU exists). Without
   // WebGPU the editor still works: patches validate, save and submit; only
   // the live preview is missing.
@@ -144,6 +155,54 @@ export default function Playground() {
   useEffect(() => {
     void runtime?.setPatch(doc);
   }, [runtime, doc]);
+
+  // The dock. The canvas starts full width and, as the page scrolls, scales
+  // (a transform: the canvas and its WebGPU context are never re-created)
+  // into the sticky bar at the top; its bottom edge tracks the content
+  // below it exactly, because the spacer in flow is as tall as the distance
+  // it shrinks. Once docked, the canvas is really made small, so the GPU
+  // stops drawing a full-size frame for a thumbnail.
+  useEffect(() => {
+    const stage = stageRef.current;
+    const dock = dockRef.current;
+    const spacer = spacerRef.current;
+    if (!dockActive || !stage || !dock || !spacer) {
+      setDocked(false);
+      return;
+    }
+    let raf = 0;
+    let wasDocked = false;
+    const update = () => {
+      raf = 0;
+      const w = dock.clientWidth;
+      const h = dock.clientHeight;
+      const travel = Math.max(1, w - h);
+      const contentTop = spacer.getBoundingClientRect().bottom;
+      const p = Math.min(1, Math.max(0, (w - contentTop) / travel));
+      stage.style.setProperty("--pg-w", `${w}px`);
+      stage.style.setProperty("--pg-p", p.toFixed(4));
+      stage.style.setProperty("--pg-scale", (1 - p * (1 - h / w)).toFixed(4));
+      const isDocked = p >= 0.999;
+      if (isDocked !== wasDocked) {
+        wasDocked = isDocked;
+        setDocked(isDocked);
+      }
+    };
+    const schedule = () => {
+      if (!raf) raf = requestAnimationFrame(update);
+    };
+    window.addEventListener("scroll", schedule, { passive: true });
+    const ro = new ResizeObserver(schedule);
+    ro.observe(dock);
+    update();
+    return () => {
+      window.removeEventListener("scroll", schedule);
+      ro.disconnect();
+      if (raf) cancelAnimationFrame(raf);
+      for (const v of ["--pg-w", "--pg-p", "--pg-scale"])
+        stage.style.removeProperty(v);
+    };
+  }, [dockActive]);
 
   // Without a runtime, still tell the visitor whether the patch would run.
   useEffect(() => {
@@ -332,6 +391,71 @@ export default function Playground() {
     typeof window !== "undefined" && "DeviceOrientationEvent" in window;
   const effects = core?.effectKinds.filter((k) => k !== "cone") ?? [];
 
+  // Controls that appear twice on a phone (in the dock and in the list).
+  const toolPicker = (
+    <select
+      aria-label="Tool"
+      value={tool.mode === "tap" ? `fx:${tool.effect}` : `pen:${tool.pen}`}
+      onChange={(e) => {
+        const [mode, name] = e.target.value.split(":");
+        setTool(
+          mode === "fx"
+            ? { mode: "tap", effect: name }
+            : { mode: "draw", pen: name },
+        );
+      }}
+    >
+      <optgroup label="Tap an effect">
+        {effects.map((k) => (
+          <option key={k} value={`fx:${k}`}>
+            {label(k)}
+          </option>
+        ))}
+      </optgroup>
+      <optgroup label="Draw with a pen">
+        {PENS.map((p) => (
+          <option key={p} value={`pen:${p}`}>
+            {label(p)} pen
+          </option>
+        ))}
+      </optgroup>
+    </select>
+  );
+  const hueSlider = (
+    <input
+      type="range"
+      className="pg-hue"
+      aria-label="Color"
+      min={0}
+      max={1}
+      step={0.005}
+      value={hue}
+      onChange={(e) => setHue(Number(e.target.value))}
+    />
+  );
+  const brightnessSlider = (
+    <input
+      type="range"
+      aria-label="Brightness"
+      min={0}
+      max={1}
+      step={0.01}
+      value={brightness}
+      onChange={(e) => setBrightness(Number(e.target.value))}
+    />
+  );
+  const speedSlider = (
+    <input
+      type="range"
+      aria-label="Speed"
+      min={0}
+      max={3}
+      step={0.01}
+      value={speed}
+      onChange={(e) => setSpeed(Number(e.target.value))}
+    />
+  );
+
   return (
     <div className="pg">
       <header className="pg-bar">
@@ -362,63 +486,98 @@ export default function Playground() {
         <section
           className="pg-stage"
           aria-label="Live preview"
+          ref={stageRef}
           data-preview={
             gpuError ? "unavailable" : runtime ? "running" : "loading"
           }
+          data-dock={dockActive ? (docked ? "docked" : "on") : "off"}
         >
           {gpuError ? (
             <p className="pg-nogpu">{gpuError}</p>
           ) : (
-            <canvas
-              ref={canvasRef}
-              className={`pg-gate pg-gate-${ownsTouch ? "draw" : tool.mode}`}
-              aria-label={
-                ownsTouch
-                  ? "The gate, running your pattern. Your patch decides what a touch does."
-                  : "The gate, running your pattern. Tap to fire effects or draw, depending on the tool."
-              }
-              style={{ touchAction: "none" }}
-              onPointerDown={(e) => {
-                try {
-                  e.currentTarget.setPointerCapture(e.pointerId);
-                } catch {
-                  // Not a pointer the browser tracks (a synthetic event).
+            <div className="pg-dock" ref={dockRef}>
+              <div className="pg-dock-side pg-dock-left" inert={!docked}>
+                {!ownsTouch && toolPicker}
+                {hueSlider}
+              </div>
+              <canvas
+                ref={canvasRef}
+                className={`pg-gate pg-gate-${ownsTouch ? "draw" : tool.mode}`}
+                aria-label={
+                  ownsTouch
+                    ? "The gate, running your pattern. Your patch decides what a touch does."
+                    : "The gate, running your pattern. Tap to fire effects or draw, depending on the tool."
                 }
-                if (ownsTouch) {
-                  rawTouch(e, "down");
-                } else if (tool.mode === "tap") {
-                  const p = screenToPolar(
-                    e.currentTarget,
-                    e.clientX,
-                    e.clientY,
-                  );
-                  fire(p.angle, p.radius);
-                } else {
-                  paint(e.pointerId, e.clientX, e.clientY);
-                }
-              }}
-              onPointerMove={(e) => {
-                if (ownsTouch) {
-                  if (held.current.has(e.pointerId)) rawTouch(e, "move");
-                } else if (
-                  tool.mode === "draw" &&
-                  strokes.current.has(e.pointerId)
-                ) {
-                  paint(e.pointerId, e.clientX, e.clientY);
-                }
-              }}
-              onPointerUp={(e) => {
-                if (ownsTouch) rawTouch(e, "up");
-                strokes.current.delete(e.pointerId);
-              }}
-              onPointerCancel={(e) => {
-                if (ownsTouch) rawTouch(e, "up");
-                strokes.current.delete(e.pointerId);
-              }}
-            />
+                // Tapping leaves vertical drags to the page, so a phone can
+                // scroll past a full-width canvas; drawing and Touch patches
+                // need every move.
+                style={{
+                  touchAction:
+                    ownsTouch || tool.mode === "draw" ? "none" : "pan-y",
+                }}
+                onPointerDown={(e) => {
+                  try {
+                    e.currentTarget.setPointerCapture(e.pointerId);
+                  } catch {
+                    // Not a pointer the browser tracks (a synthetic event).
+                  }
+                  if (ownsTouch) {
+                    rawTouch(e, "down");
+                  } else if (tool.mode === "tap") {
+                    const p = screenToPolar(
+                      e.currentTarget,
+                      e.clientX,
+                      e.clientY,
+                    );
+                    fire(p.angle, p.radius);
+                  } else {
+                    paint(e.pointerId, e.clientX, e.clientY);
+                  }
+                }}
+                onPointerMove={(e) => {
+                  if (ownsTouch) {
+                    if (held.current.has(e.pointerId)) rawTouch(e, "move");
+                  } else if (
+                    tool.mode === "draw" &&
+                    strokes.current.has(e.pointerId)
+                  ) {
+                    paint(e.pointerId, e.clientX, e.clientY);
+                  }
+                }}
+                onPointerUp={(e) => {
+                  if (ownsTouch) rawTouch(e, "up");
+                  strokes.current.delete(e.pointerId);
+                }}
+                onPointerCancel={(e) => {
+                  if (ownsTouch) rawTouch(e, "up");
+                  strokes.current.delete(e.pointerId);
+                }}
+              />
+              <div className="pg-dock-side pg-dock-right" inert={!docked}>
+                <label className="pg-dock-slider">
+                  <span>Brightness</span>
+                  {brightnessSlider}
+                </label>
+                <label className="pg-dock-slider">
+                  <span>Speed</span>
+                  {speedSlider}
+                </label>
+              </div>
+            </div>
           )}
+          {!gpuError && <div className="pg-dock-spacer" ref={spacerRef} />}
 
           <div className="pg-inputs">
+            {narrow && !gpuError && (
+              <label className="pg-check pg-keep">
+                <input
+                  type="checkbox"
+                  checked={keepInView}
+                  onChange={(e) => setKeepInView(e.target.checked)}
+                />
+                Keep the gate in view while you scroll
+              </label>
+            )}
             <fieldset>
               <legend>Your finger</legend>
               {ownsTouch && (
@@ -429,49 +588,8 @@ export default function Playground() {
                 </p>
               )}
               <div className="pg-row">
-                {!ownsTouch && (
-                  <select
-                    aria-label="Tool"
-                    value={
-                      tool.mode === "tap"
-                        ? `fx:${tool.effect}`
-                        : `pen:${tool.pen}`
-                    }
-                    onChange={(e) => {
-                      const [mode, name] = e.target.value.split(":");
-                      setTool(
-                        mode === "fx"
-                          ? { mode: "tap", effect: name }
-                          : { mode: "draw", pen: name },
-                      );
-                    }}
-                  >
-                    <optgroup label="Tap an effect">
-                      {effects.map((k) => (
-                        <option key={k} value={`fx:${k}`}>
-                          {label(k)}
-                        </option>
-                      ))}
-                    </optgroup>
-                    <optgroup label="Draw with a pen">
-                      {PENS.map((p) => (
-                        <option key={p} value={`pen:${p}`}>
-                          {label(p)} pen
-                        </option>
-                      ))}
-                    </optgroup>
-                  </select>
-                )}
-                <input
-                  type="range"
-                  className="pg-hue"
-                  aria-label="Color"
-                  min={0}
-                  max={1}
-                  step={0.005}
-                  value={hue}
-                  onChange={(e) => setHue(Number(e.target.value))}
-                />
+                {!ownsTouch && toolPicker}
+                {hueSlider}
               </div>
             </fieldset>
 
@@ -550,25 +668,11 @@ export default function Playground() {
               <legend>Master</legend>
               <label className="pg-slider">
                 Brightness
-                <input
-                  type="range"
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  value={brightness}
-                  onChange={(e) => setBrightness(Number(e.target.value))}
-                />
+                {brightnessSlider}
               </label>
               <label className="pg-slider">
                 Speed
-                <input
-                  type="range"
-                  min={0}
-                  max={3}
-                  step={0.01}
-                  value={speed}
-                  onChange={(e) => setSpeed(Number(e.target.value))}
-                />
+                {speedSlider}
               </label>
             </fieldset>
           </div>
@@ -667,10 +771,69 @@ export default function Playground() {
           onClose={() => setSubmitting(false)}
         />
       )}
+
+      {narrow && !toastSeen && (
+        <div className="pg-toast" role="status">
+          <p>
+            <strong>Works best on a desktop.</strong> You can play the gate and
+            turn its knobs here; building a pattern wants a mouse and a big
+            screen.
+          </p>
+          <button type="button" onClick={() => setToastSeen(true)}>
+            Got it
+          </button>
+        </div>
+      )}
     </div>
   );
 }
 
 function label(id: string): string {
   return id.charAt(0).toUpperCase() + id.slice(1).replace(/_/g, " ");
+}
+
+/** The playground's narrow layout (stacked; matches playground.css). */
+const NARROW = "(max-width: 52rem)";
+const DOCK_KEY = "empyrean-playground:dock";
+const TOAST_KEY = "empyrean-playground:desktop-toast";
+
+function useMediaQuery(query: string): boolean {
+  const [matches, setMatches] = useState(
+    () => typeof window !== "undefined" && window.matchMedia(query).matches,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const on = () => setMatches(mq.matches);
+    on();
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, [query]);
+  return matches;
+}
+
+/** A yes/no preference kept in localStorage (where storage is allowed). */
+function useStoredFlag(
+  key: string,
+  fallback: boolean,
+): [boolean, (v: boolean) => void] {
+  const [value, setValue] = useState(() => {
+    try {
+      const v = localStorage.getItem(key);
+      return v === null ? fallback : v === "1";
+    } catch {
+      return fallback;
+    }
+  });
+  const set = useCallback(
+    (v: boolean) => {
+      setValue(v);
+      try {
+        localStorage.setItem(key, v ? "1" : "0");
+      } catch {
+        // Private mode or storage blocked: the choice lasts the visit.
+      }
+    },
+    [key],
+  );
+  return [value, set];
 }

@@ -94,7 +94,7 @@ test.describe("Pattern playground", () => {
       timeout: 20_000,
     });
     // The starter patch has no touch nodes: the tool picker is there.
-    await expect(page.getByLabel("Tool")).toBeVisible();
+    await expect(page.locator(".pg-inputs").getByLabel("Tool")).toBeVisible();
     await page
       .locator(".patch-toolbar select")
       .nth(1)

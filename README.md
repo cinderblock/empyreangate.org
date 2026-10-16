@@ -20,17 +20,18 @@ bun install
 bun run dev
 ```
 
-| Script              | Description                                               |
-| ------------------- | --------------------------------------------------------- |
-| `bun run dev`       | Dev server on :5173                                       |
-| `bun run build`     | Prerender to `build/client`, then emit 404.html + sitemap |
-| `bun run preview`   | Serve the built site on :4180                             |
-| `bun run test`      | Playwright, against a fresh build (not the dev server)    |
-| `bun run test:unit` | Bun unit tests: render engine, build context              |
-| `bun run typecheck` | `react-router typegen && tsc`                             |
-| `bun run fmt`       | Format with oxfmt                                         |
-| `bun run photos`    | Web renditions of `photos/` + the photo manifest          |
-| `bun run og`        | Regenerate `public/og.png` from the built hero            |
+| Script              | Description                                                               |
+| ------------------- | ------------------------------------------------------------------------- |
+| `bun run dev`       | Dev server on :5173                                                       |
+| `bun run build`     | Prerender to `build/client`, then emit 404.html + sitemap                 |
+| `bun run preview`   | Serve the built site on :4180                                             |
+| `bun run test`      | Playwright, against a fresh build (not the dev server)                    |
+| `bun run test:unit` | Bun unit tests: render engine, build context                              |
+| `bun run test:gpu`  | The playground tests that need WebGPU, in the installed Chrome (headless) |
+| `bun run typecheck` | `react-router typegen && tsc`                                             |
+| `bun run fmt`       | Format with oxfmt                                                         |
+| `bun run photos`    | Web renditions of `photos/` + the photo manifest                          |
+| `bun run og`        | Regenerate `public/og.png` from the built hero                            |
 
 ## Structure
 
@@ -100,6 +101,12 @@ Discord/Slack-style webhook); the page needs the Turnstile site key in
 `PLAYGROUND.turnstileSiteKey` (`app/content/site.ts`). Until both exist Submit
 is hidden and the endpoint answers 503. Previews never get the bucket.
 
+To review what came in, `bun run submissions` (`scripts/submissions.ts`) lists
+the bucket through the Cloudflare API (`CLOUDFLARE_API_TOKEN` with Workers R2
+Storage: Read, and `CLOUDFLARE_ACCOUNT_ID`), downloads new records into
+`submissions/` (gitignored) and writes each patch on its own under
+`submissions/patches/`, ready for the gate's Patch tab to open with Open file.
+
 To try Submit locally, with Turnstile's always-pass test keys:
 
 ```sh
@@ -108,10 +115,18 @@ VITE_TURNSTILE_SITE_KEY=1x00000000000000000000AA bun run build
 bunx wrangler dev --local     # submissions land in .wrangler/state (local R2)
 ```
 
-To develop against a local gate checkout instead of `web-dist`, point the
-dependency at its `packages/patch-web` (`file:`), run `bun run build:wasm`
-there, and start the dev server with `PATCH_WEB_DIR=<that path>` so Vite may
-serve the wasm from outside this repo.
+To develop against a local gate checkout instead of `web-dist`, run
+`bun run build:wasm` in its `packages/patch-web`, then start the dev server
+(or build) with `PATCH_WEB_DIR=<that path>`: Vite aliases the package's entry
+points to that directory and serves its wasm from outside this repo. Nothing
+in `package.json` or `bun.lock` changes.
+
+On a phone the page stacks: the live gate docks at the top and shrinks into a
+bar (with the tool, color, brightness and speed beside it) as you scroll, so
+it stays in view over the controls and the node graph. "Keep the gate in view"
+turns that off; both it and the one-time "works best on a desktop" toast are
+remembered in localStorage. The editor itself switches to sheets (Add node,
+and a node's settings on double-tap) when narrower than 640 px.
 
 ## Photos
 

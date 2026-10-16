@@ -235,28 +235,202 @@
   flex: 1;
 }
 
+/* The dock exists at every width; it only does something on narrow screens.
+   Side controls are for the docked bar only. */
+.pg-dock {
+  position: relative;
+}
+
+.pg-dock-side {
+  display: none;
+}
+
+.pg-dock-spacer,
+.pg-keep {
+  display: none;
+}
+
+/* --- Narrow screens: stacked, with the gate docking at the top ------------- */
+
 @media (max-width: 52rem) {
   .pg-main {
     height: auto;
+    /* The docked bar's height; the canvas shrinks to a square this tall. */
+    --pg-dock-h: 5.5rem;
   }
 
-  .pg-body {
-    grid-template-columns: 1fr;
+  .pg-bar {
+    gap: 0.5rem 0.9rem;
+    padding: 0.5rem 0.9rem;
   }
 
+  .pg-bar-hint {
+    display: none;
+  }
+
+  /* The dock must stick for the whole page, editor included, so the stage
+     and the body give up their boxes: the dock's containing block is `.pg`. */
+  .pg-body,
   .pg-stage {
-    border-right: none;
-    border-bottom: 1px solid var(--line);
-    overflow: visible;
+    display: contents;
   }
 
   .pg-gate {
-    max-height: 80vh;
+    width: 100%;
+    margin: 0;
+    max-height: none;
+  }
+
+  .pg-keep {
+    display: inline-flex;
   }
 
   .pg-editor {
-    height: 85vh;
+    height: 85dvh;
   }
+
+  /* Dock on: a sticky bar as tall as --pg-dock-h; the canvas sits in it at
+     full width (overflowing downward over the spacer) and scales down about
+     its top centre as the page scrolls. --pg-p (0..1), --pg-scale and --pg-w
+     are set from the scroll position in Playground.tsx. */
+  .pg-stage:not([data-dock="off"]) .pg-dock {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    height: var(--pg-dock-h);
+    display: grid;
+    grid-template-columns: 1fr var(--pg-dock-h) 1fr;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0 0.6rem;
+  }
+
+  .pg-stage:not([data-dock="off"]) .pg-dock::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    opacity: var(--pg-p, 0);
+  }
+
+  .pg-stage:not([data-dock="off"]) .pg-gate {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: var(--pg-w, 100vw);
+    height: var(--pg-w, 100vw);
+    transform-origin: 50% 0;
+    transform: scale(var(--pg-scale, 1));
+    z-index: 1;
+  }
+
+  /* Docked: the canvas is really small now, in the middle column. */
+  .pg-stage[data-dock="docked"] .pg-gate {
+    width: var(--pg-dock-h);
+    height: var(--pg-dock-h);
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .pg-stage:not([data-dock="off"]) .pg-dock-spacer {
+    display: block;
+    height: calc(var(--pg-w, 100vw) - var(--pg-dock-h));
+  }
+
+  .pg-dock-left {
+    grid-column: 1;
+  }
+
+  .pg-dock-right {
+    grid-column: 3;
+  }
+
+  .pg-stage:not([data-dock="off"]) .pg-dock-side {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    min-width: 0;
+    position: relative;
+    opacity: clamp(0, calc((var(--pg-p, 0) - 0.6) / 0.4), 1);
+    transition: opacity 0.1s linear;
+  }
+
+  .pg-stage:not([data-dock="docked"]) .pg-dock-side {
+    pointer-events: none;
+  }
+
+  .pg-dock-side select {
+    font: inherit;
+    font-size: 0.78rem;
+    color: var(--ink);
+    background: var(--bg-raised);
+    border: 1px solid var(--line);
+    border-radius: 0.4rem;
+    padding: 0.25rem 0.4rem;
+    max-width: 100%;
+  }
+
+  .pg-dock-side .pg-hue {
+    width: 100%;
+  }
+
+  .pg-dock-slider {
+    display: grid;
+    grid-template-columns: 3.6rem 1fr;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.68rem;
+    color: var(--ink-muted);
+  }
+
+  .pg-dock-slider input {
+    min-width: 0;
+    width: 100%;
+  }
+
+  /* With the gate docked, the editor fills what is left of the screen. */
+  .pg-stage:not([data-dock="off"]) ~ .pg-editor {
+    height: calc(100dvh - var(--pg-dock-h));
+  }
+}
+
+/* --- "Works best on a desktop" ------------------------------------------- */
+
+.pg-toast {
+  position: fixed;
+  left: 0.75rem;
+  right: 0.75rem;
+  bottom: calc(0.75rem + env(safe-area-inset-bottom));
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: var(--bg-raised);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--ink-muted);
+}
+
+.pg-toast strong {
+  color: var(--ink);
+}
+
+.pg-toast button {
+  flex-shrink: 0;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent-ink);
+  background: var(--accent);
+  border: none;
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  cursor: pointer;
 }
 
 /* --- Submit ---------------------------------------------------------------- */
