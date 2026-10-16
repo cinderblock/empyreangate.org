@@ -46,6 +46,11 @@ site yet." Push the site's `dev` only (never its `master`); the gate app's
 - **Tap mode lets the page scroll** from the canvas (`touch-action: pan-y`);
   draw mode and Touch-node patches keep `none`.
 - **Submit stays hidden until the Turnstile site key exists** (as designed).
+- **Terms** (Cameron, 2026-10-16): a submission grants us a licence (play,
+  adapt, share, recordings) and the submitter is credited by the name they
+  give when it is shown. Wording in `PLAYGROUND.terms`.
+- **Previews get the real bucket and a secret** (Cameron, 2026-10-16: yes),
+  so Submit is testable on `dev.empyreangate.org` before launch.
   No Cloudflare resource is created or changed without Cameron's explicit yes
   for that change (global rule).
 
@@ -82,10 +87,23 @@ site yet." Push the site's `dev` only (never its `master`); the gate app's
    is done and what needs a yes" below.
 2. Should the dev Preview get the bucket binding and secret too, so Submit
    can be tried end to end before launch? Recommend yes, temporarily.
-3. The ops thread removing `previews` from the worker schema: intended?
-   `dev.empyreangate.org` depends on preview routing.
-4. Still open from `pattern-playground.md`: the terms wording / licence, and
-   where submissions should notify.
+3. Where submissions should notify (`NOTIFY_WEBHOOK`): still open.
+
+### The main ops checkout is stale, not edited (2026-10-16)
+
+Cameron asked what the "previews removal" was. It is not a thread's work: the
+main ops checkout's working tree is _older than its HEAD_ for 36 files.
+`cloudflare/config/projects/empyreangate.yaml` on disk is byte-identical to
+commit `90efcf5` (2026-10-11), the version before `102fbb9` added
+`previews: true` (2026-10-12); `schema.json` and `providers/workers.ts` on
+disk (mtime 2026-09-25) lack `previews_enabled` but carry a
+`generated_secrets` field that is in no commit. So someone's edits were made
+on a pre-`102fbb9` base and the files were never reconciled with the
+fast-forwards since. Nothing was applied from that tree (the dry run here ran
+from a clean worktree of `master`). If it were applied, ops would stop
+_declaring_ preview routing; the provider only writes `previews_enabled` on an
+update, so it would not switch it off, but it would be unmanaged. Needs a
+look by whoever owns the `generated_secrets` work.
 
 ## Things not to do
 

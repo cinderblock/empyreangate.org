@@ -230,10 +230,9 @@ playground's IndexedDB, files) migrated on load. Site `107e84c` (web-dist
    to ops? Recommend the dashboard: one widget, rarely changes. Either way
    `TURNSTILE_SECRET` has to be set on the `empyreangate-org` worker
    (`wrangler secret put`), by Cameron or by me with a yes.
-4. **Submission terms wording.** Draft (`PLAYGROUND.terms`): "I made this
-   pattern (or have the right to share it), and I'm happy for the Entheos
-   crew to play it on The Empyrean Gate and to share it, credited to me."
-   Name a license (MIT like the gate, or CC BY)?
+4. **Submission terms.** Decided 2026-10-16: a licence to the crew (play,
+   adapt, share, recordings) and credit by the given name when shown; see
+   `PLAYGROUND.terms`.
 5. **Notifications**: where should a new submission ping? The Worker
    supports a Discord/Slack-style webhook (`NOTIFY_WEBHOOK`); none is set.
 
