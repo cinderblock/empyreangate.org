@@ -22,6 +22,14 @@ interface R2Bucket {
       customMetadata?: Record<string, string>;
     },
   ): Promise<unknown>;
+  list(options: {
+    prefix: string;
+    limit?: number;
+  }): Promise<{ objects: unknown[]; truncated: boolean }>;
+}
+/** The Workers rate-limiting binding (`ratelimits` in wrangler.jsonc). */
+interface RateLimit {
+  limit(options: { key: string }): Promise<{ success: boolean }>;
 }
 interface Fetcher {
   fetch(request: Request): Promise<Response>;
@@ -34,6 +42,8 @@ export interface Env {
   ASSETS: Fetcher;
   /** Where submissions land. Absent on builds without it bound. */
   SUBMISSIONS?: R2Bucket;
+  /** Per-visitor rate limit (wrangler.jsonc: a few a minute per IP). */
+  SUBMIT_LIMIT?: RateLimit;
   /** Turnstile secret for the site key the page uses. */
   TURNSTILE_SECRET?: string;
   /** Optional: a Discord/Slack-style webhook told about each submission. */
@@ -49,6 +59,11 @@ export const LIMITS = {
   message: 2000,
   nodes: 256,
   edges: 1024,
+  // How many submissions a day the bucket accepts, in all. A cap on growth
+  // rather than a target: at the 3 MB body limit a full day is 300 MB, so
+  // even a month of abuse stays within R2's free 10 GB. Checked with one
+  // list call per accepted submission, after the spam check.
+  perDay: 100,
 };
 
 export interface Submission {
@@ -107,6 +122,18 @@ async function submit(
   if (!env.SUBMISSIONS || !env.TURNSTILE_SECRET) {
     return json(503, { error: "Submissions aren't open on this build yet." });
   }
+  const ip = request.headers.get("cf-connecting-ip");
+  // Cheapest check first: a visitor sending more than a few a minute is a
+  // script, and this costs nothing (no body read, no R2 call).
+  if (env.SUBMIT_LIMIT && ip) {
+    const { success } = await env.SUBMIT_LIMIT.limit({ key: ip });
+    if (!success) {
+      return json(429, {
+        error:
+          "That's a lot of patterns at once. Give it a minute and try again.",
+      });
+    }
+  }
   const length = Number(request.headers.get("content-length") ?? "0");
   if (length > LIMITS.bodyBytes) {
     return json(413, { error: "That patch is too big." });
@@ -139,7 +166,6 @@ async function submit(
     });
   }
 
-  const ip = request.headers.get("cf-connecting-ip");
   if (
     typeof body.turnstile !== "string" ||
     !(await verifyTurnstile(env.TURNSTILE_SECRET, body.turnstile, ip))
@@ -148,8 +174,22 @@ async function submit(
   }
 
   const now = new Date();
+  const day = now.toISOString().slice(0, 10);
+  // The daily cap: one list of today's prefix, after the spam check so bots
+  // cannot spend it. Full means we have all we can look at for one day.
+  const today = await env.SUBMISSIONS.list({
+    prefix: `submissions/${day}/`,
+    limit: LIMITS.perDay,
+  });
+  if (today.truncated || today.objects.length >= LIMITS.perDay) {
+    return json(429, {
+      error:
+        "We've received all the patterns we can look at today. Save yours to disk and send it tomorrow.",
+    });
+  }
+
   const id = crypto.randomUUID();
-  const key = `submissions/${now.toISOString().slice(0, 10)}/${now.getTime()}-${id}.json`;
+  const key = `submissions/${day}/${now.getTime()}-${id}.json`;
   const cf = (request as Request & { cf?: { country?: string } }).cf;
   const record = {
     id,

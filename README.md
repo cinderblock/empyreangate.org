@@ -101,6 +101,13 @@ Discord/Slack-style webhook); the page needs the Turnstile site key in
 `PLAYGROUND.turnstileSiteKey` (`app/content/site.ts`). Until both exist Submit
 is hidden and the endpoint answers 503. Previews never get the bucket.
 
+Growth is capped in the Worker, not in R2 (which has no quota): a visitor may
+send five a minute (a `ratelimits` binding, per IP, nothing to provision), and
+the bucket takes `LIMITS.perDay` (100) a day in all, checked with one list
+call after the spam check so bots cannot spend it. With the 3 MB body limit
+that is at most 300 MB a day, inside R2's free 10 GB-month even under a
+month of abuse.
+
 To review what came in, `bun run submissions` (`scripts/submissions.ts`) lists
 the bucket through the Cloudflare API (`CLOUDFLARE_API_TOKEN` with Workers R2
 Storage: Read, and `CLOUDFLARE_ACCOUNT_ID`), downloads new records into

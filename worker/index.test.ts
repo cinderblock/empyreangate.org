@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import worker, { checkSubmission, type Env } from "./index";
+import worker, { checkSubmission, LIMITS, type Env } from "./index";
 
 const patch = {
   format: 1,
@@ -24,7 +24,13 @@ function env(overrides: Partial<Env> = {}) {
       put: async (key: string, value: string) => {
         puts.push({ key, value });
       },
+      // Lists what this test stored under the prefix, like the real bucket.
+      list: async ({ prefix, limit = 1000 }) => {
+        const all = puts.filter((p) => p.key.startsWith(prefix));
+        return { objects: all.slice(0, limit), truncated: all.length > limit };
+      },
     },
+    SUBMIT_LIMIT: { limit: async () => ({ success: true }) },
     TURNSTILE_SECRET: "secret",
     ...overrides,
   };
@@ -120,6 +126,48 @@ describe("worker", () => {
         (await worker.fetch(post({ ...good, patch: huge }), e, ctx)).status,
       ).toBe(400);
       expect(puts).toHaveLength(0);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
+});
+
+describe("caps", () => {
+  test("a visitor over the per-minute limit is told to wait, before anything is read", async () => {
+    const { env: e, puts } = env({
+      SUBMIT_LIMIT: { limit: async () => ({ success: false }) },
+    });
+    const req = post(good);
+    req.headers.set("cf-connecting-ip", "203.0.113.9");
+    const res = await worker.fetch(req, e, ctx);
+    expect(res.status).toBe(429);
+    expect(((await res.json()) as { error: string }).error).toMatch(/minute/);
+    expect(puts).toHaveLength(0);
+  });
+
+  test("the bucket takes LIMITS.perDay a day, then says come back tomorrow", async () => {
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      Response.json({ success: true })) as unknown as typeof fetch;
+    try {
+      const { env: e, puts } = env();
+      const day = new Date().toISOString().slice(0, 10);
+      for (let i = 0; i < LIMITS.perDay; i++) {
+        puts.push({ key: `submissions/${day}/${i}-x.json`, value: "{}" });
+      }
+      const res = await worker.fetch(post(good), e, ctx);
+      expect(res.status).toBe(429);
+      expect(((await res.json()) as { error: string }).error).toMatch(
+        /tomorrow/,
+      );
+      expect(puts).toHaveLength(LIMITS.perDay);
+      // Yesterday's do not count against today.
+      puts.length = 0;
+      for (let i = 0; i < LIMITS.perDay; i++) {
+        puts.push({ key: `submissions/2000-01-01/${i}-x.json`, value: "{}" });
+      }
+      expect((await worker.fetch(post(good), e, ctx)).status).toBe(200);
+      expect(puts).toHaveLength(LIMITS.perDay + 1);
     } finally {
       globalThis.fetch = realFetch;
     }
