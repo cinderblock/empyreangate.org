@@ -42,3 +42,6 @@ playwright/.cache/
 # Local Worker secrets for `wrangler dev`
 .dev.vars
 .wrangler/
+
+# Downloaded playground submissions (bun run submissions)
+/submissions/

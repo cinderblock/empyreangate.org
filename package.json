@@ -7,6 +7,7 @@
     "build": "bun run photos && react-router build && bun run scripts/postbuild.ts",
     "preview": "vite preview --outDir build/client --port 4180 --strictPort",
     "og": "bun run scripts/og.ts",
+    "submissions": "bun run scripts/submissions.ts",
     "photos": "bun run scripts/photos.ts",
     "test": "playwright test",
     "test:unit": "bun test app scripts worker",
