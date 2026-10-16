@@ -202,6 +202,18 @@ Not in ops today: Turnstile widgets (no schema support) and worker secrets.
       submissions bucket under `notify/`; each submission pushes to every
       device. Needs three Worker secrets (Cameron's yes): `VAPID_PUBLIC_KEY`,
       `VAPID_PRIVATE_KEY`, `ADMIN_TOKEN` (`bun run vapid`), plus the bucket.
+- [x] Cloudflare, with Cameron's "Yes. Do it all" (2026-10-16): the R2 bucket
+      `empyreangate-submissions` created by ops CI (ops `0a37785`); a Turnstile
+      provider in ops and the widget "empyreangate.org playground" created by
+      it (ops `c5140e6`, sitekey `0x4AAAAAAFY1sKqix3RSY_TJ`, now in
+      `app/content/site.ts`); the bucket bound on production and the dev
+      Preview in `wrangler.jsonc`. The four Worker secrets wait on one
+      interactive step: `bunx wrangler login` (an OAuth approval in the
+      browser, which an agent may not click through), then
+      `bun run secrets:setup` (`scripts/secrets-setup.ts`: reads the widget's
+      secret with the read-only ops token, generates the VAPID pair and the
+      admin token, sets all four on production and the "dev" Preview, prints
+      the admin token once).
 - [x] Gate work on gate `master` (`3b5cc85`, 2026-10-15; Cameron: app master
       is fine to push). CI green; web-dist now built by CI (`f3c3891`), and
       the site depends on that build.
