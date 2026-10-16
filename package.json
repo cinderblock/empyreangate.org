@@ -11,6 +11,7 @@
     "photos": "bun run scripts/photos.ts",
     "test": "playwright test",
     "test:unit": "bun test app scripts worker",
+    "test:gpu": "playwright test -c playwright.gpu.config.ts playground",
     "test:ui": "playwright test --ui",
     "fmt": "oxfmt --write .",
     "fmt:check": "oxfmt --check .",
