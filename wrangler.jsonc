@@ -39,6 +39,9 @@
   // binding joins this block together with the production one below, once
   // the bucket exists.
   "previews": {
+    "r2_buckets": [
+      { "binding": "SUBMISSIONS", "bucket_name": "empyreangate-submissions" },
+    ],
     "ratelimits": [
       {
         "name": "SUBMIT_LIMIT",
@@ -47,13 +50,13 @@
       },
     ],
   },
-  // Playground submissions go to an R2 bucket bound as SUBMISSIONS. The bucket
-  // is declared in ops (cloudflare/config/projects/empyreangate.yaml) but not
-  // created yet (the sync token lacks R2 write permission), and wrangler fails
-  // on a missing bucket rather than creating one. Uncomment once it exists:
-  //   "r2_buckets": [
-  //     { "binding": "SUBMISSIONS", "bucket_name": "empyreangate-submissions" },
-  //   ],
+  // Playground submissions go to an R2 bucket bound as SUBMISSIONS, declared
+  // and created by ops (cloudflare/config/projects/empyreangate.yaml); wrangler
+  // fails on a missing bucket rather than creating one. The crew's push
+  // subscriptions live in the same bucket under notify/.
+  "r2_buckets": [
+    { "binding": "SUBMISSIONS", "bucket_name": "empyreangate-submissions" },
+  ],
   // A few submissions a minute per visitor is plenty; more is a script. The
   // Worker also caps the bucket at LIMITS.perDay a day (worker/index.ts).
   // Nothing to provision: the namespace id is any integer unique in the
@@ -68,8 +71,9 @@
   // Secrets, set on the worker rather than here: TURNSTILE_SECRET (required
   // to accept submissions), NOTIFY_WEBHOOK (optional), and for the crew's
   // push notifications (/admin, worker/webpush.ts) VAPID_PUBLIC_KEY,
-  // VAPID_PRIVATE_KEY and ADMIN_TOKEN (`bun run vapid` prints a set). Until
-  // a secret exists its endpoint answers 503.
+  // VAPID_PRIVATE_KEY and ADMIN_TOKEN. `bun run secrets:setup` sets all four
+  // on production and the "dev" Preview after `wrangler login`
+  // (scripts/secrets-setup.ts). Until a secret exists its endpoint answers 503.
   "observability": {
     "enabled": true,
   },

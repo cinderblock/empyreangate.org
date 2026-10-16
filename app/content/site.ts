@@ -61,13 +61,17 @@ export const ARRAY = {
 /** The pattern playground's submissions. */
 export const PLAYGROUND = {
   /**
-   * Cloudflare Turnstile site key (public). Empty until the widget exists,
-   * and Submit stays hidden until then. `VITE_TURNSTILE_SITE_KEY` overrides it,
+   * Cloudflare Turnstile site key (public). Submit stays hidden while it is
+   * empty. `VITE_TURNSTILE_SITE_KEY` overrides it,
    * e.g. with Turnstile's always-pass test key (1x00000000000000000000AA) in
    * development.
    */
   turnstileSiteKey:
-    (import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined) ?? "",
+    (import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined) ??
+    // The widget "empyreangate.org playground", created by ops
+    // (cloudflare/config/projects/empyreangate.yaml): empyreangate.org and
+    // dev.empyreangate.org.
+    "0x4AAAAAAFY1sKqix3RSY_TJ",
   /**
    * What a submitter agrees to (Cameron, 2026-10-16: a licence to us, and
    * credit when we show it). Shown next to the checkbox, stored with each

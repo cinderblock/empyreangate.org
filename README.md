@@ -112,8 +112,9 @@ accepted submission is pushed to every device (`worker/webpush.ts`: RFC 8291
 `aes128gcm` encryption and RFC 8292 VAPID, WebCrypto only), and "Send a test"
 on the page (`POST /api/notify/test`) proves a device. The Worker needs three
 more secrets, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `ADMIN_TOKEN` (`bun
-run vapid` prints a fresh set); until then the page says notifications aren't
-set up. `public/manifest.webmanifest` and the icons `bun run icons` renders
+run secrets:setup` sets them, with `TURNSTILE_SECRET`, on production and the
+dev Preview after a `wrangler login`; see `scripts/secrets-setup.ts`); until
+then the page says notifications aren't set up. `public/manifest.webmanifest` and the icons `bun run icons` renders
 from the favicon make the site installable (on an iPhone, Add to Home Screen is
 required before push is offered at all).
 

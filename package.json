@@ -9,6 +9,7 @@
     "og": "bun run scripts/og.ts",
     "icons": "bun run scripts/icons.ts",
     "vapid": "bun run scripts/vapid.ts",
+    "secrets:setup": "bun run scripts/secrets-setup.ts",
     "submissions": "bun run scripts/submissions.ts",
     "photos": "bun run scripts/photos.ts",
     "test": "playwright test",
