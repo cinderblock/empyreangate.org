@@ -1,6 +1,7 @@
 # Playground on phones, and the submission system
 
-Status: **in progress** (2026-10-16). Companion to `pattern-playground.md`,
+Status: **phone layout done and on the `dev` Preview (2026-10-16); Submit
+waits on three Cloudflare steps that each need Cameron's yes.** Companion to `pattern-playground.md`,
 which holds the architecture and the history; this doc is the mobile layout
 round plus getting Submit live.
 
@@ -62,7 +63,7 @@ site yet." Push the site's `dev` only (never its `master`); the gate app's
 5. [x] Site: `bun.lock` → web-dist `685745d` (`1965de5`).
 6. [x] Submit: Worker tests green; `scripts/submissions.ts` (`3d944c8`) to pull submissions out of the bucket for
        review; README; the exact ops/Cloudflare steps staged for approval.
-7. [ ] **← current** Push `dev`; check the Preview on a phone-sized viewport.
+7. [x] Push `dev`; check the Preview on a phone-sized viewport. **Done; only the Cloudflare steps for Submit remain (need a yes each).**
 
 ## Findings / gotchas
 
@@ -185,4 +186,4 @@ environment); test objects in a moderation queue do no harm.
 - [x] gate `64ccf3a` compact editor; `159dc55` tap-timer fix; CI web-dist `685745d`
 - [x] site `137d32c` PATCH_WEB_DIR alias, `1965de5` web-dist bump, `3d944c8` submissions script
 - [x] site `78c0c5e` preview trailing slash, `11eaab1` test:gpu, `e78c60f` phone layout; full suite 171 passed / 6 skipped (WebGPU) in chromium, firefox, webkit; `bun run test:gpu` 11/11
-- [ ] push `dev`; dev Preview checked at phone size
+- [x] `dev` pushed (rebased onto the other agent's `5797460`; `85f2a63`); Preview checked at 393 px in headless Chrome with WebGPU: dock on → docked at 88 px, side controls live, editor compact, toast, no horizontal overflow
