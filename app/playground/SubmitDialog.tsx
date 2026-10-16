@@ -178,7 +178,7 @@ export default function SubmitDialog({
             </p>
           )}
           <label>
-            Your name (how we'd credit you)
+            Your name, as you'd like to be credited
             <input
               required
               maxLength={80}

@@ -68,7 +68,11 @@ export const PLAYGROUND = {
    */
   turnstileSiteKey:
     (import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined) ?? "",
-  /** What a submitter agrees to. Draft wording; to be confirmed. */
+  /**
+   * What a submitter agrees to (Cameron, 2026-10-16: a licence to us, and
+   * credit when we show it). Shown next to the checkbox, stored with each
+   * submission as `agreed: true`.
+   */
   terms:
-    "I made this pattern (or have the right to share it), and I'm happy for the Entheos crew to play it on The Empyrean Gate and to share it, credited to me.",
+    "I made this pattern, or have the right to share it. I give The Empyrean Gate's crew a non-exclusive, perpetual, royalty-free licence to play it on the gate, adapt it, and share it and recordings of it. When it's shown, I'd like to be credited by the name above.",
 } as const;

@@ -99,7 +99,10 @@ patch's shape and stores one JSON object per submission in the R2 bucket
 needs the secret `TURNSTILE_SECRET` (and optionally `NOTIFY_WEBHOOK`, a
 Discord/Slack-style webhook); the page needs the Turnstile site key in
 `PLAYGROUND.turnstileSiteKey` (`app/content/site.ts`). Until both exist Submit
-is hidden and the endpoint answers 503. Previews never get the bucket.
+is hidden and the endpoint answers 503. Previews get the same bucket and rate
+limit (the `previews` block in `wrangler.jsonc`) so Submit can be tried on
+`dev.empyreangate.org` before launch; their secret is set separately, with
+`wrangler preview secret put TURNSTILE_SECRET --name dev`.
 
 Growth is capped in the Worker, not in R2 (which has no quota): a visitor may
 send five a minute (a `ratelimits` binding, per IP, nothing to provision), and
