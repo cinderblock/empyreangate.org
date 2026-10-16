@@ -184,6 +184,12 @@ Not in ops today: Turnstile widgets (no schema support) and worker secrets.
 - [x] Push gate `patch-crate` and a locally built `web-dist` (2026-10-15)
 - [x] Site dependency to `web-dist`; `playground` merged into `dev`, pushed
 - [x] `dev` Preview checked (dev.empyreangate.org/playground): Workers Builds green, editor + WebGPU render + thumbnails live, wasm 222 KB over the wire, `/api/submit` answers 503 as designed
+- [x] Round 3 (2026-10-16): ten control-rate nodes (Map range, Mix, Clamp,
+      Random, Counter, Toggle, Threshold, Delay, Merge events, Step sequencer)
+      and the "Step and Sample" preset, gate `ff86e0f` → web-dist `2c3f88b`
+      → `dev` `60ba775`; verified on the Preview. Plan:
+      gate `plans/editor-round-3.md`. Per-node video: not built, see that
+      plan's open question (video is one live host feed; a patch can't carry it).
 - [x] Gate work on gate `master` (`3b5cc85`, 2026-10-15; Cameron: app master
       is fine to push). CI green; web-dist now built by CI (`f3c3891`), and
       the site depends on that build.
