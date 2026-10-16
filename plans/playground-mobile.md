@@ -109,22 +109,27 @@ Done and verified (2026-10-16):
 
 Three Cloudflare steps remain, each needing an explicit yes (global rule):
 
-1. **Bucket, through ops** (staged, not applied). In the ops checkout,
-   `cloudflare/config/projects/empyreangate.yaml`, a new top-level list
-   entry, on top of whatever the other thread's uncommitted edit there
-   becomes:
+1. **Bucket, through ops.** Cameron said yes (2026-10-16, "we can add
+   r2"). Declared and committed on ops branch `empyreangate-r2`
+   (`d52e749`) in a worktree at `.t3/worktrees/ops/empyreangate-r2`, cut
+   from ops `master` so the other thread's uncommitted ops edits stay out
+   of it. The dry run there showed exactly one change (1 to create).
+   **The apply failed: the ops sync token (`CF_API_TOKEN` in
+   `cloudflare/.env.local`) has no R2 write permission**; the provider
+   asks for "Workers R2 Storage: Edit". Once Cameron grants it (Cloudflare
+   dashboard → profile → API tokens; a security setting, so his to change):
+   `APPLY=1 bun sync` in that worktree's `cloudflare/`, push the branch to
+   ops `master`, uncomment `r2_buckets` in the site's wrangler.jsonc. The
+   entry as committed:
 
    ```yaml
-   # Pattern-playground submissions: one JSON object per submission, written
-   # by the site's Worker (worker/index.ts in the site repo, binding
-   # SUBMISSIONS). wrangler deploy fails on a missing bucket rather than
-   # creating one, so this must exist before the site's wrangler.jsonc
-   # carrying the binding deploys.
+   # Pattern-playground submissions: one JSON object per submission, written by
+   # the site's Worker (worker/index.ts in the site repo, binding SUBMISSIONS).
+   # wrangler deploy fails on a missing bucket rather than creating one, so this
+   # must exist before the site's wrangler.jsonc carrying the binding deploys.
+   # Growth is capped in the Worker (per-visitor rate limit, a daily cap).
    - r2: empyreangate-submissions
    ```
-
-   Then `bun sync` (dry run) to see only that bucket added, `APPLY=1 bun
-sync`, commit, push.
 
 2. **Turnstile widget.** Dashboard: Turnstile → Add widget, name
    "empyreangate.org playground", hostnames `empyreangate.org` and
@@ -187,3 +192,26 @@ environment); test objects in a moderation queue do no harm.
 - [x] site `137d32c` PATCH_WEB_DIR alias, `1965de5` web-dist bump, `3d944c8` submissions script
 - [x] site `78c0c5e` preview trailing slash, `11eaab1` test:gpu, `e78c60f` phone layout; full suite 171 passed / 6 skipped (WebGPU) in chromium, firefox, webkit; `bun run test:gpu` 11/11
 - [x] `dev` pushed (rebased onto the other agent's `5797460`; `85f2a63`); Preview checked at 393 px in headless Chrome with WebGPU: dock on → docked at 88 px, side controls live, editor compact, toast, no horizontal overflow
+
+### Caps and cost (2026-10-16)
+
+R2 has no quota or spend cap of its own, so the Worker caps growth
+(`worker/index.ts`, smoke-tested in `wrangler dev --local`: five accepted,
+the sixth 429):
+
+| Cap                   | Value                           | Where                                               |
+| --------------------- | ------------------------------- | --------------------------------------------------- |
+| Body                  | 3 MB (4 Still images at 600 KB) | `LIMITS.bodyBytes`                                  |
+| Per visitor           | 5 a minute per IP               | `ratelimits` binding `SUBMIT_LIMIT`, wrangler.jsonc |
+| Per day, whole bucket | 100 (`LIMITS.perDay`)           | one `list` of today's prefix, after Turnstile       |
+| Spam                  | Turnstile                       | unchanged                                           |
+
+Worst case is 300 MB a day, 9 GB a month. R2 pricing (standard storage):
+$0.015 per GB-month after a free 10 GB-month; Class A operations (writes,
+lists) $4.50 per million after 1 million free; Class B (reads) $0.36 per
+million after 10 million free; no egress charge. A realistic month (a few
+hundred submissions, most without images) is a few MB and a few hundred
+operations: $0. A month of sustained abuse at the caps is about 9 GB stored
+and 6,000 Class A operations, both inside the free tier, and about $0.15 a
+month for each further 9 GB kept after that. The review script's downloads
+are Class B.
