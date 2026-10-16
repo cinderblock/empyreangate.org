@@ -192,6 +192,16 @@ Not in ops today: Turnstile widgets (no schema support) and worker secrets.
       → `dev` `60ba775`; verified on the Preview. Plan:
       gate `plans/editor-round-3.md`. Per-node video: not built, see that
       plan's open question (video is one live host feed; a patch can't carry it).
+- [x] Round 4 (2026-10-16): Clip (a loop stored in the patch as a sprite
+      sheet), Coordinate, Field math, Brightness of, Color adjust, Palette,
+      Feedback, Sub-patches (format 4), editor undo/redo/duplicate; gate
+      `19cc12d` → web-dist `11c28a5`. Plan: gate `plans/editor-round-4.md`.
+- [x] Crew notifications (2026-10-16): Web Push to an installed PWA. `/admin`
+      (noindex) + `public/sw.js` + manifest/icons; Worker `/api/notify/*`
+      (`worker/webpush.ts`, RFC 8291/8292 in WebCrypto); subscriptions in the
+      submissions bucket under `notify/`; each submission pushes to every
+      device. Needs three Worker secrets (Cameron's yes): `VAPID_PUBLIC_KEY`,
+      `VAPID_PRIVATE_KEY`, `ADMIN_TOKEN` (`bun run vapid`), plus the bucket.
 - [x] Gate work on gate `master` (`3b5cc85`, 2026-10-15; Cameron: app master
       is fine to push). CI green; web-dist now built by CI (`f3c3891`), and
       the site depends on that build.
