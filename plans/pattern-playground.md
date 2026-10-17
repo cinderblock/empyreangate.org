@@ -214,9 +214,11 @@ Not in ops today: Turnstile widgets (no schema support) and worker secrets.
       Preview got them one by one. Script fixes in `eb1f2e3`: the login spans
       four accounts, so the ops env's account id goes to wrangler; and
       `secret bulk` refuses while the latest version is not live, so
-      production uses `versions secret bulk`. The admin token is in
-      `%USERPROFILE%\eg-secrets-setup.txt` (nowhere else; move it to a
-      password manager and delete the file).
+      production uses `versions secret bulk`. The admin token lives in the
+      site repo's GitHub secrets (`ADMIN_TOKEN`) and nowhere else (Cameron,
+      2026-10-17: no secrets on this machine; extract or, more likely, roll).
+      The script now stores it there itself and `--only=admin` rolls just
+      that token, keeping the VAPID pair so enrolled phones survive.
 - [x] Submit proven end to end on the Preview (2026-10-17 08:02 UTC): the
       dialog's managed Turnstile passed on its own in real Chrome (no
       checkbox), the Worker accepted the patch, and `bun run submissions`

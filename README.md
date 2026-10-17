@@ -113,7 +113,9 @@ accepted submission is pushed to every device (`worker/webpush.ts`: RFC 8291
 on the page (`POST /api/notify/test`) proves a device. The Worker needs three
 more secrets, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `ADMIN_TOKEN` (`bun
 run secrets:setup` sets them, with `TURNSTILE_SECRET`, on production and the
-dev Preview after a `wrangler login`; see `scripts/secrets-setup.ts`); until
+dev Preview after a `wrangler login`, and keeps the admin token in this repo's
+GitHub secrets rather than on any disk; `--only=admin` rolls just that token
+without orphaning enrolled phones; see `scripts/secrets-setup.ts`); until
 then the page says notifications aren't set up. `public/manifest.webmanifest` and the icons `bun run icons` renders
 from the favicon make the site installable (on an iPhone, Add to Home Screen is
 required before push is offered at all).

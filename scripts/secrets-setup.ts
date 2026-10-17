@@ -6,21 +6,27 @@
  *                       token in the ops checkout's cloudflare/.env.local
  *   VAPID_PUBLIC_KEY    a fresh pair (worker/webpush.ts), generated here
  *   VAPID_PRIVATE_KEY
- *   ADMIN_TOKEN         generated here and PRINTED at the end: it is what the
- *                       crew types into /admin. Keep it somewhere safe.
+ *   ADMIN_TOKEN         generated here: what the crew types into /admin. It
+ *                       is stored in the GitHub repo's Actions secrets (`gh
+ *                       secret set ADMIN_TOKEN`) and printed once so it can
+ *                       be typed into a phone. Nothing else keeps it: no file
+ *                       on this machine (don't tee the output into one), no
+ *                       password manager. Lost it? Roll it (below).
  *
  * Needs `wrangler login` first (an OAuth approval in your browser; the
- * workstation deliberately holds no edit-capable API token). Then:
+ * workstation deliberately holds no edit-capable API token) and `gh auth
+ * login`. Then:
  *
  *   bunx wrangler login
  *   bun run secrets:setup            # both production and the "dev" Preview
  *   bun run secrets:setup --only=preview   # or --only=production
+ *   bun run secrets:setup --only=admin     # roll just the admin token
  *
- * Idempotent in the sense that running it again replaces every value: the
- * admin token changes, and every enrolled device keeps working only if the
- * VAPID keys stay the same, so do not re-run it casually once devices are
- * enrolled. Generated values never touch the disk except a temp file that
- * is deleted right after upload.
+ * Running it again replaces every value. A new VAPID pair silently orphans
+ * every enrolled device (their subscriptions are bound to the old public
+ * key), so once phones are enrolled roll only the admin token, which costs
+ * the crew one re-entry on /admin. Generated values never touch the disk
+ * except a temp file that is deleted right after upload.
  */
 
 import { readFileSync } from "node:fs";
@@ -42,6 +48,10 @@ const OPS_ENV = join(
 );
 
 const only = process.argv.find((a) => a.startsWith("--only="))?.slice(7);
+if (only !== undefined && !["preview", "production", "admin"].includes(only)) {
+  throw new Error(`--only must be preview, production or admin, not "${only}"`);
+}
+const adminOnly = only === "admin";
 
 function readOpsEnv(): { token: string; account: string } {
   let text = "";
@@ -94,30 +104,53 @@ async function turnstileSecret(): Promise<{ sitekey: string; secret: string }> {
   return { sitekey: widget.sitekey, secret: result.secret };
 }
 
-async function run(args: string[], input?: string): Promise<void> {
-  // The login spans several accounts; the ops env names the one the worker
-  // lives in, and wrangler cannot ask when it is not on a terminal.
-  const { account } = readOpsEnv();
-  const proc = Bun.spawn(["bunx", "wrangler", ...args], {
-    env: { ...process.env, CLOUDFLARE_ACCOUNT_ID: account },
+async function exec(
+  cmd: string[],
+  env: Record<string, string | undefined>,
+  input?: string,
+): Promise<void> {
+  const proc = Bun.spawn(cmd, {
+    env,
     stdin: input === undefined ? "inherit" : new Blob([input]),
     stdout: "inherit",
     stderr: "inherit",
   });
   const code = await proc.exited;
-  if (code !== 0)
-    throw new Error(`wrangler ${args.join(" ")} exited with ${code}`);
+  if (code !== 0) throw new Error(`${cmd.join(" ")} exited with ${code}`);
 }
 
-const { sitekey, secret } = await turnstileSecret();
-const vapid = await generateVapidKeys();
+async function run(args: string[], input?: string): Promise<void> {
+  // The login spans several accounts; the ops env names the one the worker
+  // lives in, and wrangler cannot ask when it is not on a terminal.
+  const { account } = readOpsEnv();
+  await exec(
+    ["bunx", "wrangler", ...args],
+    { ...process.env, CLOUDFLARE_ACCOUNT_ID: account },
+    input,
+  );
+}
+
+/** The admin token's only home besides the Worker: this repo's GitHub secrets. */
+async function storeOnGitHub(name: string, value: string): Promise<void> {
+  // gh infers the repo from the git remote of the working directory.
+  await exec(["gh", "secret", "set", name], process.env, value);
+}
+
 const adminToken = crypto.randomUUID().replace(/-/g, "");
-const secrets: Record<string, string> = {
-  TURNSTILE_SECRET: secret,
-  VAPID_PUBLIC_KEY: vapid.publicKey,
-  VAPID_PRIVATE_KEY: vapid.privateKey,
-  ADMIN_TOKEN: adminToken,
-};
+const secrets: Record<string, string> = { ADMIN_TOKEN: adminToken };
+let sitekey = "";
+if (!adminOnly) {
+  const turnstile = await turnstileSecret();
+  const vapid = await generateVapidKeys();
+  sitekey = turnstile.sitekey;
+  secrets.TURNSTILE_SECRET = turnstile.secret;
+  secrets.VAPID_PUBLIC_KEY = vapid.publicKey;
+  secrets.VAPID_PRIVATE_KEY = vapid.privateKey;
+}
+
+// GitHub first: if this fails, nothing on Cloudflare has changed yet.
+console.log("\nGitHub secrets of this repo:");
+await storeOnGitHub("ADMIN_TOKEN", adminToken);
 
 if (only !== "preview") {
   const dir = await mkdtemp(join(tmpdir(), "egsecrets-"));
@@ -163,11 +196,15 @@ if (only !== "production") {
 }
 
 console.log(`
-Done. The Turnstile sitekey is ${sitekey} (public; PLAYGROUND.turnstileSiteKey
-in app/content/site.ts must match it).
+Done.${
+  sitekey
+    ? ` The Turnstile sitekey is ${sitekey} (public; PLAYGROUND.turnstileSiteKey
+in app/content/site.ts must match it).`
+    : ""
+}
 
-ADMIN_TOKEN (what the crew enters on /admin; keep it safe, it is not stored
-anywhere else):
+ADMIN_TOKEN (what the crew enters on /admin). It is in this repo's GitHub
+secrets and nowhere else; do not save it on this machine. Shown once:
 
   ${adminToken}
 `);

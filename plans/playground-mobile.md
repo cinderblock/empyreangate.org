@@ -171,8 +171,10 @@ coarse)`. There the button is "Use phone motion" (real sensors); anywhere
    accepted, and `bun run submissions` listed the object, credited
    "Claude (end-to-end test, safe to delete)". Headless Chrome is what gets
    the checkbox; a real browser does not.
-   The ADMIN_TOKEN the script printed is in `%USERPROFILE%\eg-secrets-setup.txt`
-   (and nowhere else): copy it into a password manager and delete the file.
+   ~~The ADMIN_TOKEN the script printed is in `%USERPROFILE%\eg-secrets-setup.txt`~~
+   Moved to the site repo's GitHub secrets (`ADMIN_TOKEN`) and the file deleted
+   (playground thread, 2026-10-17, on Cameron's "no secrets here"). The script
+   now does that itself; `--only=admin` rolls the token alone.
    Consider `mode: non-interactive` or `invisible` in ops if the checkbox
    is unwanted for visitors (an ops change; needs a yes).
 2. ~~Should the dev Preview get the bucket binding and secret too?~~ Yes
