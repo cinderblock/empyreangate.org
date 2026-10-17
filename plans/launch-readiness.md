@@ -75,13 +75,16 @@ runs `npx wrangler deploy`, so the push publishes).
 - [x] dev Preview: launch-check 9/9 green with the new headers; Preview
       still shows the 4 placeholders, the production build none
 - [ ] Edge rate-limit rule on `/api/*` (30 per 10 s per IP, block 10 s).
-      Cameron: "Rate limit seems reasonable". Written in the ops worktree
-      `~/.t3/worktrees/ops/empyreangate-api-rate-limit` (branch
-      `empyreangate-api-rate-limit`, off `origin/master` `e5515bd`), in
-      `cloudflare/config/projects/empyreangate.yaml`. `bun run validate`
-      passes. The dry-run sync says `+ API flood (30/10s -> block)`, with
-      1 to create, 0 to update and 0 to delete. Not committed: ops'
-      CLAUDE.md wants a yes for each commit and push.
+      Cameron: "Rate limit seems reasonable", then "you can commit to Ops".
+      Committed as ops `732a112` on branch `empyreangate-api-rate-limit`
+      (worktree `~/.t3/worktrees/ops/empyreangate-api-rate-limit`, off
+      `origin/master` `e5515bd`). Validate passes and the dry-run sync shows
+      1 to create, 0 to update, 0 to delete. **Not pushed**: pushing to ops
+      master is what applies it, and that needs its own yes.
+- [x] Cool night shot captioned "unSCruz 2024." in its own slot
+      (`unscruz-2024`). "Raising it." is an empty slot again, for a real
+      build shot (Cameron: "It's raised and setup. Caption should be
+      unSCruz.")
 - [ ] After master publishes: `bun run launch-check`, all green
 
 ## Findings: the edge rule
@@ -90,15 +93,25 @@ runs `npx wrangler deploy`, so the push publishes).
   Verified Bot) in the expression, IP counting, a 10 s period and a 10 s
   timeout. Cloudflare's docs don't say which operators the Free plan takes.
   `matches` (regex) is Business and up. The rule uses `wildcard`, and only
-  the real apply can prove Free accepts it. If it's refused, use
+  the real apply can prove Free accepts it. The API (read-only token) shows
+  the zone is on "Free Website" with no `http_ratelimit` entrypoint yet
+  (404), so the one Free slot is open. If it's refused, use
   `starts_with(http.request.uri.path, "/api/")`.
+- TedX's photos carry no EXIF, XMP or IPTC, only an ICC profile (1440×1440,
+  an Instagram-style export). The only date is in the file names,
+  `IMG_20240428_230641_*`: 2024-04-28 23:06:41.
+- The ops pre-commit hook's `cloudflare-validate` needs `DO_SERVERS` from
+  `cloudflare/.env.local`, which Bun loads from the working directory. A
+  fresh worktree has no such file, so the hook fails on `firefly.isozilla.com`.
+  Sourcing the file in the shell breaks its JSON. To commit, copy the file
+  in, then delete it.
 - The shared ops checkout is dirty and 9 commits behind, and its copy of
   `empyreangate.yaml` has someone else's uncommitted edit (it drops
   `previews: true`). Leave it alone; work in the dedicated worktree.
 
 ## Open questions for Cameron
 
-1. Commit the edge rule in the ops worktree and push it to ops master
-   (CI applies it)? Or push a branch first for a PR?
-2. Is "Raising it." right for the cool shot, and should TedX be credited?
-   Originals would be sharper than the ~230 KB copies we have.
+1. Push ops `732a112` to ops master (CI applies it), then watch the run?
+   Recommended. If Free refuses `wildcard`, switch to `starts_with`.
+2. Credit TedX on the photos? Originals would be sharper than the ~230 KB
+   copies we have.
