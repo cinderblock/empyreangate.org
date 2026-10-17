@@ -20,18 +20,19 @@ bun install
 bun run dev
 ```
 
-| Script              | Description                                                               |
-| ------------------- | ------------------------------------------------------------------------- |
-| `bun run dev`       | Dev server on :5173                                                       |
-| `bun run build`     | Prerender to `build/client`, then emit 404.html + sitemap                 |
-| `bun run preview`   | Serve the built site on :4180                                             |
-| `bun run test`      | Playwright, against a fresh build (not the dev server)                    |
-| `bun run test:unit` | Bun unit tests: render engine, build context                              |
-| `bun run test:gpu`  | The playground tests that need WebGPU, in the installed Chrome (headless) |
-| `bun run typecheck` | `react-router typegen && tsc`                                             |
-| `bun run fmt`       | Format with oxfmt                                                         |
-| `bun run photos`    | Web renditions of `photos/` + the photo manifest                          |
-| `bun run og`        | Regenerate `public/og.png` from the built hero                            |
+| Script                          | Description                                                                |
+| ------------------------------- | -------------------------------------------------------------------------- |
+| `bun run dev`                   | Dev server on :5173                                                        |
+| `bun run build`                 | Prerender to `build/client`, then emit 404.html + sitemap                  |
+| `bun run preview`               | Serve the built site on :4180                                              |
+| `bun run test`                  | Playwright, against a fresh build (not the dev server)                     |
+| `bun run test:unit`             | Bun unit tests: render engine, build context                               |
+| `bun run test:gpu`              | The playground tests that need WebGPU, in the installed Chrome (headless)  |
+| `bun run typecheck`             | `react-router typegen && tsc`                                              |
+| `bun run fmt`                   | Format with oxfmt                                                          |
+| `bun run photos`                | Web renditions of `photos/` + the photo manifest                           |
+| `bun run og`                    | Regenerate `public/og.png` from the built hero                             |
+| `bun run launch-check [origin]` | Check a deploy from outside: pages, 404, robots, redirects, Worker secrets |
 
 ## Structure
 

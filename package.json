@@ -11,6 +11,7 @@
     "vapid": "bun run scripts/vapid.ts",
     "secrets:setup": "bun run scripts/secrets-setup.ts",
     "submissions": "bun run scripts/submissions.ts",
+    "launch-check": "bun run scripts/launch-check.ts",
     "photos": "bun run scripts/photos.ts",
     "test": "playwright test",
     "test:unit": "bun test app scripts worker",
