@@ -96,7 +96,9 @@ missing.
 **Submit** posts the patch, a name, an optional contact and note to
 `/api/submit` (`worker/index.ts`), which checks Cloudflare Turnstile and the
 patch's shape and stores one JSON object per submission in the R2 bucket
-`empyreangate-submissions` (`submissions/<date>/<time>-<id>.json`). The Worker
+`empyreangate-submissions` (`submissions/<date>/<visitor>/<time>-<id>.json`,
+where `<visitor>` is a keyed hash of the sender's address, never the address
+itself). The Worker
 needs the secret `TURNSTILE_SECRET` (and optionally `NOTIFY_WEBHOOK`, a
 Discord/Slack-style webhook); the page needs the Turnstile site key in
 `PLAYGROUND.turnstileSiteKey` (`app/content/site.ts`). Until both exist Submit
@@ -121,10 +123,12 @@ then the page says notifications aren't set up. `public/manifest.webmanifest` an
 from the favicon make the site installable (on an iPhone, Add to Home Screen is
 required before push is offered at all).
 
-Growth is capped in the Worker, not in R2 (which has no quota): a visitor may
-send five a minute (a `ratelimits` binding, per IP, nothing to provision), and
-the bucket takes `LIMITS.perDay` (100) a day in all, checked with one list
-call after the spam check so bots cannot spend it. With the 3 MB body limit
+Growth is capped in the Worker, not in R2 (which has no quota): a visitor (an
+IPv4 address, or an IPv6 /64) may send five a minute (a `ratelimits` binding,
+nothing to provision) and `LIMITS.perVisitorPerDay` (10) a day, so nobody can
+use up the day alone; and the bucket takes `LIMITS.perDay` (100) a day in all.
+The daily caps are one list call each, after the spam check so bots cannot
+spend them. With the 3 MB body limit
 that is at most 300 MB a day, inside R2's free 10 GB-month even under a
 month of abuse.
 

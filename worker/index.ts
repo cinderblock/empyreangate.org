@@ -84,6 +84,12 @@ export const LIMITS = {
   // even a month of abuse stays within R2's free 10 GB. Checked with one
   // list call per accepted submission, after the spam check.
   perDay: 100,
+  // How many of those one visitor may send, so nobody can spend the whole
+  // day's cap alone. A visitor is an IPv4 address or an IPv6 /64.
+  perVisitorPerDay: 10,
+  // Longest patch name quoted in a notification: a Web Push payload must
+  // stay under ~4 KB, and a patch name is otherwise unbounded.
+  notifyName: 80,
 };
 
 export interface Submission {
@@ -129,12 +135,60 @@ function authorized(request: Request, env: PushEnv): boolean {
   return token.length > 0 && sameSecret(token, env.ADMIN_TOKEN);
 }
 
-async function subscriptionKey(endpoint: string): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", te.encode(endpoint));
-  const hex = [...new Uint8Array(digest)]
+function hex(bytes: ArrayBuffer): string {
+  return [...new Uint8Array(bytes)]
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
-  return `${NOTIFY_PREFIX}${hex.slice(0, 32)}.json`;
+}
+
+async function subscriptionKey(endpoint: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", te.encode(endpoint));
+  return `${NOTIFY_PREFIX}${hex(digest).slice(0, 32)}.json`;
+}
+
+/** Who a request is from, for the caps: an IPv4 address as it is, an IPv6
+ * address as its /64, since one phone or household can rotate through a
+ * whole /64 at will. */
+export function visitorAddress(ip: string): string {
+  if (!ip.includes(":")) return ip;
+  const [head, tail] = ip.toLowerCase().split("::");
+  const front = head ? head.split(":") : [];
+  const back = tail ? tail.split(":") : [];
+  const groups =
+    tail === undefined
+      ? front
+      : [
+          ...front,
+          ...Array(Math.max(0, 8 - front.length - back.length)).fill("0"),
+          ...back,
+        ];
+  return `${groups
+    .slice(0, 4)
+    .map((g) => g.replace(/^0+(?=.)/, ""))
+    .join(":")}::/64`;
+}
+
+/** A visitor's segment in a submission's key: a keyed hash of their address,
+ * so the bucket can count one visitor's submissions without holding their
+ * IP. Keyed with the Turnstile secret, which every accepting build has;
+ * rotating it only restarts today's counts. */
+async function visitorId(secret: string, address: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    te.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  return hex(await crypto.subtle.sign("HMAC", key, te.encode(address))).slice(
+    0,
+    16,
+  );
+}
+
+/** `text`, cut to `max` characters with an ellipsis if it was longer. */
+function clip(text: string, max: number): string {
+  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }
 
 function parseSubscription(raw: unknown): PushSubscriptionJSON | null {
@@ -205,8 +259,9 @@ export async function broadcast(
       } else if (res.ok) {
         sent++;
       }
-    } catch {
+    } catch (e) {
       // A push service that is down loses one message; the next one tries again.
+      console.error("Push to one device failed:", e);
     }
   }
   return sent;
@@ -333,10 +388,11 @@ async function submit(
     return json(503, { error: "Submissions aren't open on this build yet." });
   }
   const ip = request.headers.get("cf-connecting-ip");
+  const visitor = visitorAddress(ip ?? "unknown");
   // Cheapest check first: a visitor sending more than a few a minute is a
   // script, and this costs nothing (no body read, no R2 call).
   if (env.SUBMIT_LIMIT && ip) {
-    const { success } = await env.SUBMIT_LIMIT.limit({ key: ip });
+    const { success } = await env.SUBMIT_LIMIT.limit({ key: visitor });
     if (!success) {
       return json(429, {
         error:
@@ -385,8 +441,20 @@ async function submit(
 
   const now = new Date();
   const day = now.toISOString().slice(0, 10);
-  // The daily cap: one list of today's prefix, after the spam check so bots
-  // cannot spend it. Full means we have all we can look at for one day.
+  // The daily caps, after the spam check so bots cannot spend them: first
+  // this visitor's share (their own prefix under today's), then the day's.
+  const mine = `submissions/${day}/${await visitorId(env.TURNSTILE_SECRET, visitor)}/`;
+  const theirs = await env.SUBMISSIONS.list({
+    prefix: mine,
+    limit: LIMITS.perVisitorPerDay,
+  });
+  if (theirs.truncated || theirs.objects.length >= LIMITS.perVisitorPerDay) {
+    return json(429, {
+      error:
+        "That's as many patterns as we can take from one person in a day. Save yours to disk and send it tomorrow.",
+    });
+  }
+  // Full means we have all we can look at for one day.
   const today = await env.SUBMISSIONS.list({
     prefix: `submissions/${day}/`,
     limit: LIMITS.perDay,
@@ -399,7 +467,7 @@ async function submit(
   }
 
   const id = crypto.randomUUID();
-  const key = `submissions/${day}/${now.getTime()}-${id}.json`;
+  const key = `${mine}${now.getTime()}-${id}.json`;
   const cf = (request as Request & { cf?: { country?: string } }).cf;
   const record = {
     id,
@@ -421,24 +489,31 @@ async function submit(
     },
   });
 
+  const patchName = clip(patch.name, LIMITS.notifyName);
   if (pushReady(env)) {
     ctx.waitUntil(
       broadcast(env, {
         title: "New gate pattern",
-        body: `"${patch.name}" from ${record.name} (${patch.nodes.length} nodes)`,
+        body: `"${patchName}" from ${record.name} (${patch.nodes.length} nodes)`,
         url: "/admin",
         tag: "submission",
-      }).catch(() => undefined),
+      }).catch((e: unknown) => console.error("Push broadcast failed:", e)),
     );
   }
   if (env.NOTIFY_WEBHOOK) {
-    const line = `New gate pattern "${patch.name}" from ${record.name} (${patch.nodes.length} nodes): ${key}`;
+    const line = `New gate pattern "${patchName}" from ${record.name} (${patch.nodes.length} nodes): ${key}`;
     ctx.waitUntil(
       fetch(env.NOTIFY_WEBHOOK, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ content: line, text: line }),
-      }).catch(() => undefined),
+        // Names are the sender's own text: Discord must not turn an
+        // "@everyone" in one into a ping.
+        body: JSON.stringify({
+          content: line,
+          text: line,
+          allowed_mentions: { parse: [] },
+        }),
+      }).catch((e: unknown) => console.error("Notify webhook failed:", e)),
     );
   }
   return json(200, { ok: true, id });
@@ -453,7 +528,8 @@ export default {
       }
       try {
         return await submit(request, env, ctx);
-      } catch {
+      } catch (e) {
+        console.error("Submit failed:", e);
         return json(500, {
           error: "Something went wrong saving that. Try again later.",
         });
@@ -462,7 +538,8 @@ export default {
     if (url.pathname.startsWith("/api/notify/")) {
       try {
         return await notify(request, env, url);
-      } catch {
+      } catch (e) {
+        console.error(`${url.pathname} failed:`, e);
         return json(500, { error: "Something went wrong. Try again later." });
       }
     }

@@ -1,5 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import worker, { checkSubmission, deps, LIMITS, type Env } from "./index";
+import worker, {
+  checkSubmission,
+  deps,
+  LIMITS,
+  visitorAddress,
+  type Env,
+} from "./index";
 import { generateVapidKeys } from "./webpush";
 
 const patch = {
@@ -107,7 +113,7 @@ describe("worker", () => {
       expect(res.status).toBe(200);
       expect(puts).toHaveLength(1);
       expect(puts[0].key).toMatch(
-        /^submissions\/\d{4}-\d\d-\d\d\/\d+-[0-9a-f-]+\.json$/,
+        /^submissions\/\d{4}-\d\d-\d\d\/[0-9a-f]{16}\/\d+-[0-9a-f-]+\.json$/,
       );
       const record = JSON.parse(puts[0].value);
       expect(record.name).toBe("Ada");
@@ -181,6 +187,83 @@ describe("caps", () => {
       }
       expect((await worker.fetch(post(good), e, ctx)).status).toBe(200);
       expect(puts).toHaveLength(LIMITS.perDay + 1);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
+});
+
+describe("visitors", () => {
+  test("an IPv4 address is itself; an IPv6 address is its /64", () => {
+    expect(visitorAddress("203.0.113.9")).toBe("203.0.113.9");
+    expect(visitorAddress("2001:db8:0a:1::5")).toBe("2001:db8:a:1::/64");
+    expect(visitorAddress("2001:DB8:a:1:ffff:2:3:4")).toBe("2001:db8:a:1::/64");
+    expect(visitorAddress("2001:db8::1")).toBe("2001:db8:0:0::/64");
+    expect(visitorAddress("::1")).toBe("0:0:0:0::/64");
+  });
+
+  test("one visitor gets LIMITS.perVisitorPerDay a day; others still get in", async () => {
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      Response.json({ success: true })) as unknown as typeof fetch;
+    try {
+      const { env: e, puts } = env();
+      const from = (ip: string) => {
+        const req = post(good);
+        req.headers.set("cf-connecting-ip", ip);
+        return req;
+      };
+      for (let i = 0; i < LIMITS.perVisitorPerDay; i++) {
+        expect((await worker.fetch(from("203.0.113.9"), e, ctx)).status).toBe(
+          200,
+        );
+      }
+      const res = await worker.fetch(from("203.0.113.9"), e, ctx);
+      expect(res.status).toBe(429);
+      expect(((await res.json()) as { error: string }).error).toMatch(
+        /one person/,
+      );
+      // A new address in the same IPv6 /64 is the same visitor.
+      for (let i = 0; i < LIMITS.perVisitorPerDay; i++) {
+        await worker.fetch(from(`2001:db8:0:1::${i + 1}`), e, ctx);
+      }
+      expect(
+        (await worker.fetch(from("2001:db8:0:1::ff"), e, ctx)).status,
+      ).toBe(429);
+      expect((await worker.fetch(from("198.51.100.4"), e, ctx)).status).toBe(
+        200,
+      );
+      // The bucket never holds the address itself.
+      for (const p of puts) {
+        expect(p.key.split("/")[2]).toMatch(/^[0-9a-f]{16}$/);
+        expect(p.key).not.toMatch(/203\.0\.113|2001:db8|198\.51\.100/);
+      }
+      expect(puts).toHaveLength(2 * LIMITS.perVisitorPerDay + 1);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
+});
+
+describe("the notify webhook", () => {
+  test("clips a long patch name and lets no mention ping anyone", async () => {
+    const realFetch = globalThis.fetch;
+    const sent: { content: string; allowed_mentions: unknown }[] = [];
+    globalThis.fetch = (async (url: string, init?: RequestInit) => {
+      if (String(url).includes("turnstile"))
+        return Response.json({ success: true });
+      sent.push(JSON.parse(String(init?.body)));
+      return new Response(null, { status: 204 });
+    }) as unknown as typeof fetch;
+    try {
+      const { env: e } = env({ NOTIFY_WEBHOOK: "https://hooks.example/x" });
+      const long = { ...patch, name: "@everyone ".repeat(500) };
+      const res = await worker.fetch(post({ ...good, patch: long }), e, ctx);
+      expect(res.status).toBe(200);
+      expect(sent).toHaveLength(1);
+      expect(sent[0].content.length).toBeLessThan(300);
+      expect(sent[0].content).toContain("…");
+      expect(sent[0].allowed_mentions).toEqual({ parse: [] });
     } finally {
       globalThis.fetch = realFetch;
     }

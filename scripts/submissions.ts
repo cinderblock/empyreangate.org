@@ -43,7 +43,8 @@ interface R2Object {
 
 /** Local file name for a record: sortable by time, unique by id. */
 export function recordFileName(key: string): string {
-  // Keys are `submissions/<date>/<ms>-<uuid>.json`; keep the leaf.
+  // Keys are `submissions/<date>/<visitor>/<ms>-<uuid>.json` (before
+  // launch, `submissions/<date>/<ms>-<uuid>.json`); keep the leaf.
   return key.slice(key.lastIndexOf("/") + 1);
 }
 
@@ -130,8 +131,9 @@ async function main() {
   const { token, account } = env();
   await mkdir(join(OUT, "patches"), { recursive: true });
   const have = new Set(await readdir(OUT));
+  // In the order they arrived: the leaf starts with the time.
   const objects = (await listObjects(token, account)).sort((a, b) =>
-    a.key.localeCompare(b.key),
+    recordFileName(a.key).localeCompare(recordFileName(b.key)),
   );
   let fetched = 0;
   const records: SubmissionRecord[] = [];

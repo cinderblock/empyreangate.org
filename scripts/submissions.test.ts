@@ -32,6 +32,11 @@ group("submissions", () => {
     expect(
       recordFileName("submissions/2026-10-16/1760637852000-0f3c9b2e.json"),
     ).toBe("1760637852000-0f3c9b2e.json");
+    expect(
+      recordFileName(
+        "submissions/2026-10-18/3f9a0c1d2e4b5a69/1760800000000-0f3c9b2e.json",
+      ),
+    ).toBe("1760800000000-0f3c9b2e.json");
   });
 
   test("names the patch file after the patch, the sender and the id", () => {
