@@ -42,6 +42,17 @@ site yet." Push the site's `dev` only (never its `master`); the gate app's
   on the canvas that opens a menu sheet (rename, status, undo/redo, the
   host's open/save/submit, delete, the library, new blank/preset), ＋ opens
   the palette, ⚠ shows only while the patch cannot run.
+- **Master brightness and speed live in the graph** (Cameron, 2026-10-16:
+  "we need brightness and speed globals to show up more clearly in the
+  react-flow area"): the editor takes a `globals` prop and pins a "Gate
+  globals" card bottom-right inside React Flow (a `Panel`, so it keeps its
+  corner while the graph pans): sliders with values on a wide canvas, a
+  one-line chip with the values on a phone, toggled by its head. The site
+  passes its brightness/speed state and drops the Master fieldset above the
+  editor (the dock's side sliders on phones stay); the gate app's Patch tab
+  passes the Live tab's master through `set_master`. Not a node type: a
+  wirable Globals input node would be a crate/format change and a question
+  for Cameron (see open questions).
 - **The dock**: on narrow screens the live gate is sticky at the top; as you
   scroll it shrinks (a transform, so the canvas and its WebGPU context are
   never re-created) into a bar with controls on either side (tool + color on
@@ -86,12 +97,19 @@ site yet." Push the site's `dev` only (never its `master`); the gate app's
 
 ## Open questions for the user
 
-1. The three Cloudflare steps for Submit (bucket via ops, Turnstile widget,
-   `TURNSTILE_SECRET`): each needs a yes; exact changes under "Submit: what
-   is done and what needs a yes" below.
-2. Should the dev Preview get the bucket binding and secret too, so Submit
-   can be tried end to end before launch? Recommend yes, temporarily.
+1. ~~The three Cloudflare steps for Submit~~ Bucket and widget exist (ops CI,
+   other agent); only the Worker secrets remain, behind Cameron's
+   `bunx wrangler login` then `bun run secrets:setup`.
+2. ~~Should the dev Preview get the bucket binding and secret too?~~ Yes
+   (Cameron, 2026-10-16); bound in `wrangler.jsonc`, secret waits on the login.
 3. Where submissions should notify (`NOTIFY_WEBHOOK`): still open.
+4. Should the master also be a **wirable node** ("Globals" input with
+   `brightness` and `speed` Scalar outputs), so a patch can react to the
+   crew's settings? It is a crate change (registry, eval inputs gain master
+   brightness, codegen, wasm, the gate engine feeding it) and a patch-format
+   addition the gate carries forever; Agent B owns those files. The card
+   shipped first because it is presentation only and does not foreclose it.
+   Recommendation: only if a real patch wants it.
 
 ### The main ops checkout is stale, not edited (2026-10-16)
 
@@ -214,6 +232,8 @@ environment); test objects in a moderation queue do no harm.
 - [x] site `137d32c` PATCH_WEB_DIR alias, `1965de5` web-dist bump, `3d944c8` submissions script
 - [x] site `78c0c5e` preview trailing slash, `11eaab1` test:gpu, `e78c60f` phone layout; full suite 171 passed / 6 skipped (WebGPU) in chromium, firefox, webkit; `bun run test:gpu` 11/11
 - [x] `dev` pushed (rebased onto the other agent's `5797460`; `85f2a63`); Preview checked at 393 px in headless Chrome with WebGPU: dock on → docked at 88 px, side controls live, editor compact, toast, no horizontal overflow
+- [x] gate `d50de97` no toolbar in compact (web-dist `9c735c8`); site `41341e0`
+- [x] gate `574b9de` "Gate globals" card (web-dist `962231d`; `tests/patch-globals.spec.ts`, mock `set_master`); site: Master fieldset gone, card wired, tests in both playground specs; playground specs 33 passed / 6 skipped (3 browsers), `test:gpu` 13/13
 
 ### Caps and cost (2026-10-16)
 

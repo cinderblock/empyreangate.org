@@ -11,6 +11,7 @@ import {
   openPatchFromDisk,
   PatchEditor,
   savePatchToDisk,
+  type GlobalControl,
   type PatchDoc,
 } from "@empyrean-gate/patch-web/editor";
 import {
@@ -455,6 +456,28 @@ export default function Playground() {
       onChange={(e) => setSpeed(Number(e.target.value))}
     />
   );
+  // The same two, as the card the editor pins in its canvas: the master is
+  // not in the patch, and the graph should never hide it.
+  const globals: GlobalControl[] = [
+    {
+      name: "brightness",
+      label: "Brightness",
+      value: brightness,
+      min: 0,
+      max: 1,
+      format: (v) => `${Math.round(v * 100)}%`,
+      onChange: setBrightness,
+    },
+    {
+      name: "speed",
+      label: "Speed",
+      value: speed,
+      min: 0,
+      max: 3,
+      format: (v) => `${v.toFixed(2)}×`,
+      onChange: setSpeed,
+    },
+  ];
 
   return (
     <div className="pg">
@@ -663,18 +686,6 @@ export default function Playground() {
                 )}
               </div>
             </fieldset>
-
-            <fieldset>
-              <legend>Master</legend>
-              <label className="pg-slider">
-                Brightness
-                {brightnessSlider}
-              </label>
-              <label className="pg-slider">
-                Speed
-                {speedSlider}
-              </label>
-            </fieldset>
           </div>
         </section>
 
@@ -689,6 +700,8 @@ export default function Playground() {
             canEdit
             minis={runtime}
             showActivate={false}
+            globals={globals}
+            globalsNote="On the gate, the crew sets these on the night; here they're yours. Speed scales every Time node and phase, brightness scales the Output."
             onDocChange={onDocChange}
             nodeExtras={(node) =>
               node.kind === "video_in" ? (

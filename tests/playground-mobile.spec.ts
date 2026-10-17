@@ -111,6 +111,26 @@ test.describe("Pattern playground on a phone", () => {
     await expect(page.locator(".pg-stage")).toHaveAttribute("data-dock", "off");
   });
 
+  test("the master brightness and speed are a one-line chip in the graph", async ({
+    page,
+  }) => {
+    await page.getByRole("button", { name: "Got it" }).click();
+    await page.locator(".pg-editor").scrollIntoViewIfNeeded();
+    const card = page.locator(".patch-globals");
+    await expect(card).toBeVisible();
+    await expect(card).not.toHaveClass(/open/);
+    await expect(card).toContainText("Brightness 100% · Speed 1.00×");
+    // Inside the canvas, not under the dock or over the name chip.
+    const canvas = (await page.locator(".patch-canvas").boundingBox())!;
+    const box = (await card.boundingBox())!;
+    expect(box.y).toBeGreaterThan(canvas.y + canvas.height / 2);
+    expect(box.x + box.width).toBeLessThanOrEqual(canvas.x + canvas.width + 1);
+    await card.locator(".patch-globals-head").click();
+    await expect(card).toHaveClass(/open/);
+    await card.getByLabel("Brightness").fill("0.4");
+    await expect(card.locator("output").first()).toHaveText("40%");
+  });
+
   test("the editor's palette and node settings are sheets", async ({
     page,
   }) => {

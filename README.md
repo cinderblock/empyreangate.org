@@ -145,6 +145,12 @@ To develop against a local gate checkout instead of `web-dist`, run
 points to that directory and serves its wasm from outside this repo. Nothing
 in `package.json` or `bun.lock` changes.
 
+The master brightness and speed are not part of a patch (on the gate the crew
+sets them on the night), so the editor pins them as a "Gate globals" card in
+the corner of its canvas rather than in the controls above: open with sliders
+on a wide screen, a one-line chip with the values on a phone. The gate app's
+Patch tab shows the same card, driving its Live tab's master.
+
 On a phone the page stacks: the live gate docks at the top and shrinks into a
 bar (with the tool, color, brightness and speed beside it) as you scroll, so
 it stays in view over the controls and the node graph. "Keep the gate in view"

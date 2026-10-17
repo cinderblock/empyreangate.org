@@ -48,6 +48,28 @@ test.describe("Pattern playground", () => {
     }
   });
 
+  test("the master brightness and speed sit in the canvas, not above it", async ({
+    page,
+  }) => {
+    await expect(page.locator(".patch-name")).toHaveValue("Rainbow Sparkle", {
+      timeout: 20_000,
+    });
+    // No separate Master fieldset: the card in the graph is the one place.
+    await expect(
+      page.locator(".pg-inputs legend", { hasText: "Master" }),
+    ).toHaveCount(0);
+    const card = page.locator(".patch-globals");
+    await expect(card).toBeVisible();
+    await expect(card).toHaveClass(/open/);
+    await expect(card.getByLabel("Brightness")).toHaveValue("1");
+    await card.getByLabel("Speed").fill("1.5");
+    await expect(card.locator("output").nth(1)).toHaveText("1.50×");
+    await expect(card).toContainText("here they're yours");
+    // Collapsible to one line, values still on it.
+    await card.getByRole("button", { name: /Hide the gate's globals/ }).click();
+    await expect(card).toContainText("Brightness 100% · Speed 1.50×");
+  });
+
   test("edits are kept in the browser across reloads", async ({ page }) => {
     await expect(page.locator(".patch-name")).toHaveValue("Rainbow Sparkle", {
       timeout: 20_000,
