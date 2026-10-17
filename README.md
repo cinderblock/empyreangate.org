@@ -187,7 +187,8 @@ runs `bun run photos` first, which writes WebP renditions at 800/1600/2400 px
 and a JPEG fallback into `public/photos/` (gitignored, so Cloudflare rebuilds
 them from the originals) and regenerates `app/content/photo-manifest.ts` with
 their dimensions. EXIF, GPS included, is stripped. A slot in
-`app/content/gallery.ts` points at an original by its slug.
+`app/content/gallery.ts` points at an original by its slug, and names who
+took it in `by`, which is credited under the caption.
 
 ## Deployment
 

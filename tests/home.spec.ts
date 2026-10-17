@@ -91,6 +91,17 @@ test.describe("Home", () => {
     await expect(gallery).not.toContainText("Photo coming");
   });
 
+  test("credits the photographer under the caption", async ({ page }) => {
+    const credit = page
+      .locator(".gallery figcaption .photo-credit")
+      .filter({ hasText: "Theodore Wahrburg" })
+      .first();
+    await expect(credit).toContainText("Photo: Theodore Wahrburg");
+    await expect(
+      credit.getByRole("link", { name: "Theodore Wahrburg" }),
+    ).toHaveAttribute("href", "https://ted.wahrburg.dev/");
+  });
+
   test("names the next event with a machine-readable date", async ({
     page,
   }) => {

@@ -714,6 +714,11 @@ p {
   color: var(--ink-muted);
 }
 
+.photo-credit {
+  display: block;
+  font-size: 0.8rem;
+}
+
 .gallery-cta {
   grid-column: 1 / -1;
   color: var(--ink-muted);

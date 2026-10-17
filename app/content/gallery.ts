@@ -8,6 +8,8 @@
  * shots are still needed; production leaves it out.
  */
 
+import { TED, type Person } from "./credits";
+
 /** One original's web renditions, from the generated manifest. */
 export interface PhotoAsset {
   /** Intrinsic size of the largest rendition. */
@@ -26,6 +28,8 @@ export interface Photo {
   orientation: "landscape" | "portrait";
   /** Slug of the original in `photos/`. */
   asset?: string;
+  /** Who took it, credited under the caption. */
+  by?: Person;
 }
 
 export const PHOTOS: Photo[] = [
@@ -34,12 +38,14 @@ export const PHOTOS: Photo[] = [
     caption: "The ring at night from the dance floor.",
     orientation: "landscape",
     asset: "unscruz-2024-night-warm",
+    by: TED,
   },
   {
     slot: "unscruz-2024",
     caption: "unSCruz 2024.",
     orientation: "landscape",
     asset: "unscruz-2024-night-cool",
+    by: TED,
   },
   {
     slot: "gateway-fire",

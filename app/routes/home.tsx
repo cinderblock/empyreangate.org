@@ -363,7 +363,14 @@ export default function Home() {
               >
                 <figure className="photo">
                   <PhotoSlot photo={photo} />
-                  <figcaption>{photo.caption}</figcaption>
+                  <figcaption>
+                    {photo.caption}
+                    {photo.by && (
+                      <span className="photo-credit">
+                        Photo: <PersonName person={photo.by} />
+                      </span>
+                    )}
+                  </figcaption>
                 </figure>
               </li>
             ))}
