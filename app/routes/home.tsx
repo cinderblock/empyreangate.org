@@ -213,6 +213,11 @@ export default function Home() {
               </li>
             ))}
             <li>
+              <Link to={SITE.playground} className="nav-playground">
+                Playground
+              </Link>
+            </li>
+            <li>
               <External href={SITE.software}>Code ↗</External>
             </li>
           </ul>
@@ -239,6 +244,9 @@ export default function Home() {
               <a className="button" href={`#${PIECE.id}`}>
                 About the gate
               </a>
+              <Link className="button button-ghost" to={SITE.playground}>
+                Try the playground
+              </Link>
               <External href={SITE.software}>
                 <span className="button button-ghost">The software ↗</span>
               </External>
@@ -449,6 +457,7 @@ export default function Home() {
           <External href={SITE.entheos.home}>Entheos</External>.
         </p>
         <p>
+          <Link to={SITE.playground}>Pattern playground</Link> ·{" "}
           <External href={SITE.software}>Gate software</External> ·{" "}
           <External href={SITE.source}>This site's source</External> ·{" "}
           <External href={SITE.entheos.instagram}>Instagram</External>

@@ -51,6 +51,26 @@ test.describe("Home", () => {
     }
   });
 
+  test("links to the playground from the nav, hero and footer", async ({
+    page,
+  }) => {
+    const nav = page.getByRole("navigation", { name: "Sections" });
+    await expect(nav.getByRole("link", { name: "Playground" })).toHaveAttribute(
+      "href",
+      "/playground",
+    );
+    await expect(
+      page.locator(".hero-actions").getByRole("link", {
+        name: "Try the playground",
+      }),
+    ).toHaveAttribute("href", "/playground");
+    await expect(
+      page.locator(".site-footer").getByRole("link", {
+        name: "Pattern playground",
+      }),
+    ).toHaveAttribute("href", "/playground");
+  });
+
   test("links to the software and to Entheos", async ({ page }) => {
     await expect(
       page

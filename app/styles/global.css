@@ -228,6 +228,11 @@ p {
   color: var(--ink);
 }
 
+/* The one link that leaves the page for something to do, not read. */
+.site-header nav .nav-playground {
+  color: var(--accent);
+}
+
 /* --- Hero ---------------------------------------------------------------- */
 
 .hero {
