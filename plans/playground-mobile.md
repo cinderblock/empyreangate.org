@@ -50,9 +50,14 @@ site yet." Push the site's `dev` only (never its `master`); the gate app's
   one-line chip with the values on a phone, toggled by its head. The site
   passes its brightness/speed state and drops the Master fieldset above the
   editor (the dock's side sliders on phones stay); the gate app's Patch tab
-  passes the Live tab's master through `set_master`. Not a node type: a
-  wirable Globals input node would be a crate/format change and a question
-  for Cameron (see open questions).
+  passes the Live tab's master through `set_master`.
+- **The masters are also a node** (Cameron, 2026-10-16: "everything needs
+  to be wireable!"): Input node `globals` ("Gate globals") with Scalar
+  outputs `brightness`, `speed`, `hue`, `hue_amount`. `EvalInputs` gained
+  `master_brightness`, `master_hue`, `master_hue_amount`; the wasm sim feeds
+  its own master and hue pull, the gate engine feeds the crossfade-effective
+  master brightness and the config's hue pull (amount 0 while the pull is
+  off). The card's note points at the node.
 - **The dock**: on narrow screens the live gate is sticky at the top; as you
   scroll it shrinks (a transform, so the canvas and its WebGPU context are
   never re-created) into a bar with controls on either side (tool + color on
@@ -117,13 +122,8 @@ site yet." Push the site's `dev` only (never its `master`); the gate app's
 2. ~~Should the dev Preview get the bucket binding and secret too?~~ Yes
    (Cameron, 2026-10-16); bound in `wrangler.jsonc`, secret waits on the login.
 3. Where submissions should notify (`NOTIFY_WEBHOOK`): still open.
-4. Should the master also be a **wirable node** ("Globals" input with
-   `brightness` and `speed` Scalar outputs), so a patch can react to the
-   crew's settings? It is a crate change (registry, eval inputs gain master
-   brightness, codegen, wasm, the gate engine feeding it) and a patch-format
-   addition the gate carries forever; Agent B owns those files. The card
-   shipped first because it is presentation only and does not foreclose it.
-   Recommendation: only if a real patch wants it.
+4. ~~Should the master also be a wirable node?~~ Yes (Cameron: "everything
+   needs to be wireable!"). Done as the `globals` node, see Decisions.
 
 ### The main ops checkout is stale, not edited (2026-10-16)
 

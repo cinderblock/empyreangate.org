@@ -149,7 +149,9 @@ The master brightness and speed are not part of a patch (on the gate the crew
 sets them on the night), so the editor pins them as a "Gate globals" card in
 the corner of its canvas rather than in the controls above: open with sliders
 on a wide screen, a one-line chip with the values on a phone. The gate app's
-Patch tab shows the same card, driving its Live tab's master.
+Patch tab shows the same card, driving its Live tab's master. A patch that
+wants to react to them adds the Gate globals node (Inputs), which outputs
+brightness, speed and the master hue pull as scalars.
 
 On a phone the page stacks: the live gate docks at the top and shrinks into a
 bar (with the tool, color, brightness and speed beside it) as you scroll, so

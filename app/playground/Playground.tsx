@@ -701,7 +701,7 @@ export default function Playground() {
             minis={runtime}
             showActivate={false}
             globals={globals}
-            globalsNote="On the gate, the crew sets these on the night; here they're yours. Speed scales every Time node and phase, brightness scales the Output."
+            globalsNote="On the gate, the crew sets these on the night; here they're yours. Speed scales every Time node and phase, brightness scales the Output. To react to them, add a Gate globals node."
             onDocChange={onDocChange}
             nodeExtras={(node) =>
               node.kind === "video_in" ? (

@@ -70,6 +70,22 @@ test.describe("Pattern playground", () => {
     await expect(card).toContainText("Brightness 100% · Speed 1.50×");
   });
 
+  test("the masters are also a node a patch can wire", async ({ page }) => {
+    await expect(page.locator(".patch-name")).toHaveValue("Rainbow Sparkle", {
+      timeout: 20_000,
+    });
+    await page.locator(".palette-item", { hasText: "Gate globals" }).click();
+    const node = page.locator(".pnode", { hasText: "Gate globals" });
+    await expect(node).toHaveCount(1);
+    for (const port of ["brightness", "speed", "hue", "hue_amount"]) {
+      await expect(
+        node.locator(".pnode-port.out", { hasText: new RegExp(`^${port}$`) }),
+      ).toHaveCount(1);
+    }
+    // Unwired, it changes nothing: the patch still renders (or still says why not).
+    await expect(page.locator(".patch-status.error")).toHaveCount(0);
+  });
+
   test("edits are kept in the browser across reloads", async ({ page }) => {
     await expect(page.locator(".patch-name")).toHaveValue("Rainbow Sparkle", {
       timeout: 20_000,
