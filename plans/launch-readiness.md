@@ -17,6 +17,14 @@ runs `npx wrangler deploy`, so the push publishes).
 
 ## Findings
 
+- **Workers Paid** ($5/month; Cameron, 2026-10-17): 30 s CPU, so the Submit
+  CPU worry is moot; overages are billed rather than refused. The ops cost
+  monitor alerts at $0.50/hour or $5/day of Cloudflare usage. Worst
+  realistic case is a junk flood at `/api/submit` (each rejected cheaply but
+  still a billed invocation, ~$0.30/M beyond 10M a month): 1,000 req/s for a
+  day is about $25. The Worker's own rate limits don't stop billing, since
+  the Worker must run to refuse; only an edge rule does.
+
 - **Billing exposure is pennies.** Static assets are free and never wake the
   Worker (`run_worker_first: ["/api/*"]`). R2 growth is capped at 100
   submissions a day of at most 3 MB. Turnstile, Web Analytics and the
@@ -70,6 +78,8 @@ runs `npx wrangler deploy`, so the push publishes).
 
 ## Open questions for Cameron
 
-1. Workers Free or Paid? Only matters for pathological patches now.
+1. Optional: a zone rate-limit rule on `/api/*` in ops (30 requests per
+   10 s per IP, block 10 s), so a junk flood is stopped before the Worker
+   runs and bills. Staged in chat only, not written. Needs Cameron's yes.
 2. Is "Raising it." right for the cool shot, and should TedX be credited?
    Originals would be sharper than the ~230 KB copies we have.
