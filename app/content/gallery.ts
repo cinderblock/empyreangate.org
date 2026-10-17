@@ -36,6 +36,12 @@ export const PHOTOS: Photo[] = [
     asset: "unscruz-2024-night-warm",
   },
   {
+    slot: "unscruz-2024",
+    caption: "unSCruz 2024.",
+    orientation: "landscape",
+    asset: "unscruz-2024-night-cool",
+  },
+  {
     slot: "gateway-fire",
     caption: "The gateway, and the fire beneath it.",
     orientation: "portrait",
@@ -54,7 +60,6 @@ export const PHOTOS: Photo[] = [
     slot: "build",
     caption: "Raising it.",
     orientation: "landscape",
-    asset: "unscruz-2024-night-cool",
   },
   {
     slot: "regional",
