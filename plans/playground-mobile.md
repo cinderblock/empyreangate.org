@@ -128,10 +128,12 @@ coarse)`. There the button is "Use phone motion" (real sensors); anywhere
    goes to wrangler; and `secret bulk` refuses while the latest version is
    not live, so production uses `versions secret bulk`. `POST /api/submit`
    on the Preview now answers 400 to an empty body (was 503).
-   **Still to prove: one real submission.** The widget is `mode: managed`
-   and shows a "Verify you are human" checkbox to headless Chrome; the
-   agent does not complete CAPTCHAs, so Cameron makes one submission from
-   a browser, then `bun run submissions` confirms it in the bucket.
+   ~~**Still to prove: one real submission.**~~ Proven 2026-10-17 08:02 UTC
+   (the playground thread, in Cameron's real Chrome through the extension):
+   the managed widget passed by itself with no checkbox, the Worker
+   accepted, and `bun run submissions` listed the object, credited
+   "Claude (end-to-end test, safe to delete)". Headless Chrome is what gets
+   the checkbox; a real browser does not.
    The ADMIN_TOKEN the script printed is in `%USERPROFILE%\eg-secrets-setup.txt`
    (and nowhere else): copy it into a password manager and delete the file.
    Consider `mode: non-interactive` or `invisible` in ops if the checkbox

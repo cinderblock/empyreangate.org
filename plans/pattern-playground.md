@@ -207,19 +207,35 @@ Not in ops today: Turnstile widgets (no schema support) and worker secrets.
       provider in ops and the widget "empyreangate.org playground" created by
       it (ops `c5140e6`, sitekey `0x4AAAAAAFY1sKqix3RSY_TJ`, now in
       `app/content/site.ts`); the bucket bound on production and the dev
-      Preview in `wrangler.jsonc`. The four Worker secrets wait on one
-      interactive step: `bunx wrangler login` (an OAuth approval in the
-      browser, which an agent may not click through), then
-      `bun run secrets:setup` (`scripts/secrets-setup.ts`: reads the widget's
-      secret with the read-only ops token, generates the VAPID pair and the
-      admin token, sets all four on production and the "dev" Preview, prints
-      the admin token once).
+      Preview in `wrangler.jsonc`. The four Worker secrets were set on
+      2026-10-17 05:56 UTC by the other thread (`plans/playground-mobile.md`)
+      after Cameron's `wrangler login`: production got version `3f2e2adc`
+      carrying them, **not deployed** (production stays dark); the "dev"
+      Preview got them one by one. Script fixes in `eb1f2e3`: the login spans
+      four accounts, so the ops env's account id goes to wrangler; and
+      `secret bulk` refuses while the latest version is not live, so
+      production uses `versions secret bulk`. The admin token is in
+      `%USERPROFILE%\eg-secrets-setup.txt` (nowhere else; move it to a
+      password manager and delete the file).
+- [x] Submit proven end to end on the Preview (2026-10-17 08:02 UTC): the
+      dialog's managed Turnstile passed on its own in real Chrome (no
+      checkbox), the Worker accepted the patch, and `bun run submissions`
+      (with the read-only ops token) listed it as the bucket's one object,
+      credited "Claude (end-to-end test, safe to delete)". Before that,
+      `/api/notify/key` answered 200 and `/api/notify/test` 401 without a
+      token, so `/admin` can enrol a phone on the Preview.
+- [ ] First production deploy (when `master` is published): run
+      `bunx wrangler secret list` right after; the four secrets should carry
+      over from version `3f2e2adc`. If not, run the setup for production only
+      (`bun run secrets:setup --only=production`); that rotates the VAPID pair
+      and the admin token for production, harmless before any device enrols
+      there.
 - [x] Gate work on gate `master` (`3b5cc85`, 2026-10-15; Cameron: app master
       is fine to push). CI green; web-dist now built by CI (`f3c3891`), and
       the site depends on that build.
-- [ ] Ops: submissions bucket (staged above; needs a yes)
-- [ ] Turnstile widget + `TURNSTILE_SECRET` + site key
-- [ ] Uncomment the R2 binding once the bucket exists
+- [x] Ops: submissions bucket (ops `0a37785`)
+- [x] Turnstile widget + `TURNSTILE_SECRET` + site key (ops `c5140e6`, secrets above)
+- [x] The R2 binding, on production and Previews (`64b3f63`)
 
 ### Touch as nodes (2026-10-15)
 
