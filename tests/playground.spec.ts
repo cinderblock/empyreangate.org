@@ -171,6 +171,77 @@ test.describe("Pattern playground", () => {
     }
   });
 
+  test("an event output gets a meter: Effect taps counts the taps on the gate", async ({
+    page,
+  }) => {
+    await expect(page.locator(".patch-name")).toHaveValue("Rainbow Sparkle", {
+      timeout: 20_000,
+    });
+    const stage = page.locator(".pg-stage");
+    await expect(stage).toHaveAttribute(
+      "data-preview",
+      /^(running|unavailable)$/,
+      {
+        timeout: 20_000,
+      },
+    );
+    test.skip(
+      (await stage.getAttribute("data-preview")) !== "running",
+      "no WebGPU in this browser: no meters",
+    );
+    await page.locator(".palette-item", { hasText: "Effect taps" }).click();
+    const strip = page
+      .locator(".pnode", { hasText: "Effect taps" })
+      .locator(".mini-event");
+    await expect(strip).toBeVisible();
+    await expect(strip).toContainText("×0");
+    // A tap on the gate (the finger tool) is exactly what this node reports.
+    // The patch recompiles with the new node for a moment after it is added;
+    // a tap in that window goes to the old simulation, so tap until counted.
+    await expect
+      .poll(
+        async () => {
+          await page
+            .locator("canvas.pg-gate")
+            .click({ position: { x: 150, y: 150 } });
+          return strip.innerText();
+        },
+        { timeout: 10_000, intervals: [600] },
+      )
+      .toMatch(/×[1-9]/);
+  });
+
+  test("the Phone IMU node can be driven by hand from its panel", async ({
+    page,
+  }) => {
+    await expect(page.locator(".patch-name")).toHaveValue("Rainbow Sparkle", {
+      timeout: 20_000,
+    });
+    await page.locator(".palette-item", { hasText: "Phone IMU" }).click();
+    await page.locator(".pnode", { hasText: "Phone IMU" }).click();
+    const panel = page.locator(".patch-side");
+    await expect(panel.locator(".pg-imu")).toBeVisible();
+    const byHand = panel.getByLabel("Drive it by hand");
+    const yaw = panel.getByLabel(/Yaw/);
+    await expect(yaw).toBeDisabled();
+    // With a preview running the sliders take over the motion source.
+    if (await byHand.isEnabled()) {
+      await byHand.check();
+      await expect(yaw).toBeEnabled();
+      await yaw.fill("0.25");
+      await expect(
+        panel.locator(".patch-param-value").filter({ hasText: "0.25" }),
+      ).toHaveCount(1);
+      await panel.getByRole("button", { name: "Shake" }).click();
+      // The Motion control reflects it, and stopping there releases the panel.
+      const stop = page.getByRole("button", { name: "Stop simulated motion" });
+      await expect(stop).toBeVisible();
+      await stop.click();
+      await expect(byHand).not.toBeChecked();
+      await expect(yaw).toBeDisabled();
+    }
+  });
+
   test("edits are kept in the browser across reloads", async ({ page }) => {
     await expect(page.locator(".patch-name")).toHaveValue("Rainbow Sparkle", {
       timeout: 20_000,

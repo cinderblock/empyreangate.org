@@ -75,6 +75,33 @@ coarse)`. There the button is "Use phone motion" (real sensors); anywhere
   else it is "Simulate phone motion", feeding the runtime's new
   `setMotionSource` a generator (`app/playground/motion.ts`: a slow turn, a
   sway, a nod, a shake every few seconds, in the real sensor path's units).
+- **Connection hints** (Cameron, 2026-10-17: "a filtered, heuristically
+  sorted list of possible connections ... easier to discover what can be
+  connected"): while a wire is dragged every port says whether it fits
+  (`port-fit` glows, `port-nofit` dims; tooltips name each port's shape);
+  dropped on empty canvas, a "connect to…" chooser (`connect.ts`,
+  `suggestConnections`, unit-tested) lists the node types that take that
+  shape, ranked exact-before-adapter, shaped-input-before-knob, the usual
+  consumers/producers of that data first, then by name, with a filter box.
+  A pick adds the node at the drop point, wired, as one undo step. Popover
+  on a wide canvas, sheet on a phone. Sub-patches are not offered (their
+  ports depend on their contents).
+- **Every small node gets meters, events included** (Cameron, 2026-10-17:
+  "why doesn't Effect taps have some sort of visualization? pretty much
+  everything should"): the crate's `preview_scalars` now also lists Event
+  outputs, and `Runtime::scalar_value` reports a running fire count for
+  them (kept across a rebuild), so nothing in the protocol changed and the
+  gate backend gets it for free. The editor draws an event as a strip that
+  ticks where it fired, lit on a fresh one, with the total. A node with up
+  to four meterable outputs meters them all; wider nodes (Audio, Touch, DJ
+  link) keep `out` + wired. Still without a picture: `points`, `effects`
+  and `texture` outputs (Touch strokes, Triggered effects, Video in); those
+  need a GPU mini pass per shape, logged as a follow-up below.
+- **Phone IMU by hand** (Cameron, 2026-10-17): the node's panel in the
+  playground has "Drive it by hand" with yaw/pitch/roll sliders and a Shake
+  button, through `setMotionSource`; the Motion control reflects it and
+  stopping there releases it. Gate app: not added (its IMU is the phones'
+  control bus, see the open question on several phones).
 - **The dock**: on narrow screens the live gate is sticky at the top; as you
   scroll it shrinks (a transform, so the canvas and its WebGPU context are
   never re-created) into a bar with controls on either side (tool + color on
@@ -117,6 +144,16 @@ coarse)`. There the button is "Use phone motion" (real sensors); anywhere
   nothing Cloudflare-side can be read from here without a login or
   `CLOUDFLARE_API_TOKEN`.
 
+- **The preview froze after an early edit** (found 2026-10-17 by the Effect
+  taps spec; also the black gate in an earlier screenshot). `setPatch`
+  pauses the frame loop while the GPU installs a shader; an edit arriving
+  meanwhile that needs no shader (a CPU-only node, a knob) made the
+  superseded install return without clearing the pause: canvas frozen,
+  every meter 0.00, status still "rendering". Fixed in the runtime (gate
+  `48966a2`): the install clears the pause unless a newer install owns it.
+  The spec adds the node immediately after load on purpose, as the
+  regression check.
+
 ## Open questions for the user
 
 1. ~~The three Cloudflare steps for Submit~~ All done. Bucket and widget via
@@ -143,6 +180,23 @@ coarse)`. There the button is "Use phone motion" (real sensors); anywhere
 3. Where submissions should notify (`NOTIFY_WEBHOOK`): still open.
 4. ~~Should the master also be a wirable node?~~ Yes (Cameron: "everything
    needs to be wireable!"). Done as the `globals` node, see Decisions.
+5. **Several phones and the Phone IMU node** (Cameron, 2026-10-17: "what
+   happens when multiple phones connect, not in a game mode?"). Today the
+   gate keeps one global `ControlInputs` (`state.rs`); every client's `Imu`
+   message overwrites yaw/pitch/roll and adds its shake (`server.rs`, capped
+   at 3). So with two phones the node sees whichever sent last, at the
+   phones' message rate, i.e. a flicker between them; shakes from all add
+   up. Options, each a backend change: (a) follow the latest _active_ phone
+   (switch only when a phone has moved recently, like the Touch node's
+   "Latest finger"); (b) average; (c) a per-phone choice on the node
+   ("Follow: latest / first / all"), with `count` and per-phone outputs.
+   Recommendation: (c) with "latest" as default, mirroring the Touch node.
+   Not started; needs Cameron's pick.
+6. **Minis for points, effects and texture outputs** (Touch strokes,
+   Triggered effects, Video in / Clip / Still image as textures): each needs
+   its own mini pass in the crate's preview WGSL (a solo render of the
+   points or effects on the ring; a thumbnail of the texture). Follow-up;
+   not started.
 
 ### The main ops checkout is stale, not edited (2026-10-16)
 

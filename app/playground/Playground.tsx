@@ -65,6 +65,11 @@ export default function Playground() {
   const [groove, setGroove] = useState(true);
   const [mic, setMic] = useState(false);
   const [motion, setMotion] = useState(false);
+  // Driving the Phone IMU node by hand (its node panel): the live values the
+  // manual source reads, and whether it is the source right now.
+  const imuManual = useRef({ yaw: 0, pitch: 0, roll: 0, shake: 0 });
+  const [imuOverride, setImuOverride] = useState(false);
+  const [imu, setImu] = useState({ yaw: 0, pitch: 0, roll: 0 });
   const [mediaName, setMediaName] = useState<string | null>(null);
   const [brightness, setBrightness] = useState(1);
   const [speed, setSpeed] = useState(1);
@@ -376,15 +381,48 @@ export default function Playground() {
     if (motion) {
       runtime.stopMotion();
       setMotion(false);
+      setImuOverride(false);
       return;
     }
     try {
       if (realMotion) await runtime.startMotion();
       else runtime.setMotionSource(syntheticMotion());
       setMotion(true);
+      setImuOverride(false);
     } catch (e) {
       setNotice(`Motion: ${e instanceof Error ? e.message : String(e)}`);
     }
+  };
+  /** Drive the Phone IMU node from its panel's sliders (dev and testing):
+   * a motion source that reads the sliders' values and the Shake button. */
+  const driveImuByHand = (on: boolean) => {
+    if (!runtime) return;
+    if (!on) {
+      runtime.stopMotion();
+      setMotion(false);
+      setImuOverride(false);
+      return;
+    }
+    const m = imuManual.current;
+    runtime.setMotionSource({
+      read: () => {
+        const shake = m.shake;
+        m.shake = 0;
+        return {
+          yaw: m.yaw * Math.PI * 2,
+          pitch: m.pitch,
+          roll: m.roll,
+          shake,
+        };
+      },
+      stop: () => {},
+    });
+    setMotion(true);
+    setImuOverride(true);
+  };
+  const setImuAxis = (axis: "yaw" | "pitch" | "roll", v: number) => {
+    imuManual.current[axis] = v;
+    setImu((cur) => ({ ...cur, [axis]: v }));
   };
 
   const pickMedia = (file: File | null) => {
@@ -733,7 +771,60 @@ export default function Playground() {
             globalsNote="On the gate, the crew sets these on the night; here they're yours. Speed scales every Time node and phase, brightness scales the Output. To react to them, add a Gate globals node."
             onDocChange={onDocChange}
             nodeExtras={(node) =>
-              node.kind === "video_in" ? (
+              node.kind === "imu" ? (
+                <div className="pg-imu">
+                  <p className="hint">
+                    On the gate this is a dancer's phone. Here, use your own
+                    (Motion, in the controls), the stand-in, or drive it by hand
+                    for testing.
+                  </p>
+                  <label className="pg-check">
+                    <input
+                      type="checkbox"
+                      disabled={!runtime}
+                      checked={imuOverride}
+                      onChange={(e) => driveImuByHand(e.target.checked)}
+                    />
+                    Drive it by hand
+                  </label>
+                  {(
+                    [
+                      ["yaw", "Yaw (turns)", 0, 1],
+                      ["pitch", "Pitch", -1, 1],
+                      ["roll", "Roll", -1, 1],
+                    ] as const
+                  ).map(([axis, label, min, max]) => (
+                    <label key={axis} className="patch-param">
+                      <span className="patch-param-head">{label}</span>
+                      <span className="patch-param-row">
+                        <input
+                          type="range"
+                          min={min}
+                          max={max}
+                          step={0.01}
+                          disabled={!imuOverride}
+                          value={imu[axis]}
+                          onChange={(e) =>
+                            setImuAxis(axis, Number(e.target.value))
+                          }
+                        />
+                        <span className="patch-param-value">
+                          {imu[axis].toFixed(2)}
+                        </span>
+                      </span>
+                    </label>
+                  ))}
+                  <button
+                    type="button"
+                    disabled={!imuOverride}
+                    onClick={() => {
+                      imuManual.current.shake = 2;
+                    }}
+                  >
+                    Shake
+                  </button>
+                </div>
+              ) : node.kind === "video_in" ? (
                 <div className="pg-video-in">
                   <p className="hint">
                     On the gate, Video in shows the gate's live video. Here,
