@@ -85,6 +85,9 @@ runs `npx wrangler deploy`, so the push publishes).
       (`unscruz-2024`). "Raising it." is an empty slot again, for a real
       build shot (Cameron: "It's raised and setup. Caption should be
       unSCruz.")
+- [x] Photo credit: Cameron said "Yes, credit TedX". TedX is taken to be
+      Theodore Wahrburg, already in the crew list. A slot's `by` puts
+      "Photo: <name>" under the caption, linked to his site (`d89c8b9`).
 - [ ] After master publishes: `bun run launch-check`, all green
 
 ## Findings: the edge rule
@@ -113,5 +116,5 @@ runs `npx wrangler deploy`, so the push publishes).
 
 1. Push ops `732a112` to ops master (CI applies it), then watch the run?
    Recommended. If Free refuses `wildcard`, switch to `starts_with`.
-2. Credit TedX on the photos? Originals would be sharper than the ~230 KB
-   copies we have.
+2. Ask Ted for the originals? They'd be sharper than the ~230 KB,
+   1440×1440 copies we have now. Optional.
