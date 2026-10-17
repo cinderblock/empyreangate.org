@@ -18,6 +18,11 @@ export const SITE = {
     "The Empyrean Gate is a sixty-foot ring of twenty-four thousand lights lofted over a gateway, with a fire beneath it. Built by the Entheos community for Burning Man 2022, it has come back every year since.",
   /** The gate's software, open source. */
   software: "https://github.com/TomSawyerLabs/empyrean-gate",
+  /** The patch engine (Rust crate) and the node editor (TypeScript), in that repo. */
+  engine:
+    "https://github.com/TomSawyerLabs/empyrean-gate/tree/master/crates/empyrean-patch",
+  editor:
+    "https://github.com/TomSawyerLabs/empyrean-gate/tree/master/packages/patch-web",
   /** This site's source. */
   source: "https://github.com/cinderblock/empyreangate.org",
   donate: "https://www.givsum.com/charities/entheos-community-village",

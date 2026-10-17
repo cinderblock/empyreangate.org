@@ -24,7 +24,7 @@ import {
 } from "@empyrean-gate/patch-web/runtime";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
-import { PLAYGROUND } from "../content/site";
+import { PLAYGROUND, SITE } from "../content/site";
 import { BPM, syntheticAudio } from "../gate/engine";
 import SubmitDialog from "./SubmitDialog";
 import { LocalPatchStore } from "./store";
@@ -490,6 +490,17 @@ export default function Playground() {
           Build a pattern from the gate's own nodes. It runs here exactly as it
           would on the gate.
         </span>
+        <nav className="pg-bar-links" aria-label="Source code">
+          <a href={SITE.engine} rel="noopener" target="_blank">
+            Engine ↗
+          </a>
+          <a href={SITE.editor} rel="noopener" target="_blank">
+            Editor ↗
+          </a>
+          <a href={SITE.software} rel="noopener" target="_blank">
+            GitHub ↗
+          </a>
+        </nav>
       </header>
 
       {notice && (

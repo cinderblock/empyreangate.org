@@ -104,13 +104,17 @@
 
     "@cspotcode/source-map-support": ["@cspotcode/source-map-support@0.8.1", "", { "dependencies": { "@jridgewell/trace-mapping": "0.3.9" } }, "sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw=="],
 
+    "@dagrejs/dagre": ["@dagrejs/dagre@3.1.1", "", { "dependencies": { "@dagrejs/graphlib": "4.0.5" } }, "sha512-zroZB1dFOFiGgv4Xcrn1DckB1o4aOikPqD2NDQPV0WM//CXGcS6xiD0rNkqHmw6FEg4tabt4nxPLwgCWT+Vb2A=="],
+
+    "@dagrejs/graphlib": ["@dagrejs/graphlib@4.0.5", "", {}, "sha512-7xrBTqIts3o+PMUZX97wSc+7TUbW+/rULzGNCTP6yooNVDXbzw4Wutg/H/xOutTB/c/k0YqOAavgPh4/Zk9PFA=="],
+
     "@emnapi/core": ["@emnapi/core@1.11.1", "", { "dependencies": { "@emnapi/wasi-threads": "1.2.2", "tslib": "^2.4.0" } }, "sha512-RSvbQmHzdKzNsLYa/wHrbc3KN4sYLKAdPZxqiM2HATqv/SBk2/ENSHpvXGaLOMcsAyz0poEGqkmmKYG3OWiJEQ=="],
 
     "@emnapi/runtime": ["@emnapi/runtime@1.11.3", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-Xz4Tpyki7XyrpbUK1jR1AhdAdaXyhhY4lZ3neLodmhpuWfy2PAQN5B46sAiU4liOXGLkHypn/qU+jvfWSCYYLA=="],
 
     "@emnapi/wasi-threads": ["@emnapi/wasi-threads@1.2.2", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-c95qOXkHdydNKhscBTebqEC1CVAZpyqOfVfBzQ1qgzyl3gfeldUjIggDbIZgDKsHLgnsM+igH7TJ/eAasaVuMA=="],
 
-    "@empyrean-gate/patch-web": ["@empyrean-gate/patch-web@github:TomSawyerLabs/empyrean-gate#9b7ad54", { "dependencies": { "@webgpu/types": "^0.1.66" }, "peerDependencies": { "@xyflow/react": "^12.11.3", "react": "^19.2.0", "react-dom": "^19.2.0" } }, "TomSawyerLabs-empyrean-gate-9b7ad54", "sha512-LHceC8UuP0aqgRARIonf7O4SUcnkPFtqTstULDAwZkTEhcsbiSaGi1Oz8ZNZ2ntpITrGLOeUgtg4QxtvDyOi0A=="],
+    "@empyrean-gate/patch-web": ["@empyrean-gate/patch-web@github:TomSawyerLabs/empyrean-gate#d3bddac", { "dependencies": { "@dagrejs/dagre": "^3.1.1", "@webgpu/types": "^0.1.66" }, "peerDependencies": { "@xyflow/react": "^12.11.3", "react": "^19.2.0", "react-dom": "^19.2.0" } }, "TomSawyerLabs-empyrean-gate-d3bddac", "sha512-lh4PaU+jvyzD+dHRl4t0/22DG76MOmmI9y0PYnVsZwrnlok6JM4eX3nUgyNJp7GongX4ocy6CwrMFG+XcLAWrQ=="],
 
     "@esbuild/aix-ppc64": ["@esbuild/aix-ppc64@0.28.2", "", { "os": "aix", "cpu": "ppc64" }, "sha512-XExcO+dvLKvVtNTibSTBej1NCAbaGhWn9Ww1ZPx80qsahhPFe/8jgWP0IchNe0F3HwkU7n8ejhH8bjonqht8mQ=="],
 

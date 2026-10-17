@@ -58,6 +58,15 @@ site yet." Push the site's `dev` only (never its `master`); the gate app's
   its own master and hue pull, the gate engine feeds the crossfade-effective
   master brightness and the config's hue pull (amount 0 while the pull is
   off). The card's note points at the node.
+- **Arrange** (Cameron, 2026-10-17: "an auto arrange button ... mermaid
+  diagrams are able to do it, stably even"): `arrange.ts` in patch-web uses
+  dagre (`@dagrejs/dagre`, a dependency of the shared package, so it flows
+  to the site through web-dist) for a layered left-to-right layout with the
+  measured node sizes. Deterministic for a given document order, so a second
+  press changes nothing. One undo step (`mutateDoc` key `arrange`), then
+  `fitView`. Toolbar button on a wide screen; in the compact menu on a phone,
+  where it also closes the sheet. Unit tests in `arrange.test.ts`; behaviour
+  spec `tests/patch-arrange.spec.ts`; a site spec on the real preset.
 - **The dock**: on narrow screens the live gate is sticky at the top; as you
   scroll it shrinks (a transform, so the canvas and its WebGPU context are
   never re-created) into a bar with controls on either side (tool + color on

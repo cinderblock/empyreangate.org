@@ -53,6 +53,23 @@
   color: var(--ink-muted);
 }
 
+/* Where the engine and editor live, at the bar's far end. */
+.pg-bar-links {
+  display: flex;
+  gap: 0.9rem;
+  margin-left: auto;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.pg-bar-links a {
+  color: var(--ink-muted);
+}
+
+.pg-bar-links a:hover {
+  color: var(--ink);
+}
+
 .pg-notice {
   display: flex;
   align-items: center;

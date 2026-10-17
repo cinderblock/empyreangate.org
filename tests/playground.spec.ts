@@ -29,6 +29,22 @@ test.describe("Pattern playground", () => {
     expect(await page.locator(".palette-item").count()).toBeGreaterThan(30);
   });
 
+  test("links to the engine and the editor on GitHub", async ({ page }) => {
+    const links = page.getByRole("navigation", { name: "Source code" });
+    await expect(links.getByRole("link", { name: "Engine ↗" })).toHaveAttribute(
+      "href",
+      /github\.com\/TomSawyerLabs\/empyrean-gate\/.*crates\/empyrean-patch$/,
+    );
+    await expect(links.getByRole("link", { name: "Editor ↗" })).toHaveAttribute(
+      "href",
+      /github\.com\/TomSawyerLabs\/empyrean-gate\/.*packages\/patch-web$/,
+    );
+    await expect(links.getByRole("link", { name: "GitHub ↗" })).toHaveAttribute(
+      "href",
+      "https://github.com/TomSawyerLabs/empyrean-gate",
+    );
+  });
+
   test("previews live, or says why it can't", async ({ page }) => {
     const stage = page.locator(".pg-stage");
     await expect(stage).toHaveAttribute(
@@ -84,6 +100,47 @@ test.describe("Pattern playground", () => {
     }
     // Unwired, it changes nothing: the patch still renders (or still says why not).
     await expect(page.locator(".patch-status.error")).toHaveCount(0);
+  });
+
+  test("Arrange lays the preset out without overlaps, source to Output", async ({
+    page,
+  }) => {
+    await expect(page.locator(".patch-name")).toHaveValue("Rainbow Sparkle", {
+      timeout: 20_000,
+    });
+    await page.getByRole("button", { name: "⇆ Arrange" }).click();
+    await page.waitForTimeout(500);
+    const boxes = await page.locator(".react-flow__node").evaluateAll((els) =>
+      els.map((el) => {
+        const r = el.getBoundingClientRect();
+        const m = /translate\(([-\d.]+)px/.exec(
+          (el as HTMLElement).style.transform,
+        );
+        return {
+          label: el.querySelector(".pnode-head")?.textContent ?? "",
+          x: Number(m?.[1]),
+          l: r.left,
+          t: r.top,
+          r: r.right,
+          b: r.bottom,
+        };
+      }),
+    );
+    expect(boxes.length).toBeGreaterThan(5);
+    for (let i = 0; i < boxes.length; i++) {
+      for (let j = i + 1; j < boxes.length; j++) {
+        const a = boxes[i];
+        const b = boxes[j];
+        const overlap = a.l < b.r && b.l < a.r && a.t < b.b && b.t < a.b;
+        expect(overlap, `${a.label} / ${b.label}`).toBe(false);
+      }
+    }
+    const output = boxes.find((n) => n.label.startsWith("Output"))!;
+    const rainbow = boxes.find((n) => n.label.startsWith("Rainbow"))!;
+    expect(output.x).toBeGreaterThan(rainbow.x);
+    // One undo step.
+    await page.getByRole("button", { name: "↶ Undo" }).click();
+    await expect(page.getByRole("button", { name: "↷ Redo" })).toBeEnabled();
   });
 
   test("edits are kept in the browser across reloads", async ({ page }) => {
