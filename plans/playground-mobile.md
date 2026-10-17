@@ -34,10 +34,14 @@ site yet." Push the site's `dev` only (never its `master`); the gate app's
 - **Toast**: "works best on a desktop", narrow screens only, dismissable,
   remembered in localStorage, never on desktop.
 - **Editor side panels on narrow screens become full-screen sheets** with a
-  Done button: the palette opens from an "Add node" toolbar button; a node's
-  settings open on double-tap (Cameron's suggestion) and from a floating
-  "Settings" pill shown while a node is selected. Single tap still only
-  selects. Wide layouts are unchanged.
+  Done button; a node's settings open on double-tap (Cameron's suggestion)
+  and from a floating pill shown while a node is selected. Single tap still
+  only selects. Wide layouts are unchanged.
+- **No toolbar at all in the compact editor** (Cameron, 2026-10-16: "at most
+  one row of buttons, but even that feels heavy"): the patch name is a chip
+  on the canvas that opens a menu sheet (rename, status, undo/redo, the
+  host's open/save/submit, delete, the library, new blank/preset), ＋ opens
+  the palette, ⚠ shows only while the patch cannot run.
 - **The dock**: on narrow screens the live gate is sticky at the top; as you
   scroll it shrinks (a transform, so the canvas and its WebGPU context are
   never re-created) into a bar with controls on either side (tool + color on
