@@ -192,8 +192,17 @@ coarse)`. There the button is "Use phone motion" (real sensors); anywhere
    (switch only when a phone has moved recently, like the Touch node's
    "Latest finger"); (b) average; (c) a per-phone choice on the node
    ("Follow: latest / first / all"), with `count` and per-phone outputs.
-   Recommendation: (c) with "latest" as default, mirroring the Touch node.
-   Not started; needs Cameron's pick.
+   ~~Recommendation: (c) with "latest" as default.~~ **Decided and shipped**
+   (Cameron, 2026-10-17: "one phone gets control at a time; if other phones
+   are in queue, the controller gets a time limit; limit goes down as the
+   queue is longer, minimum like 20 s; average wait should target 1~2
+   minutes; buzz the phone as they get control"). Gate `0af40fc`: phones
+   stand in line while sending motion, the front drives the bus, turns are
+   `clamp(90 s / waiting, 20 s, 120 s)` while someone waits, an expired
+   holder goes to the back, status carries holder/line/seconds, Settings
+   shows the place and buzzes on the turn. Design and constants in the gate
+   repo's `plans/imu-turns.md`. Still to do: try it with two real phones
+   after the next app release.
 6. **Minis for points, effects and texture outputs** (Touch strokes,
    Triggered effects, Video in / Clip / Still image as textures): each needs
    its own mini pass in the crate's preview WGSL (a solo render of the
@@ -325,6 +334,7 @@ environment); test objects in a moderation queue do no harm.
 - [x] gate `574b9de` "Gate globals" card (web-dist `962231d`; `tests/patch-globals.spec.ts`, mock `set_master`); site: Master fieldset gone, card wired, tests in both playground specs; playground specs 33 passed / 6 skipped (3 browsers), `test:gpu` 13/13
 - [x] Worker secrets set with Cameron's login (production version `3f2e2adc`, not deployed; dev Preview); script fixes `eb1f2e3`; Preview `/api/submit` answers 400 to `{}`; a real submission waits on Cameron (managed widget)
 - [x] gate `1ab04b1` Gate globals node (web-dist `9b7ad54`; crate tests 87/87, wasm + tauri check clean); site `8638b60`: card note, README, node test; playground specs 36 passed / 6 skipped, `test:gpu` 14/14
+- [x] gate `0af40fc` phone motion turns (arbiter + 4 Rust tests, Settings banner + buzz, `imu-turns` spec, status fixture); backend tests 340/340; no web-dist change, so no site bump
 - [x] gate `3f92f16` connection hints + event meters (connect.ts, 5 unit tests; `patch-connect` spec 3; crate event counts, test), gate `48966a2` preview-freeze fix; site `d95c88f` (web-dist `0780ace`): IMU by hand panel, event-meter and IMU specs; playground specs 48 passed / 9 skipped, `test:gpu` 19/19
 - [x] gate `57d0e3e` `setMotionSource` (web-dist `28b9b36`); site `fd9a80c` "Simulate phone motion" on desks (`app/playground/motion.ts`, spec); playground specs 45 passed / 6 skipped, `test:gpu` 17/17
 - [x] gate `958fa14` Arrange (dagre; unit tests 4, `patch-arrange` spec 2; web-dist `d3bddac`); site `2df3c91` (README, Arrange spec; playground specs 42 passed / 6 skipped, `test:gpu` 16/16). That commit also carries Agent C's playground source links: they were staged in the shared index when my commit ran (see `.agents.txt`); not rewritten.
