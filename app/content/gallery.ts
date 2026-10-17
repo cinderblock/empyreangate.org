@@ -3,9 +3,9 @@
  *
  * Originals go in `photos/` (committed; see scripts/photos.ts). Each slot
  * names one by its slug: `photos/Gate Night Wide.jpg` becomes
- * `gate-night-wide`. A slot whose photo isn't there yet renders as a labelled
- * placeholder, so it stays obvious during review which shots are still
- * needed.
+ * `gate-night-wide`. On a Preview, a slot whose photo isn't there yet
+ * renders as a labelled placeholder, so it stays obvious during review which
+ * shots are still needed; production leaves it out.
  */
 
 /** One original's web renditions, from the generated manifest. */

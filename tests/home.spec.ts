@@ -82,6 +82,15 @@ test.describe("Home", () => {
     ).toBeVisible();
   });
 
+  test("the gallery shows only real photos in production", async ({ page }) => {
+    const gallery = page.locator(".gallery");
+    await expect(gallery.locator("img").first()).toBeAttached();
+    await expect(gallery.locator(".gallery-item")).toHaveCount(
+      await gallery.locator("img").count(),
+    );
+    await expect(gallery).not.toContainText("Photo coming");
+  });
+
   test("names the next event with a machine-readable date", async ({
     page,
   }) => {

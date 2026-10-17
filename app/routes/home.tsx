@@ -187,6 +187,13 @@ function PhotoSlot({ photo }: { photo: (typeof PHOTOS)[number] }) {
   );
 }
 
+/** The slots to show: all of them on a Preview, so review sees which shots
+ * are still needed; in production only those with a picture. */
+const SHOWN_PHOTOS =
+  SITE.origin === SITE.url
+    ? PHOTOS.filter((p) => p.asset && PHOTO_MANIFEST[p.asset])
+    : PHOTOS;
+
 const nf = new Intl.NumberFormat("en-US");
 
 export default function Home() {
@@ -349,7 +356,7 @@ export default function Home() {
         >
           <SectionHead id={GALLERY.id} section={GALLERY} />
           <ul className="gallery">
-            {PHOTOS.map((photo) => (
+            {SHOWN_PHOTOS.map((photo) => (
               <li
                 key={photo.slot}
                 className={`gallery-item ${photo.orientation}`}
