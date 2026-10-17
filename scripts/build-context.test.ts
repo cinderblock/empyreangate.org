@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { buildKind, previewLabel, siteOrigin } from "./build-context";
+import {
+  buildKind,
+  headersFile,
+  previewLabel,
+  siteOrigin,
+} from "./build-context";
 
 describe("buildKind", () => {
   test("local and GitHub Actions builds are production", () => {
@@ -57,5 +62,22 @@ describe("previewLabel", () => {
   test("refuses labels DNS can't hold", () => {
     expect(() => previewLabel("///")).toThrow(/no usable hostname label/);
     expect(() => previewLabel("x".repeat(64))).toThrow(/DNS allows 63/);
+  });
+});
+
+describe("headersFile", () => {
+  test("every build gets the safety headers, in one block for every path", () => {
+    for (const kind of ["production", "preview"] as const) {
+      const file = headersFile(kind);
+      expect(file.split("\n")[0]).toBe("/*");
+      expect(file.match(/^\S/gm)).toEqual(["/"]);
+      expect(file).toContain("X-Content-Type-Options: nosniff");
+      expect(file).toContain("Content-Security-Policy: frame-ancestors 'none'");
+    }
+  });
+
+  test("only a preview says noindex", () => {
+    expect(headersFile("production")).not.toContain("noindex");
+    expect(headersFile("preview")).toContain("X-Robots-Tag: noindex");
   });
 });

@@ -198,11 +198,14 @@ never deploys and holds no Cloudflare credential.
 | `master`, pre-launch   | `bunx wrangler versions upload` | A new version, **not** made live; empyreangate.org is unchanged                               |
 | `master`, after launch | `bunx wrangler deploy`          | Live at https://empyreangate.org                                                              |
 
-Preview builds mark themselves unindexable: `scripts/postbuild.ts` writes a
-`_headers` file with `X-Robots-Tag: noindex` and a disallow-all `robots.txt`
-whenever Workers Builds is building a branch other than master
-(`scripts/build-context.ts`). Cloudflare adds that header to workers.dev
-Previews itself, but not to custom-domain ones like `dev.empyreangate.org`.
+Every build's `_headers` (written by `scripts/postbuild.ts`) sets a few safety
+headers: `nosniff`, a `Referrer-Policy`, and no framing by other sites
+(`frame-ancestors 'none'`, `X-Frame-Options: DENY`). Preview builds also mark
+themselves unindexable: `X-Robots-Tag: noindex` in `_headers` and a
+disallow-all `robots.txt` whenever Workers Builds is building a branch other
+than master (`scripts/build-context.ts`). Cloudflare adds that header to
+workers.dev Previews itself, but not to custom-domain ones like
+`dev.empyreangate.org`.
 
 Preview builds also point their social card (`og:url`, `og:image`,
 `twitter:image`) at their own `<branch>.empyreangate.org`, so a preview link

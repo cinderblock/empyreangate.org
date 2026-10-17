@@ -28,10 +28,27 @@ export function buildKind(env: Record<string, string | undefined>): BuildKind {
   return branch === PRODUCTION_BRANCH ? "production" : "preview";
 }
 
-/** `_headers` for a preview: every response says noindex. */
-export const PREVIEW_HEADERS = `/*
-  X-Robots-Tag: noindex
-`;
+/**
+ * `_headers` for a build. Every build gets the same few safety headers: no
+ * MIME sniffing, no full URLs in the Referer sent to other sites, and no
+ * framing by other sites (`frame-ancestors`, with X-Frame-Options for old
+ * browsers). Not a full CSP: the wasm, Turnstile and the analytics beacon
+ * Cloudflare injects make one easy to get wrong. No Permissions-Policy
+ * either: the playground uses the motion sensors. A preview also says
+ * noindex on every response. One `/*` block, since Cloudflare applies every
+ * rule that matches and the order of merged headers isn't worth relying on.
+ */
+export function headersFile(kind: BuildKind): string {
+  return [
+    "/*",
+    "  X-Content-Type-Options: nosniff",
+    "  Referrer-Policy: strict-origin-when-cross-origin",
+    "  Content-Security-Policy: frame-ancestors 'none'",
+    "  X-Frame-Options: DENY",
+    ...(kind === "preview" ? ["  X-Robots-Tag: noindex"] : []),
+    "",
+  ].join("\n");
+}
 
 /** robots.txt for a preview: crawl nothing. */
 export const PREVIEW_ROBOTS = `User-agent: *

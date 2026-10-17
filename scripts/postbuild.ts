@@ -6,14 +6,15 @@
  *    miss gets the empty SPA shell — no heading, nothing without JavaScript.
  * 2. Emit `sitemap.xml` from the prerendered routes, so it can never drift
  *    out of sync with what actually shipped.
- * 3. On a preview build (any branch but master, on Workers Builds), mark every
- *    response `X-Robots-Tag: noindex` via `_headers` and replace robots.txt
- *    with a full disallow. See build-context.ts.
+ * 3. Write `_headers`: a few safety headers on every build, plus
+ *    `X-Robots-Tag: noindex` on a preview (any branch but master, on Workers
+ *    Builds), which also gets a full-disallow robots.txt. See
+ *    build-context.ts.
  */
 
 import { copyFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { PREVIEW_HEADERS, PREVIEW_ROBOTS, buildKind } from "./build-context";
+import { PREVIEW_ROBOTS, buildKind, headersFile } from "./build-context";
 
 const OUT = "build/client";
 const SITE = "https://empyreangate.org";
@@ -56,8 +57,11 @@ const sitemap = [
 await writeFile(join(OUT, "sitemap.xml"), sitemap, "utf8");
 console.log(`Emitted ${join(OUT, "sitemap.xml")} with ${urls.length} URL(s)`);
 
-if (buildKind(process.env) === "preview") {
-  await writeFile(join(OUT, "_headers"), PREVIEW_HEADERS, "utf8");
+const kind = buildKind(process.env);
+await writeFile(join(OUT, "_headers"), headersFile(kind), "utf8");
+console.log(`Emitted ${join(OUT, "_headers")} (${kind})`);
+
+if (kind === "preview") {
   await writeFile(join(OUT, "robots.txt"), PREVIEW_ROBOTS, "utf8");
   console.log(
     `Preview build of ${process.env.WORKERS_CI_BRANCH}: noindex _headers and a disallow-all robots.txt`,

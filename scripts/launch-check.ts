@@ -1,9 +1,9 @@
 /**
  * Checks a deployed site from the outside, read-only: the pages, the 404,
- * robots, the redirects onto the apex, that the workers.dev hostname stays
- * dark, and that the Worker has its secrets (an endpoint answers 503 until
- * they exist). Nothing is written: the empty submission is refused before
- * Turnstile or the bucket are reached.
+ * robots, the safety headers, the redirects onto the apex, that the
+ * workers.dev hostname stays dark, and that the Worker has its secrets (an
+ * endpoint answers 503 until they exist). Nothing is written: the empty
+ * submission is refused before Turnstile or the bucket are reached.
  *
  *   bun run launch-check                         # production
  *   bun run launch-check https://dev.empyreangate.org
@@ -61,6 +61,15 @@ report(
   noindex === !production,
   production ? "home is indexable" : "home is noindex",
   `x-robots-tag: ${home.headers.get("x-robots-tag") ?? "none"}`,
+);
+
+report(
+  home.headers.get("x-content-type-options") === "nosniff" &&
+    (home.headers.get("content-security-policy") ?? "").includes(
+      "frame-ancestors 'none'",
+    ),
+  "home has the safety headers (_headers)",
+  "",
 );
 
 const robots = await (await get("/robots.txt")).text();
