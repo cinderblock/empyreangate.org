@@ -1,6 +1,7 @@
 # Linking the public site to the live gate
 
-Status: **in progress (2026-10-17)**. Cameron: "Sounds great. Get implementing."
+Status: **code shipped (2026-10-17); the ops change is staged and waits on
+Cameron's yes** (step 6). Cameron: "Sounds great. Get implementing."
 
 ## Goal
 
@@ -65,30 +66,42 @@ empyreangate`). Not ops-managed; the cloudflared install is a manual step
 
 ## Plan / steps
 
-1. [ ] Gate crate: `PatchDoc.credit`.
-2. [ ] Gate backend: `SubmissionsConfig {site_url, token}` in `AppConfig`
+1. [x] Gate crate: `PatchDoc.credit` (gate `629d15c`).
+2. [x] Gate backend (gate `629d15c`): `SubmissionsConfig {site_url, token}` in `AppConfig`
        (token redacted for remotes, preserved on remote SetConfig; fixtures
        regenerated); routes `GET /patch/submissions`, `GET /patch/submissions/record?key=`,
        `POST /patch/submissions/decide` (loopback only; proxy to the site with
        the token); public `/health` returns JSON `{ok, open, players, game, now_playing}`.
-3. [ ] Gate UI: Settings → Submissions panel (site URL, token); Patch tab
+3. [x] Gate UI (gate `629d15c`; `tests/patch-submissions.spec.ts`): Settings → Submissions panel (site URL, token); Patch tab
        "Submissions…" drawer (`src/PatchSubmissions.tsx`); mock backend serves a
        fake queue; a Playwright spec; README + `docs/public-deploy.md`.
-4. [ ] Site Worker: `GET /api/live` (`LIVE_URL` var), `GET /api/submissions`,
+4. [x] Site Worker (site `7a3c37a`): `GET /api/live` (`LIVE_URL` var), `GET /api/submissions`,
        `GET /api/submissions?key=`, `POST /api/submissions/decide`; unit tests.
-5. [ ] Site pages: `app/live.ts` hook; hero "Play it live" + now-playing line;
+5. [x] Site pages (site `7a3c37a`): `app/live.ts` hook; hero "Play it live" + now-playing line;
        playground bar chip; Playwright specs with `page.route("**/api/live")`;
        README.
-6. [ ] Ops: worktree `empyreangate-play` from `origin/master`: tunnel
-       `empyreangate` + `play.empyreangate.org` ingress → `http://127.0.0.1:9521`;
-       validate + dry run; commit on the branch; `plans/empyreangate-play-tunnel.md`
-       with the box-side steps. **Not pushed, not applied: needs Cameron's yes.**
-7. [ ] Push gate master, wait for web-dist, bump the site, push dev, check
-       the Preview.
+6. [~] Ops, **staged, not pushed, not applied**: worktree `empyreangate-play` from `origin/master`: tunnel
+   `empyreangate` + `play.empyreangate.org` ingress → `http://127.0.0.1:9521`;
+   validate + dry run; commit on the branch; `plans/empyreangate-play-tunnel.md`
+   with the box-side steps. **Not pushed, not applied: needs Cameron's yes.**
+7. [x] Gate master `629d15c` (Checks + Web dist green), web-dist `5227d06`
+       pinned by site `7a3c37a` on `origin/dev`; the dev Preview answers
+       `GET /api/live` with `{"live":false}` and `cache-control: public, max-age=10`.
 
 ## Findings / gotchas
 
-- (none yet)
+- The gate's Playwright specs run against `dist/` served by the mock backend:
+  `bun run build` first, or a new button is simply not there.
+- `git commit -m ... --only -- <paths>`: `-m` must come before the `--`, or
+  git reads the message as a pathspec.
+- An ops worktree needs `bun install --frozen-lockfile` at its root (lefthook
+  lives in root `node_modules`), a copy of `cloudflare/.env.local` (the
+  read-only workstation tokens) for `bun run sync` to dry-run, and
+  `bunx prettier --write` on new files before the hook lets a commit through.
+- `reqwest` 0.13 as built here has no `.json()` on `RequestBuilder` (no
+  `json` feature): send `serde_json::Value::to_string()` with a content-type.
+- The gate's `now_playing` reads the patch file by id; `store::load` scans
+  the whole library, so `/health` memoises it for 5 s.
 
 ## Open questions for the user
 
@@ -106,6 +119,16 @@ empyreangate`). Not ops-managed; the cloudflared install is a manual step
 
 ## Progress log
 
-- [ ] gate commit(s)
-- [ ] site commit(s)
-- [ ] ops branch commit
+- [x] gate `629d15c` on gate master: crate credit; SubmissionsConfig +
+      routes + health JSON; Settings panel; Patch tab drawer + spec; mock queue;
+      README + docs. Crate 89/89, backend 340/340, patch-web 13, gate unit 14,
+      specs patch-submissions/minis/image/compact/public-floor/settings green.
+- [x] site `7a3c37a` on `origin/dev`: `/api/live`, `/api/submissions*`,
+      LiveLink hero button + now-playing + playground chip, specs, README,
+      web-dist bump. Unit 47/47, typecheck clean, home + playground specs 33
+      passed / 4 skipped (no WebGPU). Preview: `/api/live` → `{"live":false}`.
+- [x] ops branch `empyreangate-play` (worktree `.t3/worktrees/ops/empyreangate-play`):
+      one commit, validate green, dry run 2 to create. **Awaiting Cameron's yes
+      to push/apply.** Box-side steps in `plans/empyreangate-play-tunnel.md` there.
+- [ ] After the apply: cloudflared on the show machine (Cameron), the gate's
+      Public floor + Submissions settings, and a real end-to-end check.
