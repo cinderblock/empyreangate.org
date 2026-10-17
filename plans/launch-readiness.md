@@ -35,14 +35,18 @@ runs `npx wrangler deploy`, so the push publishes).
   .com hosts 301 to the apex; the workers.dev hostname is 404; everything
   else is ops' 503 stub, as expected before launch. The dev Preview passes
   all eight checks.
-- **Security, worth fixing in `worker/index.ts`:** (1) the 100/day cap is a
+- **Security, found in review (all five now fixed):** (1) the 100/day cap is a
   shared pool one person can fill in ~20 minutes; (2) catch blocks log
   nothing; (3) `patch.name` is unbounded and can push a Web Push payload past
   ~4 KB; (4) production sends no security headers (`_headers` is preview
   only); (5) latent: a Discord `NOTIFY_WEBHOOK` would honour `@everyone`.
 - **Gallery:** two of six slots filled (TedX's UnSCruz 2024 night shots,
-  `20b4584`). The other four render "Photo coming: …" placeholders, which
-  will be public at launch.
+  `20b4584`). Production shows only those two; Previews still show the four
+  "Photo coming: …" placeholders.
+- **Submission keys changed** with the per-visitor cap:
+  `submissions/<day>/<visitor>/<ms>-<id>.json`. Objects written before
+  (`submissions/<day>/<ms>-<id>.json`, the test submissions) still count
+  toward their day and `bun run submissions` reads both.
 
 ## Progress
 
@@ -50,17 +54,22 @@ runs `npx wrangler deploy`, so the push publishes).
 - [x] `bun run launch-check` (`fe85011`)
 - [x] Gallery: two night shots in `night-wide` and `build` (`20b4584`)
 - [x] Submit CPU estimate (above)
-- [ ] Security fixes 1–4 — waiting on Cameron's go-ahead
-- [ ] Billing alert — ops change, needs Cameron's yes
-- [ ] Empty gallery slots at launch — waiting on Cameron
+- [x] Security fixes, with Cameron's go-ahead ("do your proposed fixes"):
+      per-visitor daily cap (10; IPv4 or IPv6 /64, keyed hash in the object
+      key), console.error in every catch, patch names clipped in
+      notifications, Discord `allowed_mentions` (`d5f74b5`); safety headers on
+      every build, checked by launch-check (`0e2a3e8`)
+- [x] Billing alert: already covered. The site is on account `c5987fbf…`,
+      which the ops `uptime` Worker's cost monitor polls hourly (Workers
+      requests, R2 ops and storage; dollar thresholds; R2 storage budget
+      10 GB). No change needed.
+- [x] Empty gallery slots hidden on production, kept on Previews (`eef3835`)
+- [x] dev Preview: launch-check 9/9 green with the new headers; Preview
+      still shows the 4 placeholders, the production build none
 - [ ] After master publishes: `bun run launch-check`, all green
 
 ## Open questions for Cameron
 
 1. Workers Free or Paid? Only matters for pathological patches now.
-2. Go-ahead on security fixes 1–4? (Agent A lists `worker/index.ts`; leave a
-   note in `.agents.txt` first.)
-3. Billing alert, staged in ops?
-4. Empty gallery slots: hide them on production builds and keep the
-   placeholders on previews? (Recommended.) Is "Raising it." right for the
-   cool shot, and should TedX be credited?
+2. Is "Raising it." right for the cool shot, and should TedX be credited?
+   Originals would be sharper than the ~230 KB copies we have.
