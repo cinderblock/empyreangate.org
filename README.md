@@ -164,7 +164,11 @@ with a layered layout (dagre); it is deterministic for a given patch and one
 undo step. On a desk, "Simulate phone motion" feeds the Phone IMU node a
 stand-in (`app/playground/motion.ts`); a phone, judged by hover and pointer
 media queries rather than by `DeviceOrientationEvent` (which desktop browsers
-expose with nothing behind it), offers its real sensors.
+expose with nothing behind it), offers its real sensors. Every node carries a
+live mini while the preview runs: field outputs and the stream and texture
+sources (Touch strokes, Triggered effects, Event effect, Video in, Still
+image, Clip) get a ring thumbnail of what they hand on, scalar outputs an
+amplitude meter, event outputs a strip of their fires.
 
 On a phone the page stacks: the live gate docks at the top and shrinks into a
 bar (with the tool, color, brightness and speed beside it) as you scroll, so

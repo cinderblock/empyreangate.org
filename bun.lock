@@ -114,7 +114,7 @@
 
     "@emnapi/wasi-threads": ["@emnapi/wasi-threads@1.2.2", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-c95qOXkHdydNKhscBTebqEC1CVAZpyqOfVfBzQ1qgzyl3gfeldUjIggDbIZgDKsHLgnsM+igH7TJ/eAasaVuMA=="],
 
-    "@empyrean-gate/patch-web": ["@empyrean-gate/patch-web@github:TomSawyerLabs/empyrean-gate#0780ace", { "dependencies": { "@dagrejs/dagre": "^3.1.1", "@webgpu/types": "^0.1.66" }, "peerDependencies": { "@xyflow/react": "^12.11.3", "react": "^19.2.0", "react-dom": "^19.2.0" } }, "TomSawyerLabs-empyrean-gate-0780ace", "sha512-AEoAIG1h9QNVvy8UZrtc87l7Ap5ylO2ckTtHLApMuULun1EERarV2644v+LumaHwGBI0FNY7DPBfVXlDthhJ7g=="],
+    "@empyrean-gate/patch-web": ["@empyrean-gate/patch-web@github:TomSawyerLabs/empyrean-gate#a17aefe", { "dependencies": { "@dagrejs/dagre": "^3.1.1", "@webgpu/types": "^0.1.66" }, "peerDependencies": { "@xyflow/react": "^12.11.3", "react": "^19.2.0", "react-dom": "^19.2.0" } }, "TomSawyerLabs-empyrean-gate-a17aefe", "sha512-BZtGcmYIMbvmbG1BEUkiXlljqkUA85o2jJm+Xq7myuQ5AaVViAO0NHQUxrE5CAffIl9/+WmSXDkLf4XWTwT6jQ=="],
 
     "@esbuild/aix-ppc64": ["@esbuild/aix-ppc64@0.28.2", "", { "os": "aix", "cpu": "ppc64" }, "sha512-XExcO+dvLKvVtNTibSTBej1NCAbaGhWn9Ww1ZPx80qsahhPFe/8jgWP0IchNe0F3HwkU7n8ejhH8bjonqht8mQ=="],
 

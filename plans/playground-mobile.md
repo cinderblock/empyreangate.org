@@ -203,11 +203,17 @@ coarse)`. There the button is "Use phone motion" (real sensors); anywhere
    shows the place and buzzes on the turn. Design and constants in the gate
    repo's `plans/imu-turns.md`. Still to do: try it with two real phones
    after the next app release.
-6. **Minis for points, effects and texture outputs** (Touch strokes,
-   Triggered effects, Video in / Clip / Still image as textures): each needs
-   its own mini pass in the crate's preview WGSL (a solo render of the
-   points or effects on the ring; a thumbnail of the texture). Follow-up;
-   not started.
+6. ~~**Minis for points, effects and texture outputs**~~ Cameron said go
+   (2026-10-17); shipped on the gate as `280e5f4`. Touch strokes, Triggered
+   effects, Event effect, Video in, Still image and Clip each get a preview
+   cell, drawn as their default consumer would draw them with every knob
+   neutral (strokes with their own pens; the effects of that node's own
+   chain; the texture mapped straight onto the ring). Crate: `preview_style`
+   / `previewable` in `codegen.rs`, an `n{i}_pv` helper per stream node in
+   the preview module; no runtime change, both preview passes already bind
+   the dab, effect and video buffers. Editor: the ring follows the principal
+   output (`out`, or a source's single output) for field, points, effects
+   and texture shapes.
 
 ### The main ops checkout is stale, not edited (2026-10-16)
 
@@ -334,6 +340,7 @@ environment); test objects in a moderation queue do no harm.
 - [x] gate `574b9de` "Gate globals" card (web-dist `962231d`; `tests/patch-globals.spec.ts`, mock `set_master`); site: Master fieldset gone, card wired, tests in both playground specs; playground specs 33 passed / 6 skipped (3 browsers), `test:gpu` 13/13
 - [x] Worker secrets set with Cameron's login (production version `3f2e2adc`, not deployed; dev Preview); script fixes `eb1f2e3`; Preview `/api/submit` answers 400 to `{}`; a real submission waits on Cameron (managed widget)
 - [x] gate `1ab04b1` Gate globals node (web-dist `9b7ad54`; crate tests 87/87, wasm + tauri check clean); site `8638b60`: card note, README, node test; playground specs 36 passed / 6 skipped, `test:gpu` 14/14
+- [x] gate `280e5f4` minis for the stream and texture sources (crate test `stream_and_texture_sources_get_preview_cells` validates the WGSL with naga; `patch-minis` spec gains a case; mock registry gains Touch strokes + Triggered effects; crate 89/89, patch specs 22/22); site: web-dist bump, README sentence, `playground.spec.ts` "Touch strokes shows what you draw" (reads the thumbnail's pixels after a stroke)
 - [x] gate `0af40fc` phone motion turns (arbiter + 4 Rust tests, Settings banner + buzz, `imu-turns` spec, status fixture); backend tests 340/340; no web-dist change, so no site bump
 - [x] gate `3f92f16` connection hints + event meters (connect.ts, 5 unit tests; `patch-connect` spec 3; crate event counts, test), gate `48966a2` preview-freeze fix; site `d95c88f` (web-dist `0780ace`): IMU by hand panel, event-meter and IMU specs; playground specs 48 passed / 9 skipped, `test:gpu` 19/19
 - [x] gate `57d0e3e` `setMotionSource` (web-dist `28b9b36`); site `fd9a80c` "Simulate phone motion" on desks (`app/playground/motion.ts`, spec); playground specs 45 passed / 6 skipped, `test:gpu` 17/17

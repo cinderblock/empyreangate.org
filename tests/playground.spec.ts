@@ -211,6 +211,70 @@ test.describe("Pattern playground", () => {
       .toMatch(/×[1-9]/);
   });
 
+  test("a stream source gets a thumbnail: Touch strokes shows what you draw", async ({
+    page,
+  }) => {
+    await expect(page.locator(".patch-name")).toHaveValue("Rainbow Sparkle", {
+      timeout: 20_000,
+    });
+    const stage = page.locator(".pg-stage");
+    await expect(stage).toHaveAttribute(
+      "data-preview",
+      /^(running|unavailable)$/,
+      {
+        timeout: 20_000,
+      },
+    );
+    test.skip(
+      (await stage.getAttribute("data-preview")) !== "running",
+      "no WebGPU in this browser: no thumbnails",
+    );
+    // Rainbow Sparkle already carries a Touch strokes node, which used to be
+    // the one node on its canvas with nothing to show.
+    const ring = page
+      .locator(".pnode", { hasText: "Touch strokes" })
+      .first()
+      .getByRole("img", { name: "Touch strokes preview" });
+    await expect(ring).toBeVisible();
+    // The patch owns touch, so a stroke on the gate is what this node
+    // carries, and its thumbnail lights where the stroke went. Stroke until
+    // the first thumbnail refresh after it shows.
+    const gate = page.locator("canvas.pg-gate");
+    const litPixels = () =>
+      ring.evaluate((c) => {
+        const canvas = c as HTMLCanvasElement;
+        const data = canvas
+          .getContext("2d")!
+          .getImageData(0, 0, canvas.width, canvas.height).data;
+        let lit = 0;
+        for (let i = 3; i < data.length; i += 4) if (data[i] > 0) lit++;
+        return lit;
+      });
+    await expect
+      .poll(
+        async () => {
+          const box = await gate.boundingBox();
+          if (!box) return 0;
+          await page.mouse.move(
+            box.x + box.width * 0.3,
+            box.y + box.height * 0.5,
+          );
+          await page.mouse.down();
+          await page.mouse.move(
+            box.x + box.width * 0.7,
+            box.y + box.height * 0.5,
+            {
+              steps: 8,
+            },
+          );
+          await page.mouse.up();
+          return litPixels();
+        },
+        { timeout: 15_000, intervals: [800] },
+      )
+      .toBeGreaterThan(0);
+  });
+
   test("the Phone IMU node can be driven by hand from its panel", async ({
     page,
   }) => {
