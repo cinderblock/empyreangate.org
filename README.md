@@ -154,7 +154,10 @@ wants to react to them adds the Gate globals node (Inputs), which outputs
 brightness, speed and the master hue pull as scalars. **Arrange** (toolbar,
 or the patch menu on a phone) lays the graph out left to right by its wires
 with a layered layout (dagre); it is deterministic for a given patch and one
-undo step.
+undo step. On a desk, "Simulate phone motion" feeds the Phone IMU node a
+stand-in (`app/playground/motion.ts`); a phone, judged by hover and pointer
+media queries rather than by `DeviceOrientationEvent` (which desktop browsers
+expose with nothing behind it), offers its real sensors.
 
 On a phone the page stacks: the live gate docks at the top and shrinks into a
 bar (with the tool, color, brightness and speed beside it) as you scroll, so

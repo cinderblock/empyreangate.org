@@ -27,6 +27,7 @@ import { Link } from "react-router";
 import { PLAYGROUND, SITE } from "../content/site";
 import { BPM, syntheticAudio } from "../gate/engine";
 import SubmitDialog from "./SubmitDialog";
+import { syntheticMotion } from "./motion";
 import { LocalPatchStore } from "./store";
 import "./playground.css";
 
@@ -361,6 +362,15 @@ export default function Playground() {
     }
   };
 
+  // Desktop browsers expose DeviceOrientationEvent without having any sensor
+  // behind it, so "a phone" is judged by how it is held: no hover, a coarse
+  // pointer. Anything else gets a stand-in (app/playground/motion.ts), so a
+  // Phone IMU node can be tried from a desk.
+  const likelyPhone = useMediaQuery("(hover: none) and (pointer: coarse)");
+  const realMotion =
+    likelyPhone &&
+    typeof window !== "undefined" &&
+    "DeviceOrientationEvent" in window;
   const toggleMotion = async () => {
     if (!runtime) return;
     if (motion) {
@@ -369,7 +379,8 @@ export default function Playground() {
       return;
     }
     try {
-      await runtime.startMotion();
+      if (realMotion) await runtime.startMotion();
+      else runtime.setMotionSource(syntheticMotion());
       setMotion(true);
     } catch (e) {
       setNotice(`Motion: ${e instanceof Error ? e.message : String(e)}`);
@@ -388,8 +399,6 @@ export default function Playground() {
       );
   };
 
-  const hasMotion =
-    typeof window !== "undefined" && "DeviceOrientationEvent" in window;
   const effects = core?.effectKinds.filter((k) => k !== "cone") ?? [];
 
   // Controls that appear twice on a phone (in the dock and in the list).
@@ -680,20 +689,29 @@ export default function Playground() {
             <fieldset>
               <legend>Motion</legend>
               <div className="pg-row pg-wrap">
-                {!hasMotion && (
+                <button
+                  type="button"
+                  disabled={!runtime}
+                  aria-pressed={motion}
+                  title={
+                    realMotion
+                      ? "Feed this phone's orientation and shakes to the Phone IMU node"
+                      : "Feed the Phone IMU node a stand-in: a slow turn, a sway, a shake now and then"
+                  }
+                  onClick={() => void toggleMotion()}
+                >
+                  {realMotion
+                    ? motion
+                      ? "Stop motion"
+                      : "Use phone motion"
+                    : motion
+                      ? "Stop simulated motion"
+                      : "Simulate phone motion"}
+                </button>
+                {!realMotion && (
                   <span className="pg-check">
-                    No motion sensors in this browser.
+                    A stand-in for a phone in a dancer's hand.
                   </span>
-                )}
-                {hasMotion && (
-                  <button
-                    type="button"
-                    disabled={!runtime}
-                    aria-pressed={motion}
-                    onClick={() => void toggleMotion()}
-                  >
-                    {motion ? "Stop motion" : "Use phone motion"}
-                  </button>
                 )}
               </div>
             </fieldset>

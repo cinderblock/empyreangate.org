@@ -67,6 +67,14 @@ site yet." Push the site's `dev` only (never its `master`); the gate app's
   `fitView`. Toolbar button on a wide screen; in the compact menu on a phone,
   where it also closes the sheet. Unit tests in `arrange.test.ts`; behaviour
   spec `tests/patch-arrange.spec.ts`; a site spec on the real preset.
+- **Phone motion on a desk is a stand-in** (Cameron, 2026-10-17: "Use phone
+  motion probably shouldn't appear on desktop, or should be replaced with a
+  simulate button"): desktop browsers expose `DeviceOrientationEvent` with
+  no sensor behind it, so a phone is judged by `(hover: none) and (pointer:
+coarse)`. There the button is "Use phone motion" (real sensors); anywhere
+  else it is "Simulate phone motion", feeding the runtime's new
+  `setMotionSource` a generator (`app/playground/motion.ts`: a slow turn, a
+  sway, a nod, a shake every few seconds, in the real sensor path's units).
 - **The dock**: on narrow screens the live gate is sticky at the top; as you
   scroll it shrinks (a transform, so the canvas and its WebGPU context are
   never re-created) into a bar with controls on either side (tool + color on

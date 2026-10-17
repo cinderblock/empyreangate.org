@@ -143,6 +143,34 @@ test.describe("Pattern playground", () => {
     await expect(page.getByRole("button", { name: "↷ Redo" })).toBeEnabled();
   });
 
+  test("on a desk, phone motion is a stand-in rather than a sensor that isn't there", async ({
+    page,
+  }) => {
+    await expect(page.locator(".patch-name")).toHaveValue("Rainbow Sparkle", {
+      timeout: 20_000,
+    });
+    // A desktop browser has DeviceOrientationEvent with nothing behind it.
+    await expect(
+      page.getByRole("button", { name: "Use phone motion" }),
+    ).toHaveCount(0);
+    const simulate = page.getByRole("button", {
+      name: "Simulate phone motion",
+    });
+    await expect(simulate).toBeVisible();
+    await expect(
+      page.getByText("A stand-in for a phone in a dancer's hand."),
+    ).toBeVisible();
+    // With a preview running it toggles; without WebGPU it is simply disabled.
+    if (await simulate.isEnabled()) {
+      await simulate.click();
+      const stop = page.getByRole("button", { name: "Stop simulated motion" });
+      await expect(stop).toHaveAttribute("aria-pressed", "true");
+      await stop.click();
+      await expect(simulate).toHaveAttribute("aria-pressed", "false");
+      await expect(page.locator(".pg-notice")).toHaveCount(0);
+    }
+  });
+
   test("edits are kept in the browser across reloads", async ({ page }) => {
     await expect(page.locator(".patch-name")).toHaveValue("Rainbow Sparkle", {
       timeout: 20_000,
