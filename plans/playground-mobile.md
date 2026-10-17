@@ -248,6 +248,8 @@ environment); test objects in a moderation queue do no harm.
 - [x] `dev` pushed (rebased onto the other agent's `5797460`; `85f2a63`); Preview checked at 393 px in headless Chrome with WebGPU: dock on → docked at 88 px, side controls live, editor compact, toast, no horizontal overflow
 - [x] gate `d50de97` no toolbar in compact (web-dist `9c735c8`); site `41341e0`
 - [x] gate `574b9de` "Gate globals" card (web-dist `962231d`; `tests/patch-globals.spec.ts`, mock `set_master`); site: Master fieldset gone, card wired, tests in both playground specs; playground specs 33 passed / 6 skipped (3 browsers), `test:gpu` 13/13
+- [x] Worker secrets set with Cameron's login (production version `3f2e2adc`, not deployed; dev Preview); script fixes `eb1f2e3`; Preview `/api/submit` answers 400 to `{}`; a real submission waits on Cameron (managed widget)
+- [x] gate `1ab04b1` Gate globals node (web-dist `9b7ad54`; crate tests 87/87, wasm + tauri check clean); site `8638b60`: card note, README, node test; playground specs 36 passed / 6 skipped, `test:gpu` 14/14
 
 ### Caps and cost (2026-10-16)
 
