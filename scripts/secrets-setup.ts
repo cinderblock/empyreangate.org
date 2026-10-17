@@ -95,7 +95,11 @@ async function turnstileSecret(): Promise<{ sitekey: string; secret: string }> {
 }
 
 async function run(args: string[], input?: string): Promise<void> {
+  // The login spans several accounts; the ops env names the one the worker
+  // lives in, and wrangler cannot ask when it is not on a terminal.
+  const { account } = readOpsEnv();
   const proc = Bun.spawn(["bunx", "wrangler", ...args], {
+    env: { ...process.env, CLOUDFLARE_ACCOUNT_ID: account },
     stdin: input === undefined ? "inherit" : new Blob([input]),
     stdout: "inherit",
     stderr: "inherit",
@@ -121,7 +125,20 @@ if (only !== "preview") {
   try {
     await writeFile(file, JSON.stringify(secrets), { mode: 0o600 });
     console.log(`\nProduction worker ${WORKER}:`);
-    await run(["secret", "bulk", file, "--name", WORKER]);
+    // Pre-launch, master builds upload versions that are never deployed, and
+    // `secret bulk` refuses while the latest version is not live. The
+    // versions form makes a new version carrying the secrets, still without
+    // deploying anything.
+    await run([
+      "versions",
+      "secret",
+      "bulk",
+      file,
+      "--name",
+      WORKER,
+      "--message",
+      "secrets (bun run secrets:setup)",
+    ]);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
