@@ -97,9 +97,23 @@ site yet." Push the site's `dev` only (never its `master`); the gate app's
 
 ## Open questions for the user
 
-1. ~~The three Cloudflare steps for Submit~~ Bucket and widget exist (ops CI,
-   other agent); only the Worker secrets remain, behind Cameron's
-   `bunx wrangler login` then `bun run secrets:setup`.
+1. ~~The three Cloudflare steps for Submit~~ All done. Bucket and widget via
+   ops CI (other agent); secrets set 2026-10-16 after Cameron's
+   `wrangler login`: production got a new version `3f2e2adc` carrying the
+   four secrets (**not deployed**, as pre-launch master builds are not), the
+   `dev` Preview got them one by one. The script needed two fixes
+   (`eb1f2e3`): the login spans four accounts, so the ops env's account id
+   goes to wrangler; and `secret bulk` refuses while the latest version is
+   not live, so production uses `versions secret bulk`. `POST /api/submit`
+   on the Preview now answers 400 to an empty body (was 503).
+   **Still to prove: one real submission.** The widget is `mode: managed`
+   and shows a "Verify you are human" checkbox to headless Chrome; the
+   agent does not complete CAPTCHAs, so Cameron makes one submission from
+   a browser, then `bun run submissions` confirms it in the bucket.
+   The ADMIN_TOKEN the script printed is in `%USERPROFILE%\eg-secrets-setup.txt`
+   (and nowhere else): copy it into a password manager and delete the file.
+   Consider `mode: non-interactive` or `invisible` in ops if the checkbox
+   is unwanted for visitors (an ops change; needs a yes).
 2. ~~Should the dev Preview get the bucket binding and secret too?~~ Yes
    (Cameron, 2026-10-16); bound in `wrangler.jsonc`, secret waits on the login.
 3. Where submissions should notify (`NOTIFY_WEBHOOK`): still open.
