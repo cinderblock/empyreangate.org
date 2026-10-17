@@ -149,8 +149,11 @@ On a phone the page stacks: the live gate docks at the top and shrinks into a
 bar (with the tool, color, brightness and speed beside it) as you scroll, so
 it stays in view over the controls and the node graph. "Keep the gate in view"
 turns that off; both it and the one-time "works best on a desktop" toast are
-remembered in localStorage. The editor itself switches to sheets (Add node,
-and a node's settings on double-tap) when narrower than 640 px.
+remembered in localStorage. Narrower than 640 px the editor itself drops its
+toolbar: the open patch is a chip on the canvas (tap it for a menu sheet with
+rename, status, open, new, save, submit and delete), ＋ opens the palette as a
+sheet, a ⚠ chip appears only while the patch cannot run, and a node's
+settings open on double-tap or from a pill.
 
 ## Photos
 

@@ -13,11 +13,15 @@ const DOCK_HEIGHT = 88; // 5.5rem at the default root size
 test.describe("Pattern playground on a phone", () => {
   test.use({ viewport: PHONE, hasTouch: true });
 
-  test.beforeEach(async ({ page }) => {
-    await page.goto("/playground");
-    await expect(page.locator(".patch-name")).toHaveValue("Rainbow Sparkle", {
+  // Compact has no toolbar: the open patch shows as a chip on the canvas.
+  const opened = (page: import("@playwright/test").Page) =>
+    expect(page.locator(".patch-name-chip")).toContainText("Rainbow Sparkle", {
       timeout: 20_000,
     });
+
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/playground");
+    await opened(page);
     await expect(page.locator(".pg-stage")).toHaveAttribute(
       "data-preview",
       /^(running|unavailable)$/,
@@ -49,9 +53,7 @@ test.describe("Pattern playground on a phone", () => {
     await toast.getByRole("button", { name: "Got it" }).click();
     await expect(toast).toHaveCount(0);
     await page.reload();
-    await expect(page.locator(".patch-name")).toHaveValue("Rainbow Sparkle", {
-      timeout: 20_000,
-    });
+    await opened(page);
     await expect(page.locator(".pg-toast")).toHaveCount(0);
   });
 
@@ -105,20 +107,20 @@ test.describe("Pattern playground on a phone", () => {
       .poll(async () => (await gate.boundingBox())!.y)
       .toBeLessThan(0);
     await page.reload();
-    await expect(page.locator(".patch-name")).toHaveValue("Rainbow Sparkle", {
-      timeout: 20_000,
-    });
+    await opened(page);
     await expect(page.locator(".pg-stage")).toHaveAttribute("data-dock", "off");
   });
 
   test("the editor's palette and node settings are sheets", async ({
     page,
   }) => {
+    // The one-time toast sits over the bottom of the screen; out of the way.
+    await page.getByRole("button", { name: "Got it" }).click();
     await page.locator(".pg-editor").scrollIntoViewIfNeeded();
     await expect(page.locator(".patch-tab")).toHaveClass(/compact/);
     await expect(page.locator(".patch-palette")).toHaveCount(0);
     const before = await page.locator(".pnode").count();
-    await page.getByRole("button", { name: "＋ Add node" }).click();
+    await page.getByRole("button", { name: "Add node" }).click();
     const palette = page.locator(".patch-palette.patch-sheet");
     await expect(palette).toBeVisible();
     await palette.locator(".palette-item", { hasText: "Plasma" }).click();
