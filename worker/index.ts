@@ -1,8 +1,11 @@
 /**
- * The site's only server code: `POST /api/submit`, the playground's Submit.
- * Everything else is the prerendered static site, served from assets without
- * waking this Worker (`assets.run_worker_first` in wrangler.jsonc covers
- * `/api/*` only).
+ * The site's server code, all under `/api/`: `POST /api/submit`, the
+ * playground's Submit; `/api/notify/*`, the crew's push subscriptions;
+ * `/api/submissions*`, the queue for the gate's Patch tab (admin token);
+ * `GET /api/live`, whether the gate's public floor is up and what it is
+ * playing. Everything else is the prerendered static site, served from
+ * assets without waking this Worker (`assets.run_worker_first` in
+ * wrangler.jsonc covers `/api/*` only).
  *
  * A submission is a patch plus who sent it. It is checked (Turnstile, size,
  * shape), then written to R2 as one JSON object for us to review; nothing is
@@ -56,6 +59,9 @@ export interface Env {
   VAPID_PUBLIC_KEY?: string;
   VAPID_PRIVATE_KEY?: string;
   ADMIN_TOKEN?: string;
+  /** The gate's public floor (`vars` in wrangler.jsonc), for `/api/live`.
+   * Unset on a build without one: then nothing is ever live. */
+  LIVE_URL?: string;
 }
 
 /** Where push subscriptions live in the bucket, and how many at most. */
@@ -129,7 +135,14 @@ function sameSecret(a: string, b: string): boolean {
   return diff === 0;
 }
 
-function authorized(request: Request, env: PushEnv): boolean {
+/** The queue and the push subscriptions share the admin token. */
+type AdminEnv = Env & { SUBMISSIONS: R2Bucket; ADMIN_TOKEN: string };
+
+function adminReady(env: Env): env is AdminEnv {
+  return Boolean(env.SUBMISSIONS && env.ADMIN_TOKEN);
+}
+
+function authorized(request: Request, env: { ADMIN_TOKEN: string }): boolean {
   const header = request.headers.get("authorization") ?? "";
   const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
   return token.length > 0 && sameSecret(token, env.ADMIN_TOKEN);
@@ -341,11 +354,269 @@ async function notify(request: Request, env: Env, url: URL): Promise<Response> {
   return json(404, { error: "No such endpoint." });
 }
 
-function json(status: number, body: unknown): Response {
+function json(
+  status: number,
+  body: unknown,
+  cacheControl = "no-store",
+): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json; charset=utf-8" },
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": cacheControl,
+    },
   });
+}
+
+// ---------------------------------------------------------------------------
+// The gate, live: /api/live
+// ---------------------------------------------------------------------------
+
+/** What `/api/live` answers, from the floor's `/health` (docs/public-deploy.md
+ * in the gate repo). Nothing in it is private: the floor's own page shows
+ * the same. */
+export interface Live {
+  live: boolean;
+  /** Where to play, when live. */
+  url?: string;
+  /** The floor's master switch (the listener can be up with the floor closed). */
+  open?: boolean;
+  players?: number;
+  /** The running game's kind, if any. */
+  game?: string | null;
+  /** The patch on air and who it credits; null while the layer stack renders. */
+  nowPlaying?: { name: string; credit: string } | null;
+}
+
+/** How long one isolate keeps the floor's answer. The home page asks on
+ * every visit; the gate should hear from a few edges a minute, not from
+ * every visitor. */
+export const LIVE_TTL_MS = 10_000;
+/** How long to wait for the floor; a dark gate must not slow the page. */
+const LIVE_TIMEOUT_MS = 4_000;
+const liveMemo = new Map<string, { at: number; body: Live }>();
+
+/** For tests: forget what the floor said. */
+export function forgetLive(): void {
+  liveMemo.clear();
+}
+
+async function askFloor(url: string): Promise<Live> {
+  const base = url.replace(/\/+$/, "");
+  try {
+    const res = await deps.fetch(`${base}/health`, {
+      headers: { accept: "application/json" },
+      signal: AbortSignal.timeout(LIVE_TIMEOUT_MS),
+    });
+    if (!res.ok) return { live: false };
+    const out: Live = { live: true, url: base };
+    // Older gates answer 204 with no body: up, nothing more to say.
+    if ((res.headers.get("content-type") ?? "").includes("json")) {
+      const h = (await res.json()) as {
+        open?: unknown;
+        players?: unknown;
+        game?: unknown;
+        now_playing?: unknown;
+      };
+      if (typeof h.open === "boolean") out.open = h.open;
+      if (typeof h.players === "number") out.players = h.players;
+      out.game = typeof h.game === "string" ? h.game : null;
+      const np = h.now_playing as { name?: unknown; credit?: unknown } | null;
+      out.nowPlaying =
+        np && typeof np === "object" && typeof np.name === "string"
+          ? {
+              name: clip(np.name, 80),
+              credit: typeof np.credit === "string" ? clip(np.credit, 80) : "",
+            }
+          : null;
+    }
+    return out;
+  } catch {
+    // Down, or no tunnel yet: not live, and nothing worth logging.
+    return { live: false };
+  }
+}
+
+async function live(env: Env): Promise<Response> {
+  if (!env.LIVE_URL) return json(200, { live: false }, "public, max-age=60");
+  const now = Date.now();
+  const memo = liveMemo.get(env.LIVE_URL);
+  if (memo && now - memo.at < LIVE_TTL_MS) {
+    return json(200, memo.body, `public, max-age=${LIVE_TTL_MS / 1000}`);
+  }
+  const body = await askFloor(env.LIVE_URL);
+  liveMemo.set(env.LIVE_URL, { at: now, body });
+  return json(200, body, `public, max-age=${LIVE_TTL_MS / 1000}`);
+}
+
+// ---------------------------------------------------------------------------
+// The queue, for the gate's Patch tab: /api/submissions
+// ---------------------------------------------------------------------------
+
+const SUBMISSIONS_PREFIX = "submissions/";
+/** Where a decided submission goes: `reviewed/<decision>/<rest of key>`. */
+const REVIEWED_PREFIX = "reviewed/";
+/** How many of the newest the list carries; each is one read. */
+const LIST_LIMIT = 100;
+
+/** One queue entry as the list carries it: the record without its patch,
+ * plus the patch's name and size. */
+export interface SubmissionSummary {
+  key: string;
+  id: string;
+  submittedAt: string;
+  name: string;
+  contact: string;
+  message: string;
+  country: string | null;
+  patch: { name: string; description: string; nodes: number; edges: number };
+}
+
+/** When a key was written: its leaf is `<ms>-<uuid>.json`. */
+export function keyTime(key: string): number {
+  const leaf = key.slice(key.lastIndexOf("/") + 1);
+  return Number(leaf.split("-")[0]) || 0;
+}
+
+function summarize(key: string, record: unknown): SubmissionSummary {
+  const r = (record && typeof record === "object" ? record : {}) as Record<
+    string,
+    unknown
+  >;
+  const patch = (r.patch && typeof r.patch === "object" ? r.patch : {}) as {
+    name?: unknown;
+    description?: unknown;
+    nodes?: unknown;
+    edges?: unknown;
+  };
+  const str = (v: unknown) => (typeof v === "string" ? v : "");
+  return {
+    key,
+    id: str(r.id),
+    submittedAt: str(r.submittedAt),
+    name: str(r.name),
+    contact: str(r.contact),
+    message: str(r.message),
+    country: typeof r.country === "string" ? r.country : null,
+    patch: {
+      name: str(patch.name),
+      description: str(patch.description),
+      nodes: Array.isArray(patch.nodes) ? patch.nodes.length : 0,
+      edges: Array.isArray(patch.edges) ? patch.edges.length : 0,
+    },
+  };
+}
+
+function submissionKeyOk(key: string, prefixes: string[]): boolean {
+  return (
+    prefixes.some((p) => key.startsWith(p)) &&
+    key.endsWith(".json") &&
+    !key.includes("..")
+  );
+}
+
+/** `/api/submissions`: the queue, newest first, for the gate's Patch tab
+ * (through its backend, which holds the admin token) and the crew.
+ * `?key=` reads one record; `POST /api/submissions/decide` moves one out of
+ * the queue under `reviewed/<used|declined>/`, keeping it. */
+async function submissions(
+  request: Request,
+  env: Env,
+  url: URL,
+): Promise<Response> {
+  if (!adminReady(env)) {
+    return json(503, { error: "Submissions aren't set up on this build yet." });
+  }
+  if (!authorized(request, env)) {
+    return json(401, { error: "That admin token isn't right." });
+  }
+  if (url.pathname === "/api/submissions") {
+    if (request.method !== "GET") return json(405, { error: "GET the queue." });
+    const key = url.searchParams.get("key");
+    if (key !== null) {
+      if (!submissionKeyOk(key, [SUBMISSIONS_PREFIX, REVIEWED_PREFIX])) {
+        return json(400, { error: "That isn't a submission key." });
+      }
+      const stored = await env.SUBMISSIONS.get(key);
+      if (!stored) return json(404, { error: "No such submission." });
+      let record: unknown;
+      try {
+        record = JSON.parse(await stored.text());
+      } catch {
+        return json(500, { error: "That submission can't be read." });
+      }
+      return json(200, { submission: { key, ...(record as object) } });
+    }
+    const list = await env.SUBMISSIONS.list({
+      prefix: SUBMISSIONS_PREFIX,
+      limit: 1000,
+    });
+    const keys = list.objects
+      .map((o) => o.key)
+      .sort((a, b) => keyTime(b) - keyTime(a))
+      .slice(0, LIST_LIMIT);
+    const out: SubmissionSummary[] = [];
+    // A few reads at a time: the queue is short, the Patch tab is waiting.
+    for (let i = 0; i < keys.length; i += 10) {
+      const chunk = await Promise.all(
+        keys.slice(i, i + 10).map(async (k) => {
+          const stored = await env.SUBMISSIONS.get(k);
+          if (!stored) return null;
+          try {
+            return summarize(k, JSON.parse(await stored.text()));
+          } catch {
+            return null;
+          }
+        }),
+      );
+      for (const s of chunk) if (s) out.push(s);
+    }
+    return json(200, {
+      submissions: out,
+      truncated: list.truncated || list.objects.length > LIST_LIMIT,
+    });
+  }
+  if (url.pathname === "/api/submissions/decide") {
+    if (request.method !== "POST") {
+      return json(405, { error: "POST a decision." });
+    }
+    let body: { key?: unknown; decision?: unknown };
+    try {
+      body = (await request.json()) as typeof body;
+    } catch {
+      return json(400, { error: "That request wasn't JSON." });
+    }
+    const key = typeof body.key === "string" ? body.key : "";
+    if (!submissionKeyOk(key, [SUBMISSIONS_PREFIX])) {
+      return json(400, { error: "That isn't a queued submission's key." });
+    }
+    const decision = body.decision;
+    if (decision !== "used" && decision !== "declined") {
+      return json(400, { error: "A decision is used or declined." });
+    }
+    const stored = await env.SUBMISSIONS.get(key);
+    if (!stored) return json(404, { error: "No such submission." });
+    const text = await stored.text();
+    let record: Record<string, unknown>;
+    try {
+      record = JSON.parse(text) as Record<string, unknown>;
+    } catch {
+      record = { raw: text };
+    }
+    const reviewedKey = `${REVIEWED_PREFIX}${decision}/${key.slice(SUBMISSIONS_PREFIX.length)}`;
+    await env.SUBMISSIONS.put(
+      reviewedKey,
+      JSON.stringify(
+        { ...record, decision, decidedAt: new Date().toISOString() },
+        null,
+        2,
+      ),
+      { httpMetadata: { contentType: "application/json" } },
+    );
+    await env.SUBMISSIONS.delete(key);
+    return json(200, { ok: true, key: reviewedKey });
+  }
+  return json(404, { error: "No such endpoint." });
 }
 
 /** Check a submission's fields; returns an error message or null. */
@@ -538,6 +809,26 @@ export default {
     if (url.pathname.startsWith("/api/notify/")) {
       try {
         return await notify(request, env, url);
+      } catch (e) {
+        console.error(`${url.pathname} failed:`, e);
+        return json(500, { error: "Something went wrong. Try again later." });
+      }
+    }
+    if (url.pathname === "/api/live") {
+      if (request.method !== "GET") return json(405, { error: "GET it." });
+      try {
+        return await live(env);
+      } catch (e) {
+        console.error("Live check failed:", e);
+        return json(200, { live: false });
+      }
+    }
+    if (
+      url.pathname === "/api/submissions" ||
+      url.pathname.startsWith("/api/submissions/")
+    ) {
+      try {
+        return await submissions(request, env, url);
       } catch (e) {
         console.error(`${url.pathname} failed:`, e);
         return json(500, { error: "Something went wrong. Try again later." });

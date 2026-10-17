@@ -24,6 +24,7 @@ import {
 } from "@empyrean-gate/patch-web/runtime";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
+import { PlayLive, useLive } from "../components/LiveLink";
 import { PLAYGROUND, SITE } from "../content/site";
 import { BPM, syntheticAudio } from "../gate/engine";
 import SubmitDialog from "./SubmitDialog";
@@ -58,6 +59,8 @@ export default function Playground() {
   const [status, setStatus] = useState<RuntimeStatus | null>(null);
   const [doc, setDoc] = useState<PatchDoc | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // The real gate, when it is up: a chip in the bar to go play it.
+  const live = useLive();
   const [submitting, setSubmitting] = useState(false);
 
   const [tool, setTool] = useState<Tool>({ mode: "tap", effect: "burst" });
@@ -533,6 +536,7 @@ export default function Playground() {
           The Empyrean Gate
         </Link>
         <h1>Pattern playground</h1>
+        <PlayLive live={live} className="pg-live" />
         <span className="pg-bar-hint">
           Build a pattern from the gate's own nodes. It runs here exactly as it
           would on the gate.

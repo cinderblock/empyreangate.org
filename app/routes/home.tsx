@@ -1,6 +1,7 @@
 import type { MetaFunction } from "react-router";
 import { Link } from "react-router";
 import GateRender from "../components/GateRender";
+import { NowPlaying, PlayLive, useLive } from "../components/LiveLink";
 import { CREW, EARLIER, type Person } from "../content/credits";
 import { PHOTOS } from "../content/gallery";
 import { PHOTO_MANIFEST } from "../content/photo-manifest";
@@ -197,6 +198,8 @@ const SHOWN_PHOTOS =
 const nf = new Intl.NumberFormat("en-US");
 
 export default function Home() {
+  // Whether the gate is up right now (nothing until the browser has asked).
+  const live = useLive();
   return (
     <>
       <header className="site-header">
@@ -247,7 +250,9 @@ export default function Home() {
                 </time>
               </External>
             </p>
+            <NowPlaying live={live} />
             <div className="hero-actions">
+              <PlayLive live={live} className="button button-live" />
               <a className="button" href={`#${PIECE.id}`}>
                 About the gate
               </a>

@@ -71,6 +71,41 @@ test.describe("Home", () => {
     ).toHaveAttribute("href", "/playground");
   });
 
+  test("offers Play it live, and what is on, only while the gate answers", async ({
+    page,
+  }) => {
+    // The page is prerendered knowing nothing about the gate; the browser
+    // asks /api/live once mounted (worker/index.ts), mocked here.
+    await page.route("**/api/live", (route) =>
+      route.fulfill({
+        json: {
+          live: true,
+          url: "https://play.example.org",
+          open: true,
+          players: 2,
+          nowPlaying: { name: "Ember Drift", credit: "Ada" },
+        },
+      }),
+    );
+    await page.goto("/");
+    const button = page
+      .locator(".hero-actions")
+      .getByRole("link", { name: "Play it live ↗" });
+    await expect(button).toHaveAttribute("href", "https://play.example.org");
+    await expect(page.locator(".now-playing")).toContainText(
+      "Ember Drift by Ada",
+    );
+
+    await page.route("**/api/live", (route) =>
+      route.fulfill({ json: { live: false } }),
+    );
+    const answered = page.waitForResponse("**/api/live");
+    await page.goto("/");
+    await answered;
+    await expect(button).toHaveCount(0);
+    await expect(page.locator(".now-playing")).toHaveCount(0);
+  });
+
   test("links to the software and to Entheos", async ({ page }) => {
     await expect(
       page

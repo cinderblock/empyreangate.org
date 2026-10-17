@@ -29,6 +29,18 @@ test.describe("Pattern playground", () => {
     expect(await page.locator(".palette-item").count()).toBeGreaterThan(30);
   });
 
+  test("the bar offers the real gate while it is live", async ({ page }) => {
+    await page.route("**/api/live", (route) =>
+      route.fulfill({
+        json: { live: true, url: "https://play.example.org", open: true },
+      }),
+    );
+    await page.goto("/playground");
+    await expect(
+      page.locator(".pg-bar").getByRole("link", { name: "Play it live ↗" }),
+    ).toHaveAttribute("href", "https://play.example.org");
+  });
+
   test("links to the engine and the editor on GitHub", async ({ page }) => {
     const links = page.getByRole("navigation", { name: "Source code" });
     await expect(links.getByRole("link", { name: "Engine ↗" })).toHaveAttribute(

@@ -39,6 +39,7 @@
   // binding joins this block together with the production one below, once
   // the bucket exists.
   "previews": {
+    "vars": { "LIVE_URL": "https://play.empyreangate.org" },
     "r2_buckets": [
       { "binding": "SUBMISSIONS", "bucket_name": "empyreangate-submissions" },
     ],
@@ -50,6 +51,11 @@
       },
     ],
   },
+  // Where the gate's public floor answers (a cloudflared tunnel on the show
+  // machine to the gate app's public listener, declared by ops with the rest
+  // of the zone). `GET /api/live` asks its /health and the pages show "Play
+  // it live" while it answers; until the tunnel exists it is simply dark.
+  "vars": { "LIVE_URL": "https://play.empyreangate.org" },
   // Playground submissions go to an R2 bucket bound as SUBMISSIONS, declared
   // and created by ops (cloudflare/config/projects/empyreangate.yaml); wrangler
   // fails on a missing bucket rather than creating one. The crew's push

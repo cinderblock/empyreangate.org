@@ -53,6 +53,22 @@
   color: var(--ink-muted);
 }
 
+/* The real gate, when it is up (components/LiveLink.tsx). */
+.pg-live {
+  padding: 0.15rem 0.7rem;
+  border-radius: 999px;
+  background: var(--gold);
+  color: var(--accent-ink);
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pg-live:hover {
+  text-decoration: none;
+  filter: brightness(1.1);
+}
+
 /* Where the engine and editor live, at the bar's far end. */
 .pg-bar-links {
   display: flex;

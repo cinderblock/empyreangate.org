@@ -2,9 +2,12 @@ import { describe, expect, test } from "bun:test";
 import worker, {
   checkSubmission,
   deps,
+  forgetLive,
+  keyTime,
   LIMITS,
   visitorAddress,
   type Env,
+  type SubmissionSummary,
 } from "./index";
 import { generateVapidKeys } from "./webpush";
 
@@ -457,6 +460,241 @@ describe("crew notifications", () => {
     } finally {
       globalThis.fetch = realFetch;
       deps.fetch = realPush;
+    }
+  });
+});
+
+describe("the gate, live", () => {
+  function get(path: string) {
+    return new Request(`https://empyreangate.org${path}`);
+  }
+  test("without a floor URL nothing is ever live", async () => {
+    forgetLive();
+    const res = await worker.fetch(get("/api/live"), env().env, ctx);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ live: false });
+  });
+
+  test("a floor that answers is live, with what it says is on", async () => {
+    forgetLive();
+    const realFetch = deps.fetch;
+    const asked: string[] = [];
+    deps.fetch = async (input) => {
+      asked.push(String(input));
+      return Response.json({
+        ok: true,
+        open: true,
+        players: 3,
+        game: null,
+        now_playing: { name: "Ember Drift", credit: "Ada" },
+      });
+    };
+    try {
+      const e = env({ LIVE_URL: "https://play.example.org/" }).env;
+      const res = await worker.fetch(get("/api/live"), e, ctx);
+      expect(res.headers.get("cache-control")).toBe("public, max-age=10");
+      expect(await res.json()).toEqual({
+        live: true,
+        url: "https://play.example.org",
+        open: true,
+        players: 3,
+        game: null,
+        nowPlaying: { name: "Ember Drift", credit: "Ada" },
+      });
+      expect(asked).toEqual(["https://play.example.org/health"]);
+      // Asked again inside the memo window: the floor is not.
+      await worker.fetch(get("/api/live"), e, ctx);
+      expect(asked).toHaveLength(1);
+    } finally {
+      deps.fetch = realFetch;
+    }
+  });
+
+  test("a floor that is down, or an older one answering 204, is handled", async () => {
+    const realFetch = deps.fetch;
+    try {
+      forgetLive();
+      deps.fetch = async () => {
+        throw new TypeError("fetch failed");
+      };
+      const e = env({ LIVE_URL: "https://play.example.org" }).env;
+      expect(
+        await (await worker.fetch(get("/api/live"), e, ctx)).json(),
+      ).toEqual({
+        live: false,
+      });
+      forgetLive();
+      deps.fetch = async () => new Response(null, { status: 204 });
+      expect(
+        await (await worker.fetch(get("/api/live"), e, ctx)).json(),
+      ).toEqual({
+        live: true,
+        url: "https://play.example.org",
+      });
+    } finally {
+      deps.fetch = realFetch;
+    }
+  });
+});
+
+describe("the queue", () => {
+  function call(path: string, init: RequestInit & { token?: string } = {}) {
+    const headers: Record<string, string> = {
+      "content-type": "application/json",
+    };
+    if (init.token) headers.authorization = `Bearer ${init.token}`;
+    return new Request(`https://empyreangate.org${path}`, { ...init, headers });
+  }
+  async function queued(overrides: Partial<Env> = {}) {
+    const made = env({ ADMIN_TOKEN: "letmein", ...overrides });
+    const bucket = made.env.SUBMISSIONS!;
+    const record = (id: string, name: string, patchName: string) =>
+      JSON.stringify({
+        id,
+        submittedAt: "2026-10-17T08:02:00.000Z",
+        name,
+        contact: "",
+        message: `note from ${name}`,
+        agreed: true,
+        country: "US",
+        patch: { ...patch, name: patchName },
+      });
+    await bucket.put(
+      "submissions/2026-10-16/aaaa/1760600000000-older.json",
+      record("older", "Grace", "Night Tide"),
+    );
+    await bucket.put(
+      "submissions/2026-10-17/bbbb/1760700000000-newer.json",
+      record("newer", "Ada", "Ember Drift"),
+    );
+    // Not part of the queue: the crew's push subscriptions share the bucket.
+    await bucket.put("notify/device.json", "{}");
+    return made;
+  }
+
+  test("keys sort by the time they were written", () => {
+    expect(keyTime("submissions/2026-10-17/bbbb/1760700000000-x.json")).toBe(
+      1760700000000,
+    );
+    expect(keyTime("junk")).toBe(0);
+  });
+
+  test("needs the admin token, and is closed until it exists", async () => {
+    const closed = env().env;
+    expect(
+      (await worker.fetch(call("/api/submissions"), closed, ctx)).status,
+    ).toBe(503);
+    const { env: e } = await queued();
+    expect((await worker.fetch(call("/api/submissions"), e, ctx)).status).toBe(
+      401,
+    );
+    expect(
+      (await worker.fetch(call("/api/submissions", { token: "nope" }), e, ctx))
+        .status,
+    ).toBe(401);
+  });
+
+  test("lists the queue newest first, one record on request", async () => {
+    const { env: e } = await queued();
+    const res = await worker.fetch(
+      call("/api/submissions", { token: "letmein" }),
+      e,
+      ctx,
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      submissions: SubmissionSummary[];
+      truncated: boolean;
+    };
+    expect(body.truncated).toBe(false);
+    expect(body.submissions.map((s) => s.patch.name)).toEqual([
+      "Ember Drift",
+      "Night Tide",
+    ]);
+    expect(body.submissions[0]).toMatchObject({
+      key: "submissions/2026-10-17/bbbb/1760700000000-newer.json",
+      id: "newer",
+      name: "Ada",
+      message: "note from Ada",
+      country: "US",
+      patch: { name: "Ember Drift", nodes: 2, edges: 1 },
+    });
+    expect("nodes" in body.submissions[0].patch).toBe(true);
+    expect(JSON.stringify(body)).not.toContain('"kind"');
+
+    const one = await worker.fetch(
+      call(
+        `/api/submissions?key=${encodeURIComponent(body.submissions[0].key)}`,
+        { token: "letmein" },
+      ),
+      e,
+      ctx,
+    );
+    expect(one.status).toBe(200);
+    const { submission } = (await one.json()) as {
+      submission: { key: string; name: string; patch: typeof patch };
+    };
+    expect(submission.name).toBe("Ada");
+    expect(submission.patch.nodes).toHaveLength(2);
+
+    for (const bad of ["notify/device.json", "submissions/../x.json", "x"]) {
+      const res = await worker.fetch(
+        call(`/api/submissions?key=${encodeURIComponent(bad)}`, {
+          token: "letmein",
+        }),
+        e,
+        ctx,
+      );
+      expect(res.status).toBe(400);
+    }
+  });
+
+  test("a decision moves the record under reviewed/ and out of the queue", async () => {
+    const { env: e, puts } = await queued();
+    const key = "submissions/2026-10-16/aaaa/1760600000000-older.json";
+    const res = await worker.fetch(
+      call("/api/submissions/decide", {
+        method: "POST",
+        token: "letmein",
+        body: JSON.stringify({ key, decision: "used" }),
+      }),
+      e,
+      ctx,
+    );
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      ok: true,
+      key: "reviewed/used/2026-10-16/aaaa/1760600000000-older.json",
+    });
+    expect(puts.map((p) => p.key)).not.toContain(key);
+    const moved = puts.find((p) => p.key.startsWith("reviewed/used/"))!;
+    expect(JSON.parse(moved.value)).toMatchObject({
+      id: "older",
+      decision: "used",
+    });
+    const list = (await (
+      await worker.fetch(call("/api/submissions", { token: "letmein" }), e, ctx)
+    ).json()) as { submissions: SubmissionSummary[] };
+    expect(list.submissions.map((s) => s.id)).toEqual(["newer"]);
+
+    for (const body of [
+      { key, decision: "used" },
+      { key: "reviewed/used/x.json", decision: "used" },
+      {
+        key: "submissions/2026-10-17/bbbb/1760700000000-newer.json",
+        decision: "maybe",
+      },
+    ]) {
+      const res = await worker.fetch(
+        call("/api/submissions/decide", {
+          method: "POST",
+          token: "letmein",
+          body: JSON.stringify(body),
+        }),
+        e,
+        ctx,
+      );
+      expect([400, 404]).toContain(res.status);
     }
   });
 });

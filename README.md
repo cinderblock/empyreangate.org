@@ -11,7 +11,9 @@ Built from [cinderblock/ssg-base](https://github.com/cinderblock/ssg-base):
 React 19 + React Router 8, Vite, TypeScript, Bun, Playwright, oxfmt + lefthook.
 Fully prerendered. Two pieces of live code: the WebGL render of the array on the
 home page, and the [pattern playground](#the-pattern-playground). The only
-server code is the playground's Submit endpoint (`worker/index.ts`).
+server code is the small `/api/` Worker (`worker/index.ts`): the playground's
+Submit, the queue it feeds, the crew's notifications, and whether the gate is
+[live](#the-live-gate).
 
 ## Getting started
 
@@ -179,6 +181,32 @@ toolbar: the open patch is a chip on the canvas (tap it for a menu sheet with
 rename, status, open, new, save, submit and delete), ＋ opens the palette as a
 sheet, a ⚠ chip appears only while the patch cannot run, and a node's
 settings open on double-tap or from a pill.
+
+## The live gate
+
+The gate app's public floor (its second listener, built to sit behind a
+cloudflared tunnel; `docs/public-deploy.md` in the gate repo) is reached at
+`play.empyreangate.org`. This site links to it two ways:
+
+**Play it live.** `GET /api/live` asks the floor's `/health` (whether the
+floor is open, how many are playing, the game, the patch on air and its
+credit) and keeps the answer for ten seconds per edge, so the gate hears from
+a few edges a minute rather than from every visitor; a dark gate answers
+`{ "live": false }` within four seconds. The home page's hero and the
+playground's bar ask it once mounted (`app/components/LiveLink.tsx`) and show
+**Play it live** and "On now: _Ember Drift_ by _Ada_" only while the gate
+answers. The floor's URL is `LIVE_URL` in `wrangler.jsonc`; without it nothing
+is ever live.
+
+**The queue reaches the gate.** `GET /api/submissions` lists the newest
+hundred submissions (without their patches), `?key=` reads one, and
+`POST /api/submissions/decide` moves one under `reviewed/<used|declined>/`,
+all behind the admin token. The gate's Patch tab has a **Submissions…**
+drawer that reads them through the gate's own backend (the token sits in the
+gate's config on the show machine, typed under Settings → Submissions, never
+in a browser), opens one as a new patch credited to its sender, and marks it
+used or declined. `bun run submissions` remains for pulling the bucket to a
+laptop.
 
 ## Photos
 

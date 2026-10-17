@@ -307,6 +307,45 @@ p {
   transform: translateY(-1px);
 }
 
+/* "Play it live": only while the gate answers (components/LiveLink.tsx). */
+.button-live {
+  background: var(--gold);
+  color: var(--accent-ink);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--gold) 55%, transparent);
+  animation: live-pulse 2.4s ease-out infinite;
+}
+
+.button-live:hover {
+  background: var(--gold);
+}
+
+@keyframes live-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--gold) 55%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 12px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button-live {
+    animation: none;
+  }
+}
+
+.now-playing {
+  margin-top: 0.6rem;
+}
+
+.now-playing-name {
+  color: var(--ink);
+  font-weight: 600;
+}
+
 .button-ghost {
   background: transparent;
   color: var(--ink);
