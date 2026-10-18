@@ -42,7 +42,12 @@ press **Submit** to send it to us for possible use on the real gate.
   npm package (Cameron: "npm seems heavy"). Because the package contains
   built artifacts (wasm, JS), the gate repo's CI builds it and commits it to
   a `web-dist` branch (append-only, never force-pushed); the site pins a
-  `web-dist` commit in `bun.lock`.
+  `web-dist` commit in `bun.lock`. The pin moves by itself: the site's "Web
+  dist bump" workflow polls the branch every 15 minutes and pushes the bump
+  to `dev` after typecheck, unit tests and a build (Cameron, 2026-10-17:
+  "Start with polling, as long as it is free"; the repo is public, so it
+  is). A dispatch from the gate's CI would be quicker but needs a cross-repo
+  token; add it only if the latency ever matters.
 - **Submit = Worker + R2/D1 + Turnstile** (Cameron: "sounds great"). Still
   needs per-change approval for the ops-repo / Cloudflare part.
 - **Restructuring the gate repo is fine** (Cameron: "yes. boil the ocean").
@@ -236,6 +241,12 @@ Not in ops today: Turnstile widgets (no schema support) and worker secrets.
       is fine to push). CI green; web-dist now built by CI (`f3c3891`), and
       the site depends on that build.
 - [x] Ops: submissions bucket (ops `0a37785`)
+- [x] The `web-dist` pin bumps itself: `.github/workflows/web-dist-bump.yml`
+      (2026-10-17). Cheap check first (one `ls-remote` against the pin), the
+      full update + typecheck + tests + build only when the branch moved, a
+      commit in the hand bumps' shape listing the shared-code gate commits it
+      picks up, pushed to `dev` only. Its first manual run has a real bump to
+      make (web-dist `5227d06`, gate `629d15c`); result below.
 - [x] Turnstile widget + `TURNSTILE_SECRET` + site key (ops `c5140e6`, secrets above)
 - [x] The R2 binding, on production and Previews (`64b3f63`)
 
@@ -316,6 +327,8 @@ playground's IndexedDB, files) migrated on load. Site `107e84c` (web-dist
 - Don't hand-port codegen or the evaluator to TypeScript. Everything that
   knows a GPU layout lives in Rust and crosses to JS as bytes.
 - Don't force-push `web-dist`; CI appends.
+- Don't bump the `web-dist` pin by hand any more unless the bump workflow is
+  red; two bumps in flight rebase onto each other and one of them loses.
 - Don't touch Cloudflare/ops for the submit endpoint without per-change
   approval.
 - Don't do the gate work in the main Empyrean checkout; it's shared with

@@ -1,0 +1,130 @@
+name: Web dist bump
+
+# Keeps the playground on the newest build of @empyrean-gate/patch-web.
+#
+# package.json asks for the gate's `web-dist` branch, but bun.lock pins the one
+# commit of it that was installed, and Workers Builds installs with a frozen
+# lockfile, so the site only moves when that pin moves. This polls the branch
+# (the gate's CI publishes a commit to it for every master commit that touches
+# the shared crates or package) and, when it has moved, re-resolves the pin,
+# proves the site still typechecks, tests and builds against it, and pushes the
+# bump to `dev`. Workers Builds then deploys the Preview as for any other push.
+#
+# It never touches `master`: production moves only when a person pushes it.
+# Polling rather than a dispatch from the gate repo keeps this free of
+# cross-repo tokens; the repo is public, so the minutes are free too.
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: web-dist-bump
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  GATE: TomSawyerLabs/empyrean-gate
+  BRANCH: dev
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ env.BRANCH }}
+          # Full history, so the rebase before the push has a merge base.
+          fetch-depth: 0
+
+      # Cheap enough to run every 15 minutes: one ls-remote, no Bun, no install.
+      - name: Compare the pin with the branch head
+        id: check
+        run: |
+          pinned=$(grep -oE 'empyrean-gate#[0-9a-f]+' bun.lock | head -1 | cut -d# -f2)
+          head=$(git ls-remote "https://github.com/$GATE" refs/heads/web-dist | cut -f1)
+          test -n "$pinned" && test -n "$head"
+          echo "pinned=$pinned" >> "$GITHUB_OUTPUT"
+          case "$head" in
+            "$pinned"*) echo "Pinned $pinned is the head of web-dist."; echo "moved=false" >> "$GITHUB_OUTPUT" ;;
+            *) echo "web-dist is at ${head:0:7}, pinned $pinned."; echo "moved=true" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Setup Bun
+        if: steps.check.outputs.moved == 'true'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Re-resolve the pin
+        if: steps.check.outputs.moved == 'true'
+        id: update
+        run: |
+          bun update @empyrean-gate/patch-web
+          if git diff --quiet bun.lock; then
+            echo "bun resolved web-dist to the pinned commit after all; nothing to do."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "pin=$(grep -oE 'empyrean-gate#[0-9a-f]+' bun.lock | head -1 | cut -d# -f2)" >> "$GITHUB_OUTPUT"
+          fi
+          git diff --stat
+
+      # The same gates CI puts a pull request through, minus the browser tests.
+      # A gate change that breaks the editor's API fails here, loudly, instead
+      # of landing a broken Preview.
+      - name: Type check
+        if: steps.update.outputs.changed == 'true'
+        run: bun run typecheck
+
+      - name: Unit tests
+        if: steps.update.outputs.changed == 'true'
+        run: bun run test:unit
+
+      - name: Build
+        if: steps.update.outputs.changed == 'true'
+        run: bun run build
+
+      # "Playground: web-dist <pin> (<newest gate commit>)", the shape the hand
+      # bumps used, with every shared-code gate commit the bump picks up listed
+      # in the body.
+      - name: Write the commit message
+        if: steps.update.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OLD: ${{ steps.check.outputs.pinned }}
+          NEW: ${{ steps.update.outputs.pin }}
+        run: |
+          source_of() { gh api "repos/$GATE/commits/$1" --jq '.commit.message' | sed -n 's/^web-dist from \([0-9a-f]*\).*/\1/p'; }
+          old_src=$(source_of "$OLD"); new_src=$(source_of "$NEW")
+          echo "gate $old_src -> $new_src"
+          shared=$(gh api "repos/$GATE/compare/$old_src...$new_src" --jq '.commits[].sha' | tail -50 | while read -r sha; do
+            if gh api "repos/$GATE/commits/$sha" --jq '[.files[].filename] | map(startswith("crates/") or startswith("packages/patch-web/")) | any' | grep -q true; then
+              gh api "repos/$GATE/commits/$sha" --jq '"  " + .sha[0:7] + " " + (.commit.message | split("\n")[0])'
+            fi
+          done)
+          newest=$(printf '%s\n' "$shared" | tail -1 | cut -c11-)
+          {
+            echo "Playground: web-dist $NEW (${newest:-gate $new_src})"
+            echo
+            echo "Shared-code commits on the gate's master this picks up:"
+            echo "${shared:-  (none listed; see $GATE/compare/$old_src...$new_src)}"
+            echo
+            echo "Bumped by the Web dist bump workflow."
+          } > "$RUNNER_TEMP/message.txt"
+          cat "$RUNNER_TEMP/message.txt"
+
+      - name: Commit and push
+        if: steps.update.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add bun.lock
+          git commit -F "$RUNNER_TEMP/message.txt"
+          # Someone may have pushed while this ran; the bump is one lockfile line
+          # and rebases cleanly over anything but another bump.
+          git pull --rebase origin "$BRANCH"
+          git push origin "HEAD:$BRANCH"

@@ -88,9 +88,11 @@ still SVG of the ring where WebGL2 isn't available.
 
 `/playground` is the gate's own node editor and render engine in the browser,
 from [`@empyrean-gate/patch-web`](https://github.com/TomSawyerLabs/empyrean-gate/tree/master/packages/patch-web)
-(a git dependency on the gate repo's `web-dist` branch). The gate's Rust patch
-compiler and evaluator run as wasm and the generated WGSL runs on WebGPU, so a
-pattern looks here as it will on the gate. Patches are kept in IndexedDB; Save
+(a git dependency on the gate repo's `web-dist` branch; `bun.lock` pins one
+commit of it, and the "Web dist bump" workflow polls the branch every fifteen
+minutes and pushes the bump to `dev` once the site typechecks, tests and builds
+against it). The gate's Rust patch compiler and evaluator run as wasm and the
+generated WGSL runs on WebGPU, so a pattern looks here as it will on the gate. Patches are kept in IndexedDB; Save
 to disk / Open file use the gate's own patch JSON, which its Patch tab imports.
 Without WebGPU the editor still works and validates; only the preview is
 missing.
