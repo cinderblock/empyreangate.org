@@ -183,7 +183,10 @@ WGSL-subset interpreter. The body is a real code editor (CodeMirror):
 highlighting, completion and hover docs for the node's ports and the shader
 lib's helpers (the list comes from the engine itself), Tab indents, and
 errors marked on the body's own lines. Every output of a Code node gets a
-live mini, on the node and beside the editor.
+live mini, on the node and beside the editor. Any built-in node's panel has
+"Convert to Code": the node becomes a Code node in place, wires and knobs
+kept, with the body the engine generates for it, so every pattern in the
+palette is a starting point you can read and change.
 
 On a phone the page stacks: the live gate docks at the top and shrinks into a
 bar (with the tool, color, brightness and speed beside it) as you scroll, so
