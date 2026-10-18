@@ -801,6 +801,11 @@ export default function Playground() {
             registry={core?.registry ?? null}
             presets={core?.presets ?? []}
             codeReference={core?.codeReference ?? null}
+            convertToCode={
+              core
+                ? (d, id) => Promise.resolve(core.convertToCode(d, id))
+                : undefined
+            }
             ready={ready}
             activeId={activeId}
             status={status}
