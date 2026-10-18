@@ -234,9 +234,9 @@ test.describe("People", () => {
   test("lists people without a site as plain names", async ({ page }) => {
     await page.goto("/");
     const people = page.locator(".people");
-    await expect(people.getByText("James Logistic")).toBeVisible();
+    await expect(people.getByText('James "Logistic" Tramel')).toBeVisible();
     await expect(
-      people.getByRole("link", { name: "James Logistic" }),
+      people.getByRole("link", { name: 'James "Logistic" Tramel' }),
     ).toHaveCount(0);
   });
 
@@ -247,19 +247,15 @@ test.describe("People", () => {
     expect(roles[roles.length - 1]).toContain("Design, 2022");
   });
 
-  test("credits James as crew and for the panel's concept and direction, not the design", async ({
+  test("credits James by his full name as crew, not as an earlier contributor", async ({
     page,
   }) => {
     await page.goto("/");
-    await expect(page.locator(".crew")).toContainText("James Logistic");
-    const james = page
-      .locator(".earlier li")
-      .filter({ hasText: 'James "Logistic" Tramel' });
-    await expect(james).toHaveCount(1);
-    await expect(james).toContainText("Concept and project direction");
-    await expect(
-      page.locator(".earlier li").filter({ hasText: "Design, 2022" }),
-    ).not.toContainText("Tramel");
+    await expect(page.locator(".crew")).toContainText(
+      'James "Logistic" Tramel',
+    );
+    await expect(page.locator(".earlier")).not.toContainText("Tramel");
+    await expect(page.locator(".earlier")).not.toContainText("Logistic");
   });
 });
 

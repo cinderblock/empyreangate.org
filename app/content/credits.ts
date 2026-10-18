@@ -10,7 +10,7 @@ export interface Person {
  */
 export const CREW: Person[] = [
   { name: "The Entheos Community", href: "https://www.entheosrising.org/" },
-  { name: "James Logistic" },
+  { name: 'James "Logistic" Tramel' },
   {
     name: 'Cameron "Quadrangle" Tacklind',
     href: "https://cameron.tacklind.com/",
@@ -29,9 +29,8 @@ export interface Credit {
 
 /**
  * Earlier contributors whose work the gate was built on, most recent first.
- * People still involved are credited under CREW; James also appears here for
- * the role the panel gives him. The 2022–23 roles and the 2023 credits come
- * from the gate's own artist panel, 2023, which dates James's role no earlier.
+ * People still involved are credited under CREW, not here. The 2022–23 roles
+ * and the 2023 credits come from the gate's own artist panel, 2023.
  */
 export const EARLIER: Credit[] = [
   {
@@ -41,10 +40,6 @@ export const EARLIER: Credit[] = [
       name: "Uprising",
       href: "https://github.com/ericvicenti/uprising",
     },
-  },
-  {
-    role: "Concept and project direction, 2023",
-    people: [{ name: 'James "Logistic" Tramel' }],
   },
   {
     role: "Video sequences, 2023",

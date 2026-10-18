@@ -46,7 +46,8 @@ interactive, locally rendered version of the gate's light patterns.
 - **Timeline entries carry months** (Burning Man Aug–Sep, unSCruz May, Love
   Burn Feb) with an ISO `date` for the first day.
 - **Names and ordering** (Cameron, 2026-10-14): crew shows "James
-  Logistic" and 'Cameron "Quadrangle" Tacklind'. Earlier contributors run
+  Logistic" (now 'James "Logistic" Tramel', below) and 'Cameron
+  "Quadrangle" Tacklind'. Earlier contributors run
   most recent first, and the 2022 design credit names Anthony Fieldman
   alone: James is still involved and is credited only as crew. The earlier
   roles don't say "original" (Cameron, 2026-10-14): "Lighting, 2022",
@@ -70,11 +71,13 @@ interactive, locally rendered version of the gate's light patterns.
   Lacquemant, Walter "Rip Ions" Smith), the 2023 video and sound sequences,
   and a "Major donors" list (2022). Names as the panel prints them, except
   Anthony: he no longer goes by "Gatekeeper". No links beyond the two
-  YouTube channels the panel prints. James is credited from it too, as
-  'James "Logistic" Tramel', "Concept and project direction, 2023" (Cameron,
-  2026-10-17: yes), on top of his crew line. This supersedes "credited only
-  as crew" above; the 2022 design line still names Anthony alone. The panel
-  doesn't date the role, so it says 2023, the panel's own year.
+  YouTube channels the panel prints.
+- **James is crew only, by his full name** (Cameron, 2026-10-18): 'James
+  "Logistic" Tramel' and "James Logistic" are the same person, so he is not
+  an earlier contributor. The crew list shows 'James "Logistic" Tramel'; the
+  panel's "Concept and project direction, 2023" line is gone. This
+  supersedes the panel credit for him (2026-10-17) and the "James Logistic"
+  crew name above. The 2022 design line still names Anthony alone.
 - **People:** a names-only "The gate today" list (The Entheos Community, James
   Tramel, Cameron Tacklind, Allison Bellows, Theodore Wahrburg) and an
   "Earlier contributors" list with roles, where Eric Vicenti is credited for
