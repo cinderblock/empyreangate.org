@@ -1,7 +1,7 @@
 # Linking the public site to the live gate
 
-Status: **code shipped (2026-10-17); the ops change is staged and waits on
-Cameron's yes** (step 6). Cameron: "Sounds great. Get implementing."
+Status: **code shipped and the Cloudflare side applied (2026-10-18 00:33 UTC);
+waits on the show machine** (steps 8–9). Cameron: "Sounds great. Get implementing."
 
 ## Goal
 
@@ -80,13 +80,20 @@ empyreangate`). Not ops-managed; the cloudflared install is a manual step
 5. [x] Site pages (site `7a3c37a`): `app/live.ts` hook; hero "Play it live" + now-playing line;
        playground bar chip; Playwright specs with `page.route("**/api/live")`;
        README.
-6. [~] Ops, **staged, not pushed, not applied**: worktree `empyreangate-play` from `origin/master`: tunnel
-   `empyreangate` + `play.empyreangate.org` ingress → `http://127.0.0.1:9521`;
-   validate + dry run; commit on the branch; `plans/empyreangate-play-tunnel.md`
-   with the box-side steps. **Not pushed, not applied: needs Cameron's yes.**
-7. [x] Gate master `629d15c` (Checks + Web dist green), web-dist `5227d06`
-       pinned by site `7a3c37a` on `origin/dev`; the dev Preview answers
-       `GET /api/live` with `{"live":false}` and `cache-control: public, max-age=10`.
+6. [x] Ops: Cameron said yes (2026-10-17, "Yes on ops deploy"); pushed as ops
+       master `b67a088`; the Cloudflare run (39083155429) created tunnel
+       `empyreangate` (id `c954b757-45c1-4669-a1dd-946865a80d0e`), the ingress
+       `play.empyreangate.org → http://127.0.0.1:9521` and the proxied CNAME;
+       sync-verify clean; the name resolves. Until a connector runs on the show
+       machine the name answers Cloudflare's error page and `/api/live` stays
+       `{"live":false}`.
+       \1
+7. [ ] Show machine (off right now; `ssh empyreangate` times out): install
+       cloudflared and its service with the tunnel's token. Cameron has no access
+       yet; walk him through it when it is back, or do it over SSH with his yes.
+8. [ ] Gate app on the show machine: Settings → Public floor (listener on,
+       `127.0.0.1:9521`, URL `https://play.empyreangate.org`, floor open) and
+       Settings → Submissions (the site's admin token). Then the end-to-end check.
 
 ## Findings / gotchas
 
@@ -105,10 +112,12 @@ empyreangate`). Not ops-managed; the cloudflared install is a manual step
 
 ## Open questions for the user
 
-1. The hostname: `play.empyreangate.org` unless you prefer another.
-2. The ops diff, once staged: yes to push + apply?
-3. The cloudflared service install on the show machine is yours to run (the
-   tunnel token comes from the Zero Trust dashboard, like noook).
+1. ~~The hostname~~ `play.empyreangate.org`, applied.
+2. ~~The ops diff~~ yes, applied.
+3. The show machine: when it is back, do you want me to install cloudflared
+   over SSH (your yes for that one command), or type it yourself? Either way
+   the tunnel token is read on the machine (`cloudflared tunnel login` then
+   `cloudflared tunnel token empyreangate`) or copied from the dashboard.
 
 ## Things not to do
 
@@ -130,5 +139,6 @@ empyreangate`). Not ops-managed; the cloudflared install is a manual step
 - [x] ops branch `empyreangate-play` (worktree `.t3/worktrees/ops/empyreangate-play`):
       one commit, validate green, dry run 2 to create. **Awaiting Cameron's yes
       to push/apply.** Box-side steps in `plans/empyreangate-play-tunnel.md` there.
-- [ ] After the apply: cloudflared on the show machine (Cameron), the gate's
-      Public floor + Submissions settings, and a real end-to-end check.
+- [x] ops master `b67a088` applied by CI: tunnel, ingress, CNAME created.
+- [ ] Show machine: cloudflared service; gate Settings (Public floor,
+      Submissions); end-to-end check (steps 8–9).
