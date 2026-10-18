@@ -18,8 +18,8 @@ runs `npx wrangler deploy`, so the push publishes).
   after Decompression on Oct 17). The hero says "Now: Set up at The Loom,
   Oakland, through the end of 2026"; the top timeline entry is Decompression,
   "Oct 2026", "Still set up there, through the end of 2026." The site says
-  only that it is up, not that visitors can come. "The Loom" is inferred
-  from Decompression's venue; Cameron didn't name the place.
+  only that it is up, not that visitors can come. Cameron confirmed it is at
+  The Loom "until at least January", and that "Now" is fine (2026-10-18).
 
 ## Findings
 
@@ -103,8 +103,9 @@ runs `npx wrangler deploy`, so the push publishes).
       is dropped: a past date would mislead search, and there's no next
       public date. Add one back when there is.
 - [ ] After master publishes: `bun run launch-check`, all green
-- [ ] By 2027-01-01: replace `SITE.now` and the top timeline entry (the gate
-      comes down at the end of 2026)
+- [ ] By 2027-01-01: ask Cameron whether the gate is still up, then update
+      `SITE.now` and the top timeline entry ("at least January", so it may
+      stay longer)
 
 ## Findings: the edge rule
 
