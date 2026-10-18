@@ -191,6 +191,13 @@ Ripple Warp" is one made for that, with a Note node explaining it. A Code
 node can also read the touch strokes, the triggered effects and the video as
 inputs, and the engine refuses a body whose loops have no fixed bound.
 
+The palette has plain noise to wire into anything: Full random (a fresh
+value every frame), Random walk (Brownian drift with a pull to the middle
+and bounce, wrap or stick edges) and Smooth noise (Perlin over time) as
+scalars, and Perlin noise (1-8 harmonics; smooth, billowy or ridged) and
+Full random field (per-LED, per-spoke or per-ring static) as grey fields.
+The "Noise Garden" preset shows them together.
+
 On a phone the page stacks: the live gate docks at the top and shrinks into a
 bar (with the tool, color, brightness and speed beside it) as you scroll, so
 it stays in view over the controls and the node graph. "Keep the gate in view"

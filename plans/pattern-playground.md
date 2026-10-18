@@ -347,3 +347,11 @@ playground's IndexedDB, files) migrated on load. Site `107e84c` (web-dist
 - Don't run `cargo fmt` over `src-tauri`; format only new files.
 - **Don't push `master` in either repo** (Cameron, 2026-10-15). Use `dev`.
 - Don't add the R2 binding back before the bucket exists.
+
+### Noise nodes (2026-10-18)
+
+Cameron: "add some noise generator blocks. Full random, random walks,
+perlin noise field (with different harmonics)". Gate `81f8724`
+(`plans/noise-nodes.md` there): Full random, Random walk, Smooth noise
+(scalars), Perlin noise and Full random field (grey fields), preset Noise
+Garden. Reaches the playground through the web-dist bump.
