@@ -45,7 +45,8 @@ annotations?: { readOnlyHint, untrustedContentHint, consequentialHint } }`.
   The result is JSON-serialized. Unregister by aborting the signal.
   `navigator.modelContext` is the older, deprecated location (Chrome 150
   still ships both).
-- Chrome: origin trial M149–M156 (Blink intent LGTM 2026-05-18). Without a
+- Chrome: origin trial, Chrome 149–162, ending 2027-03-29 (the trial's own
+  page, 2026-10-17; the Blink intent of 2026-05-18 said M149–M156). Without a
   trial token for empyreangate.org it works only with the flag on.
 
 ## Decisions already made (don't re-ask)
@@ -176,11 +177,11 @@ Site:
 
 ## Open questions for the user
 
-1. **WebMCP origin-trial token** for empyreangate.org (and dev.empyreangate.org):
-   registering at developer.chrome.com/origintrials needs your Google
-   account. Without it, WebMCP works only for people with the Chrome flag
-   on; `window.empyrean`, links and docs work everywhere regardless.
-   Recommendation: register both origins once this ships.
+None. (The WebMCP origin-trial token: Cameron registered
+https://empyreangate.org with subdomains on 2026-10-17; it is
+`PLAYGROUND.webmcpOriginTrial`, in the playground's head as
+`<meta http-equiv="origin-trial">`, expiring 2027-03-30. Renew it at
+developer.chrome.com/origintrials before then if WebMCP has not shipped.)
 
 ## Follow-ups (not started, not asked for)
 

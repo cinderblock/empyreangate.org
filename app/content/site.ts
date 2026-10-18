@@ -82,6 +82,17 @@ export const PLAYGROUND = {
    * credit when we show it). Shown next to the checkbox, stored with each
    * submission as `agreed: true`.
    */
+  /**
+   * Chrome's WebMCP origin trial (public, not a secret): turns WebMCP on for
+   * every Chrome visitor, so the playground's agent tools reach the
+   * browser's own agent without a flag. Registered by Cameron 2026-10-17 at
+   * developer.chrome.com/origintrials for https://empyreangate.org with
+   * subdomains (so dev.empyreangate.org too). The trial runs Chrome 149–162;
+   * this token expires 2027-03-30. Renew it there, or drop it if WebMCP
+   * ships by default.
+   */
+  webmcpOriginTrial:
+    "ArwfyyDmJrBtvrh91gQz302343KKQirmlWwSRLp+8P8K4yJN3jeSGz2QQi48TRAO4j38ULhov3Csz14ZB5+s4woAAABjeyJvcmlnaW4iOiJodHRwczovL2VtcHlyZWFuZ2F0ZS5vcmc6NDQzIiwiZmVhdHVyZSI6IldlYk1DUCIsImV4cGlyeSI6MTgwNjM2NDgwMCwiaXNTdWJkb21haW4iOnRydWV9",
   terms:
     "I made this pattern, or have the right to share it. I give The Empyrean Gate's crew a non-exclusive, perpetual, royalty-free licence to play it on the gate, adapt it, and share it and recordings of it. When it's shown, I'd like to be credited by the name above.",
 } as const;

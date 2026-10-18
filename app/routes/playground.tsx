@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import type { MetaFunction } from "react-router";
-import { SITE } from "../content/site";
+import { PLAYGROUND, SITE } from "../content/site";
 
 export const meta: MetaFunction = () => {
   const title = `Pattern playground · ${SITE.name}`;
@@ -14,6 +14,10 @@ export const meta: MetaFunction = () => {
     { property: "og:url", content: `${SITE.origin}/playground` },
     { property: "og:image", content: `${SITE.origin}/og.png` },
     { tagName: "link", rel: "canonical", href: `${SITE.url}/playground` },
+    // Chrome's WebMCP origin trial, so the agent tools (playground/agent.ts)
+    // reach the browser's agent without a flag. In the prerendered head, so
+    // it is there before the script asks for document.modelContext.
+    { httpEquiv: "origin-trial", content: PLAYGROUND.webmcpOriginTrial },
     // The guide for AI agents (generated at build: scripts/agent-docs.ts).
     {
       tagName: "link",

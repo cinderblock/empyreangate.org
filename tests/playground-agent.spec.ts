@@ -222,6 +222,19 @@ test.describe("Playground for agents", () => {
     await expect(
       page.locator('link[rel="alternate"][type="text/markdown"]'),
     ).toHaveAttribute("href", "/playground/agents.md");
+
+    // Chrome's WebMCP origin trial, in the prerendered head.
+    const token = await page
+      .locator('meta[http-equiv="origin-trial"]')
+      .getAttribute("content");
+    const payload = JSON.parse(
+      Buffer.from(token!, "base64").subarray(69).toString("utf8"),
+    ) as { origin: string; feature: string; isSubdomain: boolean };
+    expect(payload).toMatchObject({
+      origin: "https://empyreangate.org:443",
+      feature: "WebMCP",
+      isSubdomain: true,
+    });
   });
 
   test("snapshot shows the running patch", async ({ page }) => {

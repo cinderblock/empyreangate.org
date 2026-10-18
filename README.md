@@ -210,8 +210,11 @@ page, in the gate app and on the command line:
   one PNG, plus numbers per frame), `share_link`, and the page's own
   `set_inputs` (beat, DJ mix, master, tap color), `trigger_effect` and
   `open_submit`. `<html data-webmcp="N">` says how many registered. Chrome
-  ships WebMCP as an origin trial (M149–M156); without a trial token for this
-  origin it is there only with the flag on.
+  ships WebMCP as an origin trial (Chrome 149–162): the playground's head
+  carries the trial token (`PLAYGROUND.webmcpOriginTrial` in
+  `app/content/site.ts`, for empyreangate.org and its subdomains, expiring
+  2027-03-30), so it is on for every Chrome visitor in that range without a
+  flag.
 - **`window.empyrean`**, the same API for anything that runs scripts in the
   page: `await empyrean.setPatch(doc)`, `await empyrean.snapshot({ frames: 4 })`,
   `empyrean.tools.<name>(input)`.
