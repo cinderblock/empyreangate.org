@@ -14,6 +14,14 @@ export const meta: MetaFunction = () => {
     { property: "og:url", content: `${SITE.origin}/playground` },
     { property: "og:image", content: `${SITE.origin}/og.png` },
     { tagName: "link", rel: "canonical", href: `${SITE.url}/playground` },
+    // The guide for AI agents (generated at build: scripts/agent-docs.ts).
+    {
+      tagName: "link",
+      rel: "alternate",
+      type: "text/markdown",
+      href: "/playground/agents.md",
+      title: "Making patterns: the guide for AI agents",
+    },
   ];
 };
 

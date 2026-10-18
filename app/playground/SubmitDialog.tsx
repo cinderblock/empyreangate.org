@@ -62,19 +62,22 @@ type Phase =
 export default function SubmitDialog({
   doc,
   problem,
+  initial = {},
   onClose,
 }: {
   doc: PatchDoc;
   /** Why this patch can't run (it can't be submitted then). */
   problem: string | null;
+  /** Filled in by an agent that opened the dialog for the person. */
+  initial?: { name?: string; note?: string };
   onClose: () => void;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const widgetRef = useRef<HTMLDivElement>(null);
   const widgetId = useRef<string | null>(null);
-  const [name, setName] = useState("");
+  const [name, setName] = useState(initial.name ?? "");
   const [contact, setContact] = useState("");
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(initial.note ?? "");
   const [agreed, setAgreed] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>({ kind: "form" });

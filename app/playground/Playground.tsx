@@ -7,14 +7,18 @@
  * Client-only: `routes/playground.tsx` loads this after hydration.
  */
 
+import { hasPatchLink, readPatchLink } from "@empyrean-gate/patch-web/agent";
 import {
   openPatchFromDisk,
   PatchEditor,
   savePatchToDisk,
   type GlobalControl,
   type PatchDoc,
+  type PatchEditorHandle,
 } from "@empyrean-gate/patch-web/editor";
 import {
+  attachGroove,
+  GROOVE_BPM,
   loadPatchCore,
   PatchRuntime,
   screenToPolar,
@@ -26,7 +30,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import { PlayLive, useLive } from "../components/LiveLink";
 import { PLAYGROUND, SITE } from "../content/site";
-import { BPM, syntheticAudio } from "../gate/engine";
+import { startPlaygroundAgent, type PlaygroundInputs } from "./agent";
 import SubmitDialog from "./SubmitDialog";
 import { syntheticMotion } from "./motion";
 import { LocalPatchStore } from "./store";
@@ -62,6 +66,12 @@ export default function Playground() {
   // The real gate, when it is up: a chip in the bar to go play it.
   const live = useLive();
   const [submitting, setSubmitting] = useState(false);
+  // What an agent filled in when it opened Submit for the person.
+  const [submitInitial, setSubmitInitial] = useState<{
+    name?: string;
+    note?: string;
+  }>({});
+  const editorRef = useRef<PatchEditorHandle>(null);
 
   const [tool, setTool] = useState<Tool>({ mode: "tap", effect: "burst" });
   const [hue, setHue] = useState(0.52);
@@ -109,6 +119,13 @@ export default function Playground() {
       }
       if (!live) return;
       store.migrate = c.migrate;
+      // A link carrying a patch (`#patch=`): it joins the library and opens,
+      // before the editor reopens whatever was open last.
+      const linked = await importLink(c, store, location.hash);
+      if (linked) {
+        history.replaceState(null, "", location.pathname + location.search);
+        setNotice(linked);
+      }
       if (await store.isEmpty()) {
         const starter =
           c.presets.find((p) => p.name === STARTER) ?? c.presets[0];
@@ -147,6 +164,23 @@ export default function Playground() {
   }, [store]);
 
   useEffect(() => store.onActive(setActiveId), [store]);
+
+  // A link followed while the playground is open (same page, new fragment):
+  // opened straight into the editor.
+  useEffect(() => {
+    if (!core) return;
+    const onHash = () => {
+      if (!hasPatchLink(location.hash)) return;
+      void importLink(core, store, location.hash).then((message) => {
+        history.replaceState(null, "", location.pathname + location.search);
+        if (message) setNotice(message);
+        const id = store.active;
+        if (id) store.get(id);
+      });
+    };
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, [core, store]);
 
   // The runtime follows the canvas, its own status, and the open document.
   useEffect(() => {
@@ -226,70 +260,67 @@ export default function Playground() {
   }, [runtime, core, doc]);
 
   // Continuous stand-ins: a synthetic groove (when no microphone) and a fake
-  // DJ deck riding the same beat, so audio- and DJ-driven nodes move.
-  const grooveRef = useRef({ groove, mic, djMix, t: 0 });
-  grooveRef.current.groove = groove;
-  grooveRef.current.mic = mic;
-  grooveRef.current.djMix = djMix;
+  // DJ deck riding the same beat, so audio- and DJ-driven nodes move. The
+  // gate's package keeps the clock, so an agent's restarted capture repeats.
+  const grooveRef = useRef<ReturnType<typeof attachGroove> | null>(null);
   useEffect(() => {
     if (!runtime) return;
-    return runtime.onFrame((dt) => {
-      const g = grooveRef.current;
-      g.t += dt;
-      if (!g.mic) {
-        if (g.groove) {
-          const a = syntheticAudio(g.t);
-          runtime.setAudio(
-            0,
-            new Float32Array([
-              a.level,
-              a.bass,
-              a.mid,
-              a.treble,
-              a.onset,
-              a.beatPhase,
-              BPM,
-              1,
-              a.bass,
-              a.mid,
-              a.treble,
-            ]),
-          );
-        } else {
-          runtime.setAudio(0, new Float32Array(11));
-        }
-      }
-      const beat = Math.floor((g.t * BPM) / 60);
-      const phrase = ((g.t * BPM) / 60 / 32) % 1;
-      runtime.setDjLink(
-        new Float32Array([
-          1, // active
-          syntheticAudio(g.t).level, // energy
-          1,
-          -1,
-          1,
-          -1, // deck, deck_side, event_deck, event_side
-          1,
-          1,
-          1,
-          0, // playing, on_air, deck_1_on_air, deck_2_on_air
-          0, // looping
-          g.djMix,
-          0, // mix, mix_activity
-          (beat % 4) + 1, // beat_in_bar
-          1,
-          1,
-          phrase,
-          0, // phrase_active, phrase_kind, phrase_progress, phrase_fill
-        ]),
-      );
-    });
+    const g = attachGroove(runtime);
+    grooveRef.current = g;
+    return () => {
+      g.stop();
+      grooveRef.current = null;
+    };
   }, [runtime]);
+  useEffect(() => {
+    const g = grooveRef.current;
+    if (!g) return;
+    g.settings.audio = mic ? "off" : groove ? "groove" : "silent";
+    g.settings.djMix = djMix;
+  }, [runtime, groove, mic, djMix]);
 
   useEffect(
     () => runtime?.setMaster(brightness, speed),
     [runtime, brightness, speed],
   );
+
+  // For AI agents: WebMCP tools and `window.empyrean` (see agent.ts). The
+  // controls they may set are read and written through refs, so the tools
+  // stay registered across renders.
+  const inputsRef = useRef<PlaygroundInputs>({
+    groove,
+    djMix,
+    brightness,
+    speed,
+    hue,
+    mic,
+  });
+  inputsRef.current = { groove, djMix, brightness, speed, hue, mic };
+  const docRef = useRef(doc);
+  docRef.current = doc;
+  useEffect(() => {
+    if (!core) return;
+    return startPlaygroundAgent({
+      core,
+      runtime,
+      store,
+      editor: editorRef,
+      inputs: () => inputsRef.current,
+      setInputs: (next) => {
+        if (next.groove !== undefined) setGroove(next.groove);
+        if (next.djMix !== undefined) setDjMix(next.djMix);
+        if (next.brightness !== undefined) setBrightness(next.brightness);
+        if (next.speed !== undefined) setSpeed(next.speed);
+        if (next.hue !== undefined) setHue(next.hue);
+      },
+      openSubmit: (initial) => {
+        if (!PLAYGROUND.turnstileSiteKey || !docRef.current) return false;
+        setSubmitInitial(initial);
+        setSubmitting(true);
+        return true;
+      },
+    });
+  }, [core, runtime, store]);
 
   const onDocChange = useCallback(
     (d: PatchDoc | null) => {
@@ -541,6 +572,9 @@ export default function Playground() {
           Build a pattern from the gate's own nodes. It runs here exactly as it
           would on the gate.
         </span>
+        <a className="pg-agents" href="/playground/agents.md">
+          Using an AI agent?
+        </a>
         <nav className="pg-bar-links" aria-label="Source code">
           <a href={SITE.engine} rel="noopener" target="_blank">
             Engine ↗
@@ -688,7 +722,7 @@ export default function Playground() {
                     disabled={mic}
                     onChange={(e) => setGroove(e.target.checked)}
                   />
-                  Synthetic beat ({BPM} BPM)
+                  Synthetic beat ({GROOVE_BPM} BPM)
                 </label>
                 <button
                   type="button"
@@ -762,6 +796,7 @@ export default function Playground() {
 
         <section className="pg-editor" aria-label="Patch editor">
           <PatchEditor
+            editorRef={editorRef}
             store={store}
             registry={core?.registry ?? null}
             presets={core?.presets ?? []}
@@ -906,7 +941,11 @@ export default function Playground() {
         <SubmitDialog
           doc={doc}
           problem={status?.error ?? null}
-          onClose={() => setSubmitting(false)}
+          initial={submitInitial}
+          onClose={() => {
+            setSubmitting(false);
+            setSubmitInitial({});
+          }}
         />
       )}
 
@@ -924,6 +963,29 @@ export default function Playground() {
       )}
     </div>
   );
+}
+
+/** Put the patch a `#patch=` link carries into the library and make it the
+ * active one. Resolves with a line for the visitor (null: no link). */
+async function importLink(
+  core: PatchCore,
+  store: LocalPatchStore,
+  hash: string,
+): Promise<string | null> {
+  if (!hasPatchLink(hash)) return null;
+  try {
+    const doc = await readPatchLink(hash);
+    if (!doc) return null;
+    const stored = await store.put(core.migrate({ ...doc, id: "" }));
+    store.list();
+    store.activate(stored.id);
+    const problems = core.validate(stored);
+    return problems.length
+      ? `Opened "${stored.name}" from a link. It's in your library now, but it can't run yet: ${problems.join("; ")}`
+      : `Opened "${stored.name}" from a link. It's in your library now.`;
+  } catch (e) {
+    return `That link's pattern couldn't be opened: ${e instanceof Error ? e.message : String(e)}`;
+  }
 }
 
 function label(id: string): string {

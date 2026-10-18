@@ -45,7 +45,8 @@ app/
   routes/home.tsx         The single page
   routes/playground.tsx   Shell for the playground (loads it after hydration)
   routes/404.tsx          Not found
-  playground/             The pattern playground: page, IndexedDB store, Submit
+  playground/             The pattern playground: page, IndexedDB store, Submit,
+                          and agent.ts (WebMCP tools and window.empyrean)
   content/                Everything editable without touching layout:
     site.ts                 names, URLs, the next event, the array in numbers
     story.ts                prose, the timeline of appearances
@@ -63,6 +64,7 @@ app/
 photos/                   High-resolution originals, committed (see its README)
 scripts/photos.ts         Resizes photos/ into public/photos/ (gitignored) + manifest
 scripts/postbuild.ts      404.html + sitemap.xml from the prerendered routes
+scripts/agent-docs.ts     /llms.txt and /playground/agents.md + JSON, from the patch core
 scripts/og.ts             Screenshots the hero into public/og.png
 worker/index.ts           The Worker: POST /api/submit only; assets serve the rest
 tests/                    Playwright: content, render states, responsiveness, playground
@@ -192,6 +194,47 @@ toolbar: the open patch is a chip on the canvas (tap it for a menu sheet with
 rename, status, open, new, save, submit and delete), ＋ opens the palette as a
 sheet, a ⚠ chip appears only while the patch cannot run, and a node's
 settings open on double-tap or from a pill.
+
+### For AI agents
+
+People can bring an AI agent to build a pattern with them, without anyone
+driving the node editor by mouse. Everything comes from the gate's package
+(`@empyrean-gate/patch-web/agent`), so the tools mean the same thing on this
+page, in the gate app and on the command line:
+
+- **WebMCP.** `app/playground/agent.ts` registers the tools with the browser
+  (`document.modelContext`, or the older `navigator.modelContext`) for a
+  browser's built-in agent: read the guide and the node types, read and
+  validate the open patch, `set_patch` / `edit_patch` (small operations:
+  add a node, connect, set knobs …), `snapshot` (frames over patch time as
+  one PNG, plus numbers per frame), `share_link`, and the page's own
+  `set_inputs` (beat, DJ mix, master, tap color), `trigger_effect` and
+  `open_submit`. `<html data-webmcp="N">` says how many registered. Chrome
+  ships WebMCP as an origin trial (M149–M156); without a trial token for this
+  origin it is there only with the flag on.
+- **`window.empyrean`**, the same API for anything that runs scripts in the
+  page: `await empyrean.setPatch(doc)`, `await empyrean.snapshot({ frames: 4 })`,
+  `empyrean.tools.<name>(input)`.
+- **Links.** `/playground#patch=<data>` opens a patch as a new entry in the
+  visitor's library (`<data>`: the JSON percent-encoded, or `z` + deflate-raw
+  base64url, which `share_link` makes). The fragment never reaches the
+  server. An agent with no browser writes the JSON and hands over the link.
+- **Docs, generated at build** from the patch core this build runs
+  (`scripts/agent-docs.ts`): `/llms.txt`, `/playground/agents.md` (the guide:
+  format, wire shapes, workflow, the Code node, every node type with its
+  ports and knobs), `/playground/registry.json`, `/playground/patch.schema.json`
+  and `/playground/presets.json`. The bar links the guide ("Using an AI
+  agent?"), and the page head has it as `rel="alternate"`.
+- **The command line** for coding agents: the gate's package ships
+  `empyrean-patch` (validate, render to PNG with WebGPU through the `webgpu`
+  package, link, and `mcp`, a stdio MCP server with the same tools); see the
+  guide.
+
+An agent's change goes through the editor, so it shows where the person is
+looking and is one undo step. `set_patch` replaces the open patch only when
+it carries that patch's id (read with `get_patch`); anything else opens as a
+new patch. Submitting stays human: `open_submit` fills the dialog in, and the
+person passes Turnstile and presses Send.
 
 ## The live gate
 
