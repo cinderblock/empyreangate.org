@@ -245,8 +245,13 @@ Not in ops today: Turnstile widgets (no schema support) and worker secrets.
       (2026-10-17). Cheap check first (one `ls-remote` against the pin), the
       full update + typecheck + tests + build only when the branch moved, a
       commit in the hand bumps' shape listing the shared-code gate commits it
-      picks up, pushed to `dev` only. Its first manual run has a real bump to
-      make (web-dist `5227d06`, gate `629d15c`); result below.
+      picks up, pushed to `dev` only. Verified 2026-10-18 00:39 UTC on a
+      scratch branch holding the old pin (the `branch` dispatch input
+      exists for exactly that): detected `0780ace` -> `5227d06`, checks
+      green, pushed a bump listing gate `280e5f4` and `629d15c`, 90 s end
+      to end. On `dev` itself the first run found the pin already current
+      (the live-gate commit `7a3c37a` had carried the bump) and stopped
+      after the `ls-remote`, as designed.
 - [x] Turnstile widget + `TURNSTILE_SECRET` + site key (ops `c5140e6`, secrets above)
 - [x] The R2 binding, on production and Previews (`64b3f63`)
 
