@@ -37,3 +37,17 @@ one by marking it `in progress — <thread/branch>` before working on it.
 - **To look at:** whether new HTML can reach an edge before its assets do,
   and whether that 404 gets cached; and a client-side safeguard (e.g. retry
   or reload once when the manifest / entry module fails to load).
+
+## The "Play it live" home test fails on WebKit under a full parallel run
+
+- **What:** `tests/home.spec.ts:74` ("offers Play it live, and what is on,
+  only while the gate answers") fails on `[webkit]` when the whole home suite
+  runs (twice in a row on 2026-10-18, dev at `c872052`), and passes when run
+  alone (`--project=webkit -g "Play it live" --repeat-each=2`). Error:
+  `locator('.hero-actions').getByRole('link', { name: 'Play it live ↗' })`,
+  "element(s) not found" after 5 s. It passed in the full suite an hour
+  earlier, at `2c089b8`.
+- **Why it matters:** a red suite hides real failures and trains people to
+  ignore it.
+- **To look at:** whether the mocked `/api/live` route is in place before the
+  page's first fetch on WebKit, or the 5 s wait is too short under load.
