@@ -4,12 +4,6 @@ export interface Person {
   href?: string;
 }
 
-/** Ted, credited in the crew and on the photos he took. */
-export const TED: Person = {
-  name: "Theodore Wahrburg",
-  href: "https://ted.wahrburg.dev/",
-};
-
 /**
  * Who makes the gate happen now. Names only, in the order given; the work is
  * shared enough that titles would mislead.
@@ -23,7 +17,7 @@ export const CREW: Person[] = [
   },
   // Her GitHub: second-largest contributor to the gate's software.
   { name: "Allison Bellows", href: "https://github.com/allibell" },
-  TED,
+  { name: "Theodore Wahrburg", href: "https://ted.wahrburg.dev/" },
 ];
 
 export interface EarlierCredit {

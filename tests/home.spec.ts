@@ -127,14 +127,9 @@ test.describe("Home", () => {
   });
 
   test("credits the photographer under the caption", async ({ page }) => {
-    const credit = page
-      .locator(".gallery figcaption .photo-credit")
-      .filter({ hasText: "Theodore Wahrburg" })
-      .first();
-    await expect(credit).toContainText("Photo: Theodore Wahrburg");
-    await expect(
-      credit.getByRole("link", { name: "Theodore Wahrburg" }),
-    ).toHaveAttribute("href", "https://ted.wahrburg.dev/");
+    const credits = page.locator(".gallery figcaption .photo-credit");
+    await expect(credits.first()).toHaveText("Photo: TedX");
+    await expect(credits.getByRole("link")).toHaveCount(0);
   });
 
   test("names the next event with a machine-readable date", async ({

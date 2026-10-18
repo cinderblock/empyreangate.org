@@ -8,7 +8,10 @@
  * shots are still needed; production leaves it out.
  */
 
-import { TED, type Person } from "./credits";
+import type { Person } from "./credits";
+
+/** Took the unSCruz 2024 night shots. Credited by the name given, no link. */
+const TEDX: Person = { name: "TedX" };
 
 /** One original's web renditions, from the generated manifest. */
 export interface PhotoAsset {
@@ -38,14 +41,14 @@ export const PHOTOS: Photo[] = [
     caption: "The ring at night from the dance floor.",
     orientation: "landscape",
     asset: "unscruz-2024-night-warm",
-    by: TED,
+    by: TEDX,
   },
   {
     slot: "unscruz-2024",
     caption: "unSCruz 2024.",
     orientation: "landscape",
     asset: "unscruz-2024-night-cool",
-    by: TED,
+    by: TEDX,
   },
   {
     slot: "gateway-fire",
