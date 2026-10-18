@@ -90,6 +90,11 @@ interactive, locally rendered version of the gate's light patterns.
   panel's "Concept and project direction, 2023" line is gone. This
   supersedes the panel credit for him (2026-10-17) and the "James Logistic"
   crew name above. The 2022 design line still names Anthony alone.
+- **The Art Archive's credit doesn't change People** (Cameron, 2026-10-18):
+  the archive's "Anthony Fieldman and James Tramel, with the Entheos
+  Community Artist Collective" is the artist line of the 2023 listing, not a
+  2022 design credit. "Design, 2022" stays Anthony alone; the archive's
+  wording is shown only by linking to it from the 2023 timeline entry.
 - **People:** a names-only "The gate today" list (The Entheos Community, James
   Tramel, Cameron Tacklind, Allison Bellows, Theodore Wahrburg) and an
   "Earlier contributors" list with roles, where Eric Vicenti is credited for
