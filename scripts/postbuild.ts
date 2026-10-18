@@ -10,11 +10,19 @@
  *    `X-Robots-Tag: noindex` on a preview (any branch but master, on Workers
  *    Builds), which also gets a full-disallow robots.txt. See
  *    build-context.ts.
+ * 4. Docs for AI agents (`/llms.txt`, `/playground/agents.md` and the JSON
+ *    beside it), generated from the gate's patch core. See agent-docs.ts.
  */
 
 import { copyFile, readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { PREVIEW_ROBOTS, buildKind, headersFile } from "./build-context";
+import { writeAgentDocs } from "./agent-docs";
+import {
+  PREVIEW_ROBOTS,
+  buildKind,
+  headersFile,
+  siteOrigin,
+} from "./build-context";
 
 const OUT = "build/client";
 const SITE = "https://empyreangate.org";
@@ -66,4 +74,8 @@ if (kind === "preview") {
   console.log(
     `Preview build of ${process.env.WORKERS_CI_BRANCH}: noindex _headers and a disallow-all robots.txt`,
   );
+}
+
+for (const path of await writeAgentDocs(OUT, siteOrigin(process.env))) {
+  console.log(`Emitted ${path}`);
 }
