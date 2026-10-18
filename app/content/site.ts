@@ -39,13 +39,16 @@ export const SITE = {
   instagramTag: null as string | null,
   /** The pattern playground: the gate's editor and engine, in the browser. */
   playground: "/playground",
-  nextEvent: {
-    name: "Burning Man Decompression",
+  /**
+   * Where the gate is now: set up after Decompression (Oct 17, 2026) and
+   * staying through the end of the year (Cameron). Only that it is up, not
+   * that it is open to visitors. Replace it after `until`.
+   */
+  now: {
     venue: "The Loom, Oakland",
-    /** ISO date, for structured data. */
-    date: "2026-10-17",
-    when: "Saturday, October 17, 2026",
-    url: "https://burningman.org/decompression",
+    /** ISO date of the last day. */
+    until: "2026-12-31",
+    untilText: "the end of 2026",
   },
 } as const;
 

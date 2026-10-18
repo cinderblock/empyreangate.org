@@ -73,8 +73,7 @@ export const LIGHT: Section = {
 
 export interface Appearance {
   /**
-   * When, as shown: the month of the first day ("Aug 2022", "May 2023"), or
-   * the full date of a one-day event ("Oct 17, 2026").
+   * When, as shown: the month of the first day ("Aug 2022", "May 2023").
    */
   when: string;
   /** Sortable ISO date of the first day, for structured data later. */
@@ -84,8 +83,8 @@ export interface Appearance {
   note?: string;
   /** An outside record of the appearance, rendered after the note. */
   link?: { label: string; href: string };
-  /** Marks the next date rather than a past one. */
-  upcoming?: boolean;
+  /** Marks where the gate is now, or its next date: the highlighted entry. */
+  current?: boolean;
 }
 
 /**
@@ -101,12 +100,12 @@ export interface Appearance {
  */
 export const APPEARANCES: Appearance[] = [
   {
-    when: "Oct 17, 2026",
+    when: "Oct 2026",
     date: "2026-10-17",
     event: "Burning Man Decompression",
     place: "The Loom, Oakland, California",
-    note: "Next.",
-    upcoming: true,
+    note: "Still set up there, through the end of 2026.",
+    current: true,
   },
   {
     when: "Aug 2026",

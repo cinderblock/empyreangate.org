@@ -506,7 +506,7 @@ p {
   border-color: var(--ink-faint);
 }
 
-/* Paused reads as a state worth noticing: gold, like the "Next" pill. */
+/* Paused reads as a state worth noticing: gold, like the "Now" pill. */
 .gate-playpause[aria-pressed="true"] {
   opacity: 1;
   color: var(--gold);
@@ -649,7 +649,7 @@ p {
   background: var(--ink-faint);
 }
 
-.timeline li.upcoming::before {
+.timeline li.current::before {
   background: var(--gold);
   box-shadow: 0 0 0 4px rgba(255, 179, 71, 0.25);
 }
@@ -661,7 +661,7 @@ p {
   color: var(--ink-muted);
 }
 
-.timeline li.upcoming .timeline-year {
+.timeline li.current .timeline-year {
   color: var(--gold);
 }
 

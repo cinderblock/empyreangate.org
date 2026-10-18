@@ -14,6 +14,12 @@ runs `npx wrangler deploy`, so the push publishes).
   (Cameron, 2026-10-17).
 - Post-launch checks are scripted: `bun run launch-check` (production) or
   `bun run launch-check <origin>`; read-only.
+- The gate stays set up through the end of 2026 (Cameron, 2026-10-18,
+  after Decompression on Oct 17). The hero says "Now: Set up at The Loom,
+  Oakland, through the end of 2026"; the top timeline entry is Decompression,
+  "Oct 2026", "Still set up there, through the end of 2026." The site says
+  only that it is up, not that visitors can come. "The Loom" is inferred
+  from Decompression's venue; Cameron didn't name the place.
 
 ## Findings
 
@@ -91,7 +97,14 @@ runs `npx wrangler deploy`, so the push publishes).
       "Photo: <name>" under the caption (`d89c8b9`). The first version
       wrongly credited Theodore Wahrburg from the crew list. TedX is
       **not** Theodore. It now says "Photo: TedX", with no link.
+- [x] "Next: Decompression" replaced by "Now: Set up at The Loom ... through
+      the end of 2026". `SITE.nextEvent` became `SITE.now` (venue, `until`).
+      The timeline's `upcoming` flag became `current`. The JSON-LD `Event`
+      is dropped: a past date would mislead search, and there's no next
+      public date. Add one back when there is.
 - [ ] After master publishes: `bun run launch-check`, all green
+- [ ] By 2027-01-01: replace `SITE.now` and the top timeline entry (the gate
+      comes down at the end of 2026)
 
 ## Findings: the edge rule
 
@@ -121,9 +134,7 @@ runs `npx wrangler deploy`, so the push publishes).
 
 ## Open questions for Cameron
 
-1. The hero's "Next" and the timeline's upcoming entry are Decompression,
-   2026-10-17, which is past by launch. A next date, or mark it past?
-2. Ask TedX for the originals? They'd be sharper than the ~230 KB,
+1. Ask TedX for the originals? They'd be sharper than the ~230 KB,
    1440×1440 copies we have now. Optional.
 
 ## Things not to do

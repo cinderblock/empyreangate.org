@@ -132,14 +132,19 @@ test.describe("Home", () => {
     await expect(credits.getByRole("link")).toHaveCount(0);
   });
 
-  test("names the next event with a machine-readable date", async ({
+  test("says where the gate is now, until a machine-readable date", async ({
     page,
   }) => {
-    const time = page.locator(".hero-next time");
-    await expect(time).toHaveAttribute("dateTime", /^\d{4}-\d{2}-\d{2}$/);
+    const now = page.locator(".hero-next").first();
+    await expect(now).toContainText("Now");
+    await expect(now).toContainText("The Loom");
+    await expect(now.locator("time")).toHaveAttribute(
+      "dateTime",
+      /^\d{4}-\d{2}-\d{2}$/,
+    );
   });
 
-  test("lists the timeline newest first, the next date at the top", async ({
+  test("lists the timeline newest first, where it is now at the top", async ({
     page,
   }) => {
     const dates = await page
@@ -147,7 +152,7 @@ test.describe("Home", () => {
       .evaluateAll((els) => els.map((e) => e.getAttribute("dateTime")!));
     expect(dates.length).toBeGreaterThan(1);
     expect(dates).toEqual([...dates].sort().reverse());
-    await expect(page.locator(".timeline li").first()).toHaveClass("upcoming");
+    await expect(page.locator(".timeline li").first()).toHaveClass("current");
   });
 
   test("shows each timeline entry's month as one month, not a range", async ({
@@ -181,7 +186,8 @@ test.describe("Home", () => {
     const data = JSON.parse(json!);
     const types = data["@graph"].map((n: { "@type": string }) => n["@type"]);
     expect(types).toContain("VisualArtwork");
-    expect(types).toContain("Event");
+    // No Event until there is a next public date; a past one would mislead.
+    expect(types).not.toContain("Event");
   });
 });
 

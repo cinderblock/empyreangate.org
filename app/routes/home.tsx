@@ -76,20 +76,6 @@ const STRUCTURED_DATA = {
         unitCode: "FOT",
       },
     },
-    {
-      "@type": "Event",
-      name: `${SITE.name} at ${SITE.nextEvent.name}`,
-      startDate: SITE.nextEvent.date,
-      url: SITE.nextEvent.url,
-      eventStatus: "https://schema.org/EventScheduled",
-      eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
-      location: { "@type": "Place", name: SITE.nextEvent.venue },
-      performer: {
-        "@type": "Organization",
-        name: "Entheos",
-        url: SITE.entheos.home,
-      },
-    },
   ],
 };
 
@@ -308,13 +294,9 @@ export default function Home() {
             <p className="lede">{HERO.lede}</p>
             <p className="sub">{HERO.sub}</p>
             <p className="hero-next">
-              <span className="hero-next-label">Next</span>{" "}
-              <External href={SITE.nextEvent.url}>
-                {SITE.nextEvent.name} · {SITE.nextEvent.venue} ·{" "}
-                <time dateTime={SITE.nextEvent.date}>
-                  {SITE.nextEvent.when}
-                </time>
-              </External>
+              <span className="hero-next-label">Now</span> Set up at{" "}
+              {SITE.now.venue}, through{" "}
+              <time dateTime={SITE.now.until}>{SITE.now.untilText}</time>.
             </p>
             <NowPlaying live={live} />
             <div className="hero-actions">
@@ -406,7 +388,7 @@ export default function Home() {
           <SectionHead id={WHERE.id} section={WHERE} />
           <ol className="timeline">
             {APPEARANCES.map((a, i) => (
-              <li key={i} className={a.upcoming ? "upcoming" : undefined}>
+              <li key={i} className={a.current ? "current" : undefined}>
                 <time className="timeline-year" dateTime={a.date}>
                   {a.when}
                 </time>
