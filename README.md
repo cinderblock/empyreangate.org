@@ -172,7 +172,13 @@ expose with nothing behind it), offers its real sensors. Every node carries a
 live mini while the preview runs: field outputs and the stream and texture
 sources (Touch strokes, Triggered effects, Event effect, Video in, Still
 image, Clip) get a ring thumbnail of what they hand on, scalar outputs an
-amplitude meter, event outputs a strip of their fires.
+amplitude meter, event outputs a strip of their fires. The palette's **Code**
+group adds a node you write instead of wire: declare its inputs and outputs
+(scalars, events, grey or colour fields) in the side panel and type a WGSL
+body that sets the outputs by name; a field output puts it in the shader, and
+scalar/event ports only run it on the CPU through the engine's bounded
+WGSL-subset interpreter. Shader errors inside the body are reported against
+its own lines in the ⚠ status.
 
 On a phone the page stacks: the live gate docks at the top and shrinks into a
 bar (with the tool, color, brightness and speed beside it) as you scroll, so
