@@ -74,13 +74,15 @@ runs `npx wrangler deploy`, so the push publishes).
 - [x] Empty gallery slots hidden on production, kept on Previews (`eef3835`)
 - [x] dev Preview: launch-check 9/9 green with the new headers; Preview
       still shows the 4 placeholders, the production build none
-- [ ] Edge rate-limit rule on `/api/*` (30 per 10 s per IP, block 10 s).
-      Cameron: "Rate limit seems reasonable", then "you can commit to Ops".
-      Committed as ops `732a112` on branch `empyreangate-api-rate-limit`
-      (worktree `~/.t3/worktrees/ops/empyreangate-api-rate-limit`, off
-      `origin/master` `e5515bd`). Validate passes and the dry-run sync shows
-      1 to create, 0 to update, 0 to delete. **Not pushed**: pushing to ops
-      master is what applies it, and that needs its own yes.
+- [x] Edge rate-limit rule on `/api/*` (30 per 10 s per IP, block 10 s).
+      Cameron: "Rate limit seems reasonable", "you can commit to Ops", then
+      "yes, you can push ops". Rebased onto ops master (the play tunnel had
+      landed; still 1 to create in the dry run) and pushed as ops `7c9ea2c`.
+      CI's sync-infra applied it ("Created rate-limit-rule: API flood"), so
+      Free accepts `wildcard`. Edge probe of `dev.empyreangate.org/api/live`:
+      requests 1–30 got 200, 31–35 got 429, 200 again after 12 s.
+      CI's `sync-verify` failed on Cloudflare API throttling (429, code 971),
+      not on the rule; re-run pending.
 - [x] Cool night shot captioned "unSCruz 2024." in its own slot
       (`unscruz-2024`). "Raising it." is an empty slot again, for a real
       build shot (Cameron: "It's raised and setup. Caption should be
@@ -99,8 +101,12 @@ runs `npx wrangler deploy`, so the push publishes).
   `matches` (regex) is Business and up. The rule uses `wildcard`, and only
   the real apply can prove Free accepts it. The API (read-only token) shows
   the zone is on "Free Website" with no `http_ratelimit` entrypoint yet
-  (404), so the one Free slot is open. If it's refused, use
-  `starts_with(http.request.uri.path, "/api/")`.
+  (404), so the one Free slot is open. The apply proved it: Free accepts
+  `wildcard`.
+- A full ops sync makes hundreds of Cloudflare API calls. Two CI syncs plus
+  local dry runs in a few minutes tripped the account's API limit (429,
+  code 971, "Please wait and consider throttling your request speed"). Wait
+  about five minutes with no calls before re-running.
 - TedX's photos carry no EXIF, XMP or IPTC, only an ICC profile (1440×1440,
   an Instagram-style export). The only date is in the file names,
   `IMG_20240428_230641_*`: 2024-04-28 23:06:41.
@@ -115,8 +121,8 @@ runs `npx wrangler deploy`, so the push publishes).
 
 ## Open questions for Cameron
 
-1. Push ops `732a112` to ops master (CI applies it), then watch the run?
-   Recommended. If Free refuses `wildcard`, switch to `starts_with`.
+1. The hero's "Next" and the timeline's upcoming entry are Decompression,
+   2026-10-17, which is past by launch. A next date, or mark it past?
 2. Ask TedX for the originals? They'd be sharper than the ~230 KB,
    1440×1440 copies we have now. Optional.
 
