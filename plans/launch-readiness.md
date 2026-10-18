@@ -85,9 +85,10 @@ runs `npx wrangler deploy`, so the push publishes).
       (`unscruz-2024`). "Raising it." is an empty slot again, for a real
       build shot (Cameron: "It's raised and setup. Caption should be
       unSCruz.")
-- [x] Photo credit: Cameron said "Yes, credit TedX". TedX is taken to be
-      Theodore Wahrburg, already in the crew list. A slot's `by` puts
-      "Photo: <name>" under the caption, linked to his site (`d89c8b9`).
+- [x] Photo credit: Cameron said "Yes, credit TedX". A slot's `by` puts
+      "Photo: <name>" under the caption (`d89c8b9`). The first version
+      wrongly credited Theodore Wahrburg from the crew list. TedX is
+      **not** Theodore. It now says "Photo: TedX", with no link.
 - [ ] After master publishes: `bun run launch-check`, all green
 
 ## Findings: the edge rule
@@ -116,5 +117,11 @@ runs `npx wrangler deploy`, so the push publishes).
 
 1. Push ops `732a112` to ops master (CI applies it), then watch the run?
    Recommended. If Free refuses `wildcard`, switch to `starts_with`.
-2. Ask Ted for the originals? They'd be sharper than the ~230 KB,
+2. Ask TedX for the originals? They'd be sharper than the ~230 KB,
    1440×1440 copies we have now. Optional.
+
+## Things not to do
+
+- Don't work out who someone is from a nickname or a first name. Credit
+  people exactly as Cameron names them, and ask when a link or a full name
+  would help.
