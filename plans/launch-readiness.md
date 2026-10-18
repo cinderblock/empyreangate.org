@@ -82,7 +82,7 @@ runs `npx wrangler deploy`, so the push publishes).
       Free accepts `wildcard`. Edge probe of `dev.empyreangate.org/api/live`:
       requests 1–30 got 200, 31–35 got 429, 200 again after 12 s.
       CI's `sync-verify` failed on Cloudflare API throttling (429, code 971),
-      not on the rule; re-run pending.
+      not on the rule. Re-run after a quiet wait: the whole run is green.
 - [x] Cool night shot captioned "unSCruz 2024." in its own slot
       (`unscruz-2024`). "Raising it." is an empty slot again, for a real
       build shot (Cameron: "It's raised and setup. Caption should be
