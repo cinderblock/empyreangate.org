@@ -17,6 +17,10 @@ on:
   schedule:
     - cron: "*/15 * * * *"
   workflow_dispatch:
+    inputs:
+      branch:
+        description: Branch to bump (a scratch branch with an old pin exercises the whole path)
+        default: dev
 
 concurrency:
   group: web-dist-bump
@@ -27,7 +31,7 @@ permissions:
 
 env:
   GATE: TomSawyerLabs/empyrean-gate
-  BRANCH: dev
+  BRANCH: ${{ inputs.branch || 'dev' }}
 
 jobs:
   bump:
