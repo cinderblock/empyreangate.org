@@ -89,43 +89,27 @@ export interface Appearance {
  * unSCruz: 2023, 2024, 2025 (confirmed by Cameron; May 4–7, May 2–5, May 1–3).
  * Love Burn: once, in 2024 (confirmed by Cameron). Burning Man runs the last
  * week of August into September.
+ *
+ * Newest first, the order the page shows them: add a new date at the top.
  */
 export const APPEARANCES: Appearance[] = [
   {
-    when: "Aug–Sep 2022",
-    date: "2022-08-28",
-    event: "Burning Man",
-    place: "Black Rock City, Nevada",
-    note: "The core structure is raised for the first time at the Entheos plaza.",
+    when: "Oct 17, 2026",
+    date: "2026-10-17",
+    event: "Burning Man Decompression",
+    place: "The Loom, Oakland, California",
+    note: "Next.",
+    upcoming: true,
   },
   {
-    when: "May 2023",
-    date: "2023-05-04",
-    event: "unSCruz",
-    place: "Santa Cruz, California",
-    note: "First trip off the playa, to the Santa Cruz regional.",
-  },
-  {
-    when: "Aug–Sep 2023",
-    date: "2023-08-27",
+    when: "Aug–Sep 2026",
+    date: "2026-08-30",
     event: "Burning Man",
     place: "Black Rock City, Nevada",
   },
   {
-    when: "Feb 2024",
-    date: "2024-02-15",
-    event: "Love Burn",
-    place: "Miami, Florida",
-  },
-  {
-    when: "May 2024",
-    date: "2024-05-02",
-    event: "unSCruz",
-    place: "Santa Cruz, California",
-  },
-  {
-    when: "Aug–Sep 2024",
-    date: "2024-08-25",
+    when: "Aug–Sep 2025",
+    date: "2025-08-24",
     event: "Burning Man",
     place: "Black Rock City, Nevada",
   },
@@ -136,24 +120,42 @@ export const APPEARANCES: Appearance[] = [
     place: "Santa Cruz, California",
   },
   {
-    when: "Aug–Sep 2025",
-    date: "2025-08-24",
+    when: "Aug–Sep 2024",
+    date: "2024-08-25",
     event: "Burning Man",
     place: "Black Rock City, Nevada",
   },
   {
-    when: "Aug–Sep 2026",
-    date: "2026-08-30",
+    when: "May 2024",
+    date: "2024-05-02",
+    event: "unSCruz",
+    place: "Santa Cruz, California",
+  },
+  {
+    when: "Feb 2024",
+    date: "2024-02-15",
+    event: "Love Burn",
+    place: "Miami, Florida",
+  },
+  {
+    when: "Aug–Sep 2023",
+    date: "2023-08-27",
     event: "Burning Man",
     place: "Black Rock City, Nevada",
   },
   {
-    when: "Oct 17, 2026",
-    date: "2026-10-17",
-    event: "Burning Man Decompression",
-    place: "The Loom, Oakland, California",
-    note: "Next.",
-    upcoming: true,
+    when: "May 2023",
+    date: "2023-05-04",
+    event: "unSCruz",
+    place: "Santa Cruz, California",
+    note: "First trip off the playa, to the Santa Cruz regional.",
+  },
+  {
+    when: "Aug–Sep 2022",
+    date: "2022-08-28",
+    event: "Burning Man",
+    place: "Black Rock City, Nevada",
+    note: "The core structure is raised for the first time at the Entheos plaza.",
   },
 ];
 

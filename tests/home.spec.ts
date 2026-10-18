@@ -139,6 +139,17 @@ test.describe("Home", () => {
     await expect(time).toHaveAttribute("dateTime", /^\d{4}-\d{2}-\d{2}$/);
   });
 
+  test("lists the timeline newest first, the next date at the top", async ({
+    page,
+  }) => {
+    const dates = await page
+      .locator(".timeline time")
+      .evaluateAll((els) => els.map((e) => e.getAttribute("dateTime")!));
+    expect(dates.length).toBeGreaterThan(1);
+    expect(dates).toEqual([...dates].sort().reverse());
+    await expect(page.locator(".timeline li").first()).toHaveClass("upcoming");
+  });
+
   test("ships structured data", async ({ page }) => {
     const json = await page
       .locator('script[type="application/ld+json"]')
