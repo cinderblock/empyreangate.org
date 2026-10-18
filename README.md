@@ -186,7 +186,10 @@ errors marked on the body's own lines; ⤢ Expand opens it in a large modal. Eve
 live mini, on the node and beside the editor. Any built-in node's panel has
 "Convert to Code": the node becomes a Code node in place, wires and knobs
 kept, with the body the engine generates for it, so every pattern in the
-palette is a starting point you can read and change.
+palette is a starting point you can read and change; the preset "Code:
+Ripple Warp" is one made for that, with a Note node explaining it. A Code
+node can also read the touch strokes, the triggered effects and the video as
+inputs, and the engine refuses a body whose loops have no fixed bound.
 
 On a phone the page stacks: the live gate docks at the top and shrinks into a
 bar (with the tool, color, brightness and speed beside it) as you scroll, so
