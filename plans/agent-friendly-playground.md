@@ -1,6 +1,9 @@
 # Agent-friendly playground
 
-Status: **in progress** (started 2026-10-17). Current step marked below.
+Status: **done and on the `dev` Preview** (2026-10-17). Gate `master`
+`e04afb3` → web-dist `d4e052a`; site `dev` `b28cb04` (on top of the bump
+bot's `eb5c88c`). Production (`master`) untouched. One open question below
+(the WebMCP origin-trial token).
 
 ## Goal
 
@@ -105,9 +108,9 @@ Site:
 4. [x] Gate: CLI + MCP server; assemble-dist bundles it; READMEs
 5. [x] Gate: tests (bun unit 41 pass; editor specs `patch-*` 27/27 chromium)
 6. [x] Site (worktree `C:\Users\camer\.t3\worktrees\empyreangate.org\agent-friendly`, branch `agent-friendly` from `origin/dev`): host + WebMCP + window API, `#patch=` import, docs generation, README
-7. [ ] **current** Site: full Playwright (3 browsers) + GPU suite against the locally assembled package
-8. [ ] Ship: push gate `agent-api` → `master` (fast-forward) → CI appends web-dist → bump bot (or `gh workflow run web-dist-bump.yml --ref dev`) → rebase site branch on `origin/dev` → push `dev`
-9. [ ] Verify on the `dev` Preview: docs URLs, `window.empyrean`, a link, snapshot (Claude in Chrome)
+7. [x] Site: full Playwright 255 passed / 15 skipped (WebGPU-only) over 3 browsers; GPU suite 32/32 in Chrome
+8. [x] Ship: gate `agent-api` → `master` `e04afb3` (fast-forward; Checks + Web dist green) → web-dist `d4e052a` → bump (dispatched) `eb5c88c` → site rebased, re-tested against the published package, `dev` `b28cb04`
+9. [x] Verified on the `dev` Preview (below)
 
 ## Findings / gotchas
 
@@ -152,7 +155,22 @@ Site:
       `9c5fed6` Code nodes in files, `47041e5` runtime, `8dcd4b2` editor,
       `b73295b` agent, `51093a2` CLI, `01ac0d7` issues, `f0008d9` README,
       `09cf2c4` guide JSON layout. Not pushed yet.
-- [x] Site, uncommitted in its worktree: `app/playground/agent.ts`,
+- [x] Verified 2026-10-17 on dev.empyreangate.org: `/llms.txt`,
+      `/playground/agents.md` (`text/markdown`, links on the Preview's own
+      origin), `registry.json` (`application/json`). In Claude in Chrome,
+      through `window.empyrean` only: 15 tools; a new Code-node patch
+      ("Agent: beat spiral") validated, ran and opened in the editor;
+      `snapshot` (4 frames) mean brightness 0.12/0.07 alternating with the
+      beat; `link()` gave a `#patch=z…` URL. That Chrome has no WebMCP (no
+      flag/token), so WebMCP was verified only with the Playwright stub.
+      The test patch is in Cameron's Chrome's playground library on the
+      Preview (delete it there if unwanted).
+- [x] Published CLI checked through npx, exactly as the guide gives it
+      (`empyrean-patch` from the web-dist branch, with `webgpu`): presets,
+      render (Beat Pulse rings expand over 4 frames), and `mcp` over stdio
+      (initialize, tools/list, open_preset, edit_patch, snapshot,
+      resources/read; changes saved to the bound file).
+- [x] Site, in its worktree (now committed and pushed): `app/playground/agent.ts`,
       Playground/SubmitDialog/route/CSS, `scripts/agent-docs.ts` (+ postbuild),
       `tests/playground-agent.spec.ts` (11/11 in Chrome with WebGPU), README.
 
@@ -163,6 +181,13 @@ Site:
    account. Without it, WebMCP works only for people with the Chrome flag
    on; `window.empyrean`, links and docs work everywhere regardless.
    Recommendation: register both origins once this ships.
+
+## Follow-ups (not started, not asked for)
+
+- Wire `registerWebMcp` into the gate app's own Patch tab (the package
+  supports it; agents rarely run inside the Tauri webview, so low value
+  unless the operator UI is used from a browser).
+- The Code node reference's gaps (gate ISSUES.md entry).
 
 ## Things not to do
 
