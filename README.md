@@ -199,7 +199,9 @@ remembered in localStorage. Narrower than 640 px the editor itself drops its
 toolbar: the open patch is a ☰ chip on the canvas (tap it for a menu sheet with
 rename, status, undo, open, new, save, submit and delete), ↶ and ⇆ beside it
 undo and arrange, ＋ opens the palette as a sheet, a ⚠ chip appears only while the patch cannot run, and a node's
-settings open on double-tap or from a pill.
+settings open on double-tap or from a pill. A tapped wire (or a clicked one on
+a desk) carries a ✕ at its middle that deletes it, since a phone has no Delete
+key.
 
 ### For AI agents
 

@@ -71,6 +71,13 @@ site yet." Push the site's `dev` only (never its `master`); the gate app's
   still no toolbar), and the patch chip leads with ☰ instead of a trailing
   ▾ so it reads as a menu, not a patch picker. Unit tests in `arrange.test.ts`; behaviour
   spec `tests/patch-arrange.spec.ts`; a site spec on the real preset.
+- **Deleting a wire without a keyboard** (Cameron, 2026-10-18: "mobile/touch
+  needs a way to delete a link between nodes"): wires are a custom
+  `WireEdge`; a selected wire (tap or click, any layout) is drawn thicker
+  and carries a ✕ at its middle, counter-scaled so it stays 32 px at any
+  zoom, which deletes it as one undo step (`NodeContext.deleteWire`, null
+  when read-only). On a coarse pointer the wire's hit area is 36 px wide.
+  Gate `acb0fd9`, spec `tests/patch-wire-delete.spec.ts`.
 - **Phone motion on a desk is a stand-in** (Cameron, 2026-10-17: "Use phone
   motion probably shouldn't appear on desktop, or should be replaced with a
   simulate button"): desktop browsers expose `DeviceOrientationEvent` with
