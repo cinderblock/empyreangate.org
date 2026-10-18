@@ -165,7 +165,7 @@ on a wide screen, a one-line chip with the values on a phone. The gate app's
 Patch tab shows the same card, driving its Live tab's master. A patch that
 wants to react to them adds the Gate globals node (Inputs), which outputs
 brightness, speed and the master hue pull as scalars. **Arrange** (toolbar,
-or the patch menu on a phone) lays the graph out left to right by its wires
+or the ⇆ chip on a phone's canvas) lays the graph out left to right by its wires
 with a layered layout (dagre); it is deterministic for a given patch and one
 undo step. On a desk, "Simulate phone motion" feeds the Phone IMU node a
 stand-in (`app/playground/motion.ts`); a phone, judged by hover and pointer
@@ -196,9 +196,9 @@ bar (with the tool, color, brightness and speed beside it) as you scroll, so
 it stays in view over the controls and the node graph. "Keep the gate in view"
 turns that off; both it and the one-time "works best on a desktop" toast are
 remembered in localStorage. Narrower than 640 px the editor itself drops its
-toolbar: the open patch is a chip on the canvas (tap it for a menu sheet with
-rename, status, open, new, save, submit and delete), ＋ opens the palette as a
-sheet, a ⚠ chip appears only while the patch cannot run, and a node's
+toolbar: the open patch is a ☰ chip on the canvas (tap it for a menu sheet with
+rename, status, undo, open, new, save, submit and delete), ↶ and ⇆ beside it
+undo and arrange, ＋ opens the palette as a sheet, a ⚠ chip appears only while the patch cannot run, and a node's
 settings open on double-tap or from a pill.
 
 ### For AI agents

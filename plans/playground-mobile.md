@@ -65,7 +65,11 @@ site yet." Push the site's `dev` only (never its `master`); the gate app's
   measured node sizes. Deterministic for a given document order, so a second
   press changes nothing. One undo step (`mutateDoc` key `arrange`), then
   `fitView`. Toolbar button on a wide screen; in the compact menu on a phone,
-  where it also closes the sheet. Unit tests in `arrange.test.ts`; behaviour
+  where it also closes the sheet. Cameron (2026-10-18: "the menu with the
+  arrange button is a little too hidden on mobile"): the compact canvas row
+  now also has ↶ Undo and ⇆ Arrange icon chips beside ＋ (same row, so
+  still no toolbar), and the patch chip leads with ☰ instead of a trailing
+  ▾ so it reads as a menu, not a patch picker. Unit tests in `arrange.test.ts`; behaviour
   spec `tests/patch-arrange.spec.ts`; a site spec on the real preset.
 - **Phone motion on a desk is a stand-in** (Cameron, 2026-10-17: "Use phone
   motion probably shouldn't appear on desktop, or should be replaced with a
