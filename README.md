@@ -177,8 +177,11 @@ group adds a node you write instead of wire: declare its inputs and outputs
 (scalars, events, grey or colour fields) in the side panel and type a WGSL
 body that sets the outputs by name; a field output puts it in the shader, and
 scalar/event ports only run it on the CPU through the engine's bounded
-WGSL-subset interpreter. Shader errors inside the body are reported against
-its own lines in the ⚠ status.
+WGSL-subset interpreter. The body is a real code editor (CodeMirror):
+highlighting, completion and hover docs for the node's ports and the shader
+lib's helpers (the list comes from the engine itself), Tab indents, and
+errors marked on the body's own lines. Every output of a Code node gets a
+live mini, on the node and beside the editor.
 
 On a phone the page stacks: the live gate docks at the top and shrinks into a
 bar (with the tool, color, brightness and speed beside it) as you scroll, so

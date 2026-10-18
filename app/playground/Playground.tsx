@@ -765,6 +765,7 @@ export default function Playground() {
             store={store}
             registry={core?.registry ?? null}
             presets={core?.presets ?? []}
+            codeReference={core?.codeReference ?? null}
             ready={ready}
             activeId={activeId}
             status={status}
