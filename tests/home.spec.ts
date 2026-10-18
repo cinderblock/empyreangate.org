@@ -150,6 +150,30 @@ test.describe("Home", () => {
     await expect(page.locator(".timeline li").first()).toHaveClass("upcoming");
   });
 
+  test("shows each timeline entry's month as one month, not a range", async ({
+    page,
+  }) => {
+    const whens = await page.locator(".timeline time").allTextContents();
+    for (const when of whens) expect(when).not.toMatch(/–|-/);
+  });
+
+  test("marks 2023 as placed art, linked to the Burning Man Art Archive", async ({
+    page,
+  }) => {
+    const entry = page
+      .locator(".timeline li")
+      .filter({ has: page.locator('time[datetime="2023-08-27"]') });
+    await expect(entry).toContainText("A placed art piece.");
+    const link = entry.getByRole("link", {
+      name: /In the Burning Man Art Archive/,
+    });
+    await expect(link).toHaveAttribute(
+      "href",
+      /^https:\/\/history\.burningman\.org\/art-history\/archive\/\?yyyy=2023#/,
+    );
+    await expect(link).toHaveAttribute("target", "_blank");
+  });
+
   test("ships structured data", async ({ page }) => {
     const json = await page
       .locator('script[type="application/ld+json"]')

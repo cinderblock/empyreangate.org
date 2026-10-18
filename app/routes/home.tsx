@@ -413,7 +413,15 @@ export default function Home() {
                 <span className="timeline-event">
                   <strong>{a.event}</strong>
                   <span className="timeline-place">{a.place}</span>
-                  {a.note && <span className="timeline-note">{a.note}</span>}
+                  {(a.note || a.link) && (
+                    <span className="timeline-note">
+                      {a.note}
+                      {a.note && a.link && " "}
+                      {a.link && (
+                        <External href={a.link.href}>{a.link.label} ↗</External>
+                      )}
+                    </span>
+                  )}
                 </span>
               </li>
             ))}

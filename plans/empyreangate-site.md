@@ -45,6 +45,18 @@ interactive, locally rendered version of the gate's light patterns.
   cauldron or the people. The piece section says both outright.
 - **Timeline entries carry months** (Burning Man Aug–Sep, unSCruz May, Love
   Burn Feb) with an ISO `date` for the first day.
+- **One month per entry** (Cameron, 2026-10-18: "aug-sept … looks out of
+  place", "your call, as long as it's consistent"). Every entry shows the
+  month its first day falls in, so Burning Man is "Aug": 2024 and 2025 ran
+  almost entirely in August (Aug 25–Sep 2, Aug 24–Sep 1), and it matches the
+  `<time>` date. This supersedes "Aug–Sep" above.
+- **2023 was placed art** (Cameron, 2026-10-18). The Burning Man 2023
+  entry says "A placed art piece." and links its Burning Man Art Archive
+  entry (`history.burningman.org/art-history/archive/?yyyy=2023`, anchor
+  `#a2I8X00000hDPVeUAO`, type "Black Rock City Art"). 2022 and 2024–2026
+  have no Empyrean Gate entry there. The archive credits "Anthony Fieldman
+  and James Tramel, with the Entheos Community Artist Collective" and says
+  25,000 LEDs.
 - **Names and ordering** (Cameron, 2026-10-14): crew shows "James
   Logistic" (now 'James "Logistic" Tramel', below) and 'Cameron
   "Quadrangle" Tacklind'. Earlier contributors run

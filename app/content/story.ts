@@ -72,13 +72,18 @@ export const LIGHT: Section = {
 };
 
 export interface Appearance {
-  /** When, as shown: "Aug–Sep 2022", "May 2023", "Oct 17, 2026". */
+  /**
+   * When, as shown: the month of the first day ("Aug 2022", "May 2023"), or
+   * the full date of a one-day event ("Oct 17, 2026").
+   */
   when: string;
   /** Sortable ISO date of the first day, for structured data later. */
   date: string;
   event: string;
   place: string;
   note?: string;
+  /** An outside record of the appearance, rendered after the note. */
+  link?: { label: string; href: string };
   /** Marks the next date rather than a past one. */
   upcoming?: boolean;
 }
@@ -88,7 +93,9 @@ export interface Appearance {
  *
  * unSCruz: 2023, 2024, 2025 (confirmed by Cameron; May 4–7, May 2–5, May 1–3).
  * Love Burn: once, in 2024 (confirmed by Cameron). Burning Man runs the last
- * week of August into September.
+ * week of August into September; it shows as "Aug", the month it starts, like
+ * every other entry. In 2023 the gate was a placed art piece (Cameron); the
+ * Burning Man Art Archive lists it that year and no other.
  *
  * Newest first, the order the page shows them: add a new date at the top.
  */
@@ -102,13 +109,13 @@ export const APPEARANCES: Appearance[] = [
     upcoming: true,
   },
   {
-    when: "Aug–Sep 2026",
+    when: "Aug 2026",
     date: "2026-08-30",
     event: "Burning Man",
     place: "Black Rock City, Nevada",
   },
   {
-    when: "Aug–Sep 2025",
+    when: "Aug 2025",
     date: "2025-08-24",
     event: "Burning Man",
     place: "Black Rock City, Nevada",
@@ -120,7 +127,7 @@ export const APPEARANCES: Appearance[] = [
     place: "Santa Cruz, California",
   },
   {
-    when: "Aug–Sep 2024",
+    when: "Aug 2024",
     date: "2024-08-25",
     event: "Burning Man",
     place: "Black Rock City, Nevada",
@@ -138,10 +145,15 @@ export const APPEARANCES: Appearance[] = [
     place: "Miami, Florida",
   },
   {
-    when: "Aug–Sep 2023",
+    when: "Aug 2023",
     date: "2023-08-27",
     event: "Burning Man",
     place: "Black Rock City, Nevada",
+    note: "A placed art piece.",
+    link: {
+      label: "In the Burning Man Art Archive",
+      href: "https://history.burningman.org/art-history/archive/?yyyy=2023#a2I8X00000hDPVeUAO",
+    },
   },
   {
     when: "May 2023",
@@ -151,7 +163,7 @@ export const APPEARANCES: Appearance[] = [
     note: "First trip off the playa, to the Santa Cruz regional.",
   },
   {
-    when: "Aug–Sep 2022",
+    when: "Aug 2022",
     date: "2022-08-28",
     event: "Burning Man",
     place: "Black Rock City, Nevada",
