@@ -70,9 +70,11 @@ interactive, locally rendered version of the gate's light patterns.
   Lacquemant, Walter "Rip Ions" Smith), the 2023 video and sound sequences,
   and a "Major donors" list (2022). Names as the panel prints them, except
   Anthony: he no longer goes by "Gatekeeper". No links beyond the two
-  YouTube channels the panel prints. The panel's "James 'Logistic' Tramel,
-  concept and project director" is not added: James stays crew-only (the
-  2026-10-14 decision above).
+  YouTube channels the panel prints. James is credited from it too, as
+  'James "Logistic" Tramel', "Concept and project direction, 2023" (Cameron,
+  2026-10-17: yes), on top of his crew line. This supersedes "credited only
+  as crew" above; the 2022 design line still names Anthony alone. The panel
+  doesn't date the role, so it says 2023, the panel's own year.
 - **People:** a names-only "The gate today" list (The Entheos Community, James
   Tramel, Cameron Tacklind, Allison Bellows, Theodore Wahrburg) and an
   "Earlier contributors" list with roles, where Eric Vicenti is credited for
