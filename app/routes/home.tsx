@@ -2,7 +2,13 @@ import type { MetaFunction } from "react-router";
 import { Link } from "react-router";
 import GateRender from "../components/GateRender";
 import { NowPlaying, PlayLive, useLive } from "../components/LiveLink";
-import { CREW, EARLIER, type Person } from "../content/credits";
+import {
+  CREW,
+  DONORS,
+  EARLIER,
+  type Credit,
+  type Person,
+} from "../content/credits";
 import { PHOTOS } from "../content/gallery";
 import { PHOTO_MANIFEST } from "../content/photo-manifest";
 import { ARRAY, SITE } from "../content/site";
@@ -107,6 +113,66 @@ function PersonName({ person }: { person: Person }) {
     <External href={person.href}>{person.name}</External>
   ) : (
     <>{person.name}</>
+  );
+}
+
+/**
+ * A credited name. Their site, when they have one, is the small icon before
+ * the name rather than the name itself; at the start of a line the icon hangs
+ * in the list's left gutter, so names line up with or without one.
+ */
+function Credited({ person }: { person: Person }) {
+  return (
+    <span className="credited">
+      {person.href && (
+        <a
+          className="credited-link"
+          href={person.href}
+          rel="noopener"
+          target="_blank"
+          aria-label={`${person.name} (website)`}
+        >
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M9.5 2.5h4v4M13.5 2.5 7.5 8.5M11.5 9v4.5h-9v-9H7" />
+          </svg>
+        </a>
+      )}
+      {person.name}
+    </span>
+  );
+}
+
+function CreditList({
+  className,
+  credits,
+}: {
+  className: string;
+  credits: Credit[];
+}) {
+  return (
+    <ul className={`credits ${className}`}>
+      {credits.map((credit) => (
+        <li key={credit.role}>
+          <span className="person-name">
+            {credit.people.map((p, i) => (
+              <span key={p.name}>
+                {i > 0 && ", "}
+                <Credited person={p} />
+              </span>
+            ))}
+          </span>
+          <span className="person-role">
+            {credit.role}
+            {credit.byline && (
+              <>
+                {" · "}
+                <Credited person={credit.byline} />
+              </>
+            )}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -435,36 +501,18 @@ export default function Home() {
               <ul className="crew">
                 {CREW.map((p) => (
                   <li key={p.name}>
-                    <PersonName person={p} />
+                    <Credited person={p} />
                   </li>
                 ))}
               </ul>
             </div>
             <div>
               <h3>{PEOPLE.earlierHeading}</h3>
-              <ul className="earlier">
-                {EARLIER.map((credit) => (
-                  <li key={credit.role}>
-                    <span className="person-name">
-                      {credit.people.map((p, i) => (
-                        <span key={p.name}>
-                          {i > 0 && ", "}
-                          <PersonName person={p} />
-                        </span>
-                      ))}
-                    </span>
-                    <span className="person-role">
-                      {credit.role}
-                      {credit.byline && (
-                        <>
-                          {" · "}
-                          <PersonName person={credit.byline} />
-                        </>
-                      )}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <CreditList className="earlier" credits={EARLIER} />
+            </div>
+            <div>
+              <h3>{PEOPLE.donorsHeading}</h3>
+              <CreditList className="donors" credits={DONORS} />
             </div>
           </div>
         </section>

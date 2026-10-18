@@ -766,6 +766,7 @@ p {
 /* --- People -------------------------------------------------------------- */
 
 .people {
+  --credit-icon: 1.2em;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
   gap: 2rem;
@@ -793,7 +794,7 @@ p {
   line-height: 1.25;
 }
 
-.earlier li {
+.credits li {
   display: flex;
   flex-direction: column;
   font-size: 1.05rem;
@@ -802,6 +803,38 @@ p {
 .person-role {
   color: var(--ink-muted);
   font-size: 0.9rem;
+}
+
+/* A name's site is the icon before it. Each row keeps a gutter as wide as the
+   icon, and an icon that starts a row hangs into it, so names align. */
+.people li {
+  padding-left: var(--credit-icon);
+}
+
+.credited-link {
+  display: inline-block;
+  width: var(--credit-icon);
+  vertical-align: -0.05em;
+  line-height: 1;
+}
+
+.crew li > .credited > .credited-link,
+.credits .person-name > :first-child > .credited > .credited-link {
+  margin-left: calc(-1 * var(--credit-icon));
+}
+
+.credited-link svg {
+  width: 0.7em;
+  height: 0.7em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.credited-link:hover {
+  color: var(--ink);
 }
 
 /* --- Footer -------------------------------------------------------------- */

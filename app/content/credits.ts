@@ -20,7 +20,7 @@ export const CREW: Person[] = [
   { name: "Theodore Wahrburg", href: "https://ted.wahrburg.dev/" },
 ];
 
-export interface EarlierCredit {
+export interface Credit {
   role: string;
   people: Person[];
   /** The studio, shop or project credited for the work as a whole. */
@@ -29,9 +29,10 @@ export interface EarlierCredit {
 
 /**
  * Earlier contributors whose work the gate was built on, most recent first.
- * People still involved are credited under CREW, not here.
+ * People still involved are credited under CREW, not here. The 2022–23 roles
+ * and the 2023 sequences come from the gate's own artist panel, 2023.
  */
-export const EARLIER: EarlierCredit[] = [
+export const EARLIER: Credit[] = [
   {
     role: "Light software for unSCruz 2024",
     people: [{ name: "Eric Vicenti", href: "https://eric.vicenti.net/" }],
@@ -39,6 +40,45 @@ export const EARLIER: EarlierCredit[] = [
       name: "Uprising",
       href: "https://github.com/ericvicenti/uprising",
     },
+  },
+  {
+    role: "Video sequences, 2023",
+    people: [
+      {
+        name: "World of Kaleidoscopes",
+        href: "https://www.youtube.com/@worldofkaleidoscopes2446",
+      },
+      { name: "HD Colors", href: "https://www.youtube.com/HDCOLORS" },
+    ],
+  },
+  {
+    role: "Sound sequences, 2023",
+    people: [
+      { name: "Meditative Mind" },
+      { name: "Sleep Before Midnight" },
+      { name: "Adrien Lacquemant" },
+      { name: "Tony Grund" },
+    ],
+  },
+  {
+    role: "Fabrication, 2023",
+    people: [{ name: 'James "Focus" Scott' }],
+  },
+  {
+    role: "Music, 2022–23",
+    people: [{ name: "Nati Shabat" }],
+  },
+  {
+    role: "Audio, 2022–23",
+    people: [{ name: "Abraham Fuentes" }],
+  },
+  {
+    role: "Content, 2022–23",
+    people: [{ name: "Adrien Lacquemant" }],
+  },
+  {
+    role: "Video, 2022",
+    people: [{ name: 'Walter "Rip Ions" Smith' }],
   },
   {
     role: "Lighting, 2022",
@@ -50,7 +90,7 @@ export const EARLIER: EarlierCredit[] = [
   },
   {
     role: "Fabrication, 2022",
-    people: [{ name: "Michael Kennedy" }, { name: "James Scott" }],
+    people: [{ name: "Michael Kennedy" }, { name: 'James "Focus" Scott' }],
     byline: {
       name: "Kennedy Fabrications",
       href: "https://www.kennedyfabrications.com/",
@@ -61,5 +101,21 @@ export const EARLIER: EarlierCredit[] = [
     people: [
       { name: "Anthony Fieldman", href: "https://www.anthonyfieldman.com/" },
     ],
+  },
+];
+
+/** The 2022 build's major donors, as the 2023 artist panel lists them. */
+export const DONORS: Credit[] = [
+  {
+    role: "Benefactor, 2022",
+    people: [{ name: "Matt Mullenweg" }],
+  },
+  {
+    role: "Supporters, 2022",
+    people: [{ name: "Ed Chimney" }, { name: "James Currier" }],
+  },
+  {
+    role: "Fundraising, 2022",
+    people: [{ name: "Whitmire Vo" }],
   },
 ];

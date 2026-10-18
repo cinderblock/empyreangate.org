@@ -178,6 +178,56 @@ test.describe("People", () => {
       const link = people.getByRole("link", { name });
       await expect(link).toHaveAttribute("href", href);
       await expect(link).toHaveAttribute("target", "_blank");
+      // The link is the icon; the name beside it is plain text.
+      await expect(link).toHaveText("");
+    }
+  });
+
+  test("lines names up whether or not they have a site icon", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const crew = page.locator(".crew li");
+    await expect(crew.locator(".credited-link")).not.toHaveCount(0);
+    // The x where each name's text starts, past any icon.
+    const starts = await crew.evaluateAll((items) =>
+      items.map((li) => {
+        const text = [...li.querySelector(".credited")!.childNodes].find(
+          (n) => n.nodeType === Node.TEXT_NODE,
+        )!;
+        const range = document.createRange();
+        range.selectNodeContents(text);
+        return Math.round(range.getBoundingClientRect().left);
+      }),
+    );
+    expect(new Set(starts).size).toBe(1);
+  });
+
+  test("credits the 2023 artist panel", async ({ page }) => {
+    await page.goto("/");
+    const earlier = page.locator(".earlier");
+    for (const text of [
+      'James "Focus" Scott',
+      "Nati Shabat",
+      "Abraham Fuentes",
+      "Adrien Lacquemant",
+      'Walter "Rip Ions" Smith',
+      "World of Kaleidoscopes",
+      "HD Colors",
+      "Meditative Mind",
+      "Sleep Before Midnight",
+      "Tony Grund",
+    ]) {
+      await expect(earlier).toContainText(text);
+    }
+    const donors = page.locator(".donors");
+    for (const text of [
+      "Matt Mullenweg",
+      "Ed Chimney",
+      "James Currier",
+      "Whitmire Vo",
+    ]) {
+      await expect(donors).toContainText(text);
     }
   });
 

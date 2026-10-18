@@ -181,4 +181,5 @@ export const PEOPLE = {
   lede: "The gate is built, hauled, raised, lit and taken down again by volunteers from the Entheos community. These are the hands behind it today, and the ones it was built on.",
   crewHeading: "The gate today",
   earlierHeading: "Earlier contributors",
+  donorsHeading: "Major donors",
 };

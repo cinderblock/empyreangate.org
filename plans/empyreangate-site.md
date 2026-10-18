@@ -61,6 +61,18 @@ interactive, locally rendered version of the gate's light patterns.
   This supersedes "original-design credit is one line of names". Eric's
   line also links his unSCruz 2024 software, Uprising
   (github.com/ericvicenti/uprising), as its byline (Cameron, 2026-10-14).
+- **Contributor links are icons** (Cameron, 2026-10-17): in the People
+  section a name is plain text, and its site is a small external-link icon
+  before it. An icon that starts a line hangs in a left gutter, so every name
+  lines up whether or not it has one. Photo credits keep linked names.
+- **The 2023 artist panel** (photo from Cameron, 2026-10-17) adds the
+  2022–23 roles (James "Focus" Scott, Nati Shabat, Abraham Fuentes, Adrien
+  Lacquemant, Walter "Rip Ions" Smith), the 2023 video and sound sequences,
+  and a "Major donors" list (2022). Names as the panel prints them, except
+  Anthony: he no longer goes by "Gatekeeper". No links beyond the two
+  YouTube channels the panel prints. The panel's "James 'Logistic' Tramel,
+  concept and project director" is not added: James stays crew-only (the
+  2026-10-14 decision above).
 - **People:** a names-only "The gate today" list (The Entheos Community, James
   Tramel, Cameron Tacklind, Allison Bellows, Theodore Wahrburg) and an
   "Earlier contributors" list with roles, where Eric Vicenti is credited for
