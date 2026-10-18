@@ -177,7 +177,12 @@ Site:
 
 ## Open questions for the user
 
-None. (The WebMCP origin-trial token: Cameron registered
+None. Verified 2026-10-17 on the dev Preview in Cameron's Chrome 154 with
+the token deployed (`4b136a0`): `document.modelContext` present (it was
+absent before the token), `data-webmcp="15"`, and Chrome's own
+`getTools()` lists all 15; `executeTool(tool, "<json>")` (Chrome takes the
+input as a JSON string) ran `list_presets` and `describe_node_types`
+through our handlers. (The WebMCP origin-trial token: Cameron registered
 https://empyreangate.org with subdomains on 2026-10-17; it is
 `PLAYGROUND.webmcpOriginTrial`, in the playground's head as
 `<meta http-equiv="origin-trial">`, expiring 2027-03-30. Renew it at
