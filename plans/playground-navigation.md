@@ -109,14 +109,16 @@ Library summaries gained `kinds` and the `subpatches` tree.
 5. [x] Editor: browser panel with Tree / Topics / List.
 6. [x] Gate checks + spec `patch-navigation`; on gate master as be3004b
        (rebased over Agent L's palette overhaul and the Code-aids work).
-7. [ ] Site: splat route, `_redirects`, URLs, history, store, spec, README —
-       done on branch `playground-navigation` (worktree
-       `C:\Users\camer\.t3\worktrees\empyreangate.org\playground-navigation`),
-       tested against a locally assembled web-dist. **← current: waiting for
-       the web-dist bump of be3004b to land on dev, then rebase and push.**
-8. [ ] Verify on the dev Preview (deep link, reload, Back/Forward,
-       double-click). dev.empyreangate.org is behind Cloudflare Access now, so
-       through Cameron's Chrome session.
+7. [x] Site: splat route, `_redirects`, URLs, history, store, spec, README —
+       on dev as f1e9c5b-era commits, pushed at e098ebc (2026-10-19).
+8. [x] Verified on the dev Preview in Cameron's Chrome (2026-10-19 07:20Z):
+       `/playground/builtin/scope` deep link opens read-only, `agents.md`
+       still served as markdown, Back/Forward between built-ins, a real
+       double-click opens a Sub-patch (`…/n3`, breadcrumb, live minis
+       inside), Back comes out. A scratch patch made for this was deleted.
+9. [x] Follow-up nit found there: after deleting the open patch the editor
+       reopened the page's first deep link. Gate e1e0bc2 (the host's
+       starting location counts once); reaches dev with the bot's next bump.
 
 ## Findings / gotchas
 
@@ -138,6 +140,13 @@ Library summaries gained `kinds` and the `subpatches` tree.
 - A Bash heredoc through this tool turned `\\n` / `\\r` into real line breaks
   inside Python string literals; write such edit scripts with the file tool
   or build backslashes with `chr(92)`.
+- Workers static assets honour `_redirects` 200 rewrites on the Preview
+  (verified), and `/playground/` stays the canonical bare URL.
+- The new palette (Agent L) is wider: a test double-clicking a node near the
+  canvas edge hit the side panel its first click opened. Tests double-click
+  a node's corner.
+- The WebGPU suite (`bun run test:gpu`) used the removed New-from-preset
+  select; fixed on dev (Touch Ripples from the browser).
 - Unrelated flakes seen under full parallel load, passing alone: site
   `home.spec.ts:74` (webkit), gate `multitouch.spec.ts:73` (webkit),
   `patch-compact.spec.ts:31`.
@@ -149,7 +158,9 @@ Library summaries gained `kinds` and the `subpatches` tree.
   link model + store, 6a8ef68 editor, be3004b save flush). Gate checks green
   locally: typecheck, 142 unit, 137 crate + 341 app Rust tests, behaviour
   suite (170, one webkit flake that passes alone). Site work done and green
-  locally on all three browsers (navigation spec 6/6), not yet pushed.
+  locally on all three browsers (navigation spec 6/6).
+- 2026-10-19: site on dev (e098ebc), Preview verified; gate e1e0bc2 nit.
+  Unrelated failures logged in ISSUES.md (home/render on Firefox+WebKit).
 
 ## Open questions for the user
 
