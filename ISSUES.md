@@ -51,6 +51,19 @@ one by marking it `in progress — <thread/branch>` before working on it.
   ignore it.
 - **To look at:** whether the mocked `/api/live` route is in place before the
   page's first fetch on WebKit, or the 5 s wait is too short under load.
+- **Also (2026-10-19, dev at `a8e6372`):** fails on `[firefox]` too (35 s,
+  same assertion) when only `home.spec.ts` and `render.spec.ts` run together.
+
+## Hero render tests fail on Firefox and WebKit when run with the home suite
+
+- **What:** `npx playwright test tests/home.spec tests/render.spec` on dev
+  `a8e6372` (2026-10-19): `render.spec.ts:13` ("reaches a live state, or
+  falls back on purpose", firefox), `:51`/`:68` (pause and play, webkit,
+  firefox) and `:89` ("respects prefers-reduced-motion by starting paused",
+  webkit), each `expect(locator).toHaveAttribute(...)` failing; which ones
+  vary run to run.
+- **Why it matters:** same as above; the full three-browser suite is never
+  green locally.
 
 ## Two playground tests flake on WebKit under a parallel run
 
