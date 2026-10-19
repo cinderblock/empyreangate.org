@@ -843,7 +843,9 @@
   cursor: default;
 }
 
-/* The Video in node's stand-in picker, in the editor's side panel. */
+/* Stand-in pickers in the editor's side panel: Video in's source, and the
+   simulated visitors on the kinds that need people. */
+.pg-visitors,
 .pg-video-in {
   display: flex;
   flex-direction: column;
@@ -859,6 +861,11 @@
   border-radius: 0.45rem;
   padding: 0.3rem 0.6rem;
   cursor: pointer;
+}
+
+.pg-video-in .patch-param-row {
+  flex-wrap: wrap;
+  gap: 0.4rem;
 }
 
 .pg-video-in .pg-file input {

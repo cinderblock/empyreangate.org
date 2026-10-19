@@ -21,10 +21,13 @@ import {
 } from "@empyrean-gate/patch-web/editor";
 import {
   attachGroove,
+  attachVisitors,
   GROOVE_BPM,
   loadPatchCore,
+  MediaTexture,
   PatchRuntime,
   screenToPolar,
+  syntheticMotion,
   WebGpuUnavailable,
   type DjLinkSim,
   type PatchCore,
@@ -37,10 +40,22 @@ import { PLAYGROUND, SITE } from "../content/site";
 import { startPlaygroundAgent, type PlaygroundInputs } from "./agent";
 import DjDecks from "./DjDecks";
 import SubmitDialog from "./SubmitDialog";
-import { syntheticMotion } from "./motion";
 import { LocalPatchStore } from "./store";
 import { parsePlaygroundPath, playgroundPath } from "./urls";
 import "./playground.css";
+
+/** Node kinds that only come alive when people tap, draw or touch: their
+ * panels offer the simulated visitors. */
+const VISITOR_KINDS = new Set([
+  "tap",
+  "touch",
+  "touch_dabs",
+  "effects_in",
+  "touch_mask",
+  "touch_glow",
+  "render_points",
+  "render_effects",
+]);
 
 /** What a first visit opens: a copy of this built-in preset. */
 const STARTER = "Rainbow Sparkle";
@@ -86,7 +101,14 @@ export default function Playground() {
   const imuManual = useRef({ yaw: 0, pitch: 0, roll: 0, shake: 0 });
   const [imuOverride, setImuOverride] = useState(false);
   const [imu, setImu] = useState({ yaw: 0, pitch: 0, roll: 0 });
-  const [mediaName, setMediaName] = useState<string | null>(null);
+  /** Where Video in's picture comes from: the stand-in film, the camera, or
+   * a file (its name). */
+  const [video, setVideo] = useState<"film" | "camera" | { file: string }>(
+    "film",
+  );
+  const [visitors, setVisitors] = useState(false);
+  const [huePull, setHuePull] = useState(0);
+  const [hueTarget, setHueTarget] = useState(0.08);
   const [brightness, setBrightness] = useState(1);
   const [speed, setSpeed] = useState(1);
   const [dj, setDj] = useState<DjLinkSim | null>(null);
@@ -325,6 +347,26 @@ export default function Playground() {
     () => runtime?.setMaster(brightness, speed),
     [runtime, brightness, speed],
   );
+  useEffect(
+    () => runtime?.setHuePull(hueTarget, huePull),
+    [runtime, hueTarget, huePull],
+  );
+
+  // People at the gate, when nobody is tapping: taps on the beat, strokes,
+  // and fingers when the patch owns touch.
+  const visitorsRef = useRef<ReturnType<typeof attachVisitors> | null>(null);
+  useEffect(() => {
+    if (!runtime) return;
+    const v = attachVisitors(runtime, { enabled: false });
+    visitorsRef.current = v;
+    return () => {
+      v.stop();
+      visitorsRef.current = null;
+    };
+  }, [runtime]);
+  useEffect(() => {
+    if (visitorsRef.current) visitorsRef.current.settings.enabled = visitors;
+  }, [runtime, visitors]);
 
   // For AI agents: WebMCP tools and `window.empyrean` (see agent.ts). The
   // controls they may set are read and written through refs, so the tools
@@ -444,7 +486,7 @@ export default function Playground() {
 
   // Desktop browsers expose DeviceOrientationEvent without having any sensor
   // behind it, so "a phone" is judged by how it is held: no hover, a coarse
-  // pointer. Anything else gets a stand-in (app/playground/motion.ts), so a
+  // pointer. Anything else gets a stand-in (patch-web's syntheticMotion), so a
   // Phone IMU node can be tried from a desk.
   const likelyPhone = useMediaQuery("(hover: none) and (pointer: coarse)");
   const realMotion =
@@ -504,13 +546,37 @@ export default function Playground() {
     if (!runtime) return;
     runtime
       .setMedia(file)
-      .then(() => setMediaName(file?.name ?? null))
+      .then(() => setVideo(file ? { file: file.name } : "film"))
       .catch((e: unknown) =>
         setNotice(
           `That file could not be played: ${e instanceof Error ? e.message : String(e)}`,
         ),
       );
   };
+  const pickCamera = () => {
+    if (!runtime) return;
+    MediaTexture.fromCamera()
+      .then((tex) => {
+        runtime.setVideoSource(tex);
+        setVideo("camera");
+      })
+      .catch((e: unknown) =>
+        setNotice(
+          `The camera could not be used: ${e instanceof Error ? e.message : String(e)}`,
+        ),
+      );
+  };
+  const visitorsToggle = (
+    <label className="pg-check">
+      <input
+        type="checkbox"
+        disabled={!runtime}
+        checked={visitors}
+        onChange={(e) => setVisitors(e.target.checked)}
+      />
+      Simulated visitors
+    </label>
+  );
 
   const effects = core?.effectKinds.filter((k) => k !== "cone") ?? [];
 
@@ -598,6 +664,24 @@ export default function Playground() {
       max: 3,
       format: (v) => `${v.toFixed(2)}×`,
       onChange: setSpeed,
+    },
+    {
+      name: "hue_amount",
+      label: "Hue pull",
+      value: huePull,
+      min: 0,
+      max: 1,
+      format: (v) => (v === 0 ? "off" : `${Math.round(v * 100)}%`),
+      onChange: setHuePull,
+    },
+    {
+      name: "hue",
+      label: "Pull toward",
+      value: hueTarget,
+      min: 0,
+      max: 1,
+      format: (v) => `${Math.round(v * 360)}°`,
+      onChange: setHueTarget,
     },
   ];
 
@@ -779,6 +863,17 @@ export default function Playground() {
             <DjDecks dj={dj} runtime={runtime} />
 
             <fieldset>
+              <legend>People</legend>
+              <div className="pg-row pg-wrap">
+                {visitorsToggle}
+                <span className="pg-check">
+                  Stand-ins for the crowd: taps on the beat, strokes now and
+                  then, and fingers when the patch owns touch.
+                </span>
+              </div>
+            </fieldset>
+
+            <fieldset>
               <legend>Motion</legend>
               <div className="pg-row pg-wrap">
                 <button
@@ -831,7 +926,7 @@ export default function Playground() {
             minis={runtime}
             showActivate={false}
             globals={globals}
-            globalsNote="On the gate, the crew sets these on the night; here they're yours. Speed scales every Time node and phase, brightness scales the Output. To react to them, add a Gate globals node."
+            globalsNote="On the gate, the crew sets these on the night; here they're yours. Speed scales every Time node and phase, brightness scales the Output, and the hue pull draws every color toward one hue. To react to them, add a Gate globals node."
             onDocChange={onDocChange}
             nodeExtras={(node) =>
               node.kind === "imu" ? (
@@ -890,12 +985,29 @@ export default function Playground() {
               ) : node.kind === "video_in" ? (
                 <div className="pg-video-in">
                   <p className="hint">
-                    On the gate, Video in shows the gate's live video. Here,
-                    pick a video file to stand in for it (it stays on this
-                    computer and isn't saved in the patch). For a fixed picture,
-                    use a Still image node instead: it carries its own image.
+                    On the gate, Video in shows the gate's live video. Here it
+                    plays a stand-in film until you pick your camera or a video
+                    file (both stay on this computer and aren't saved in the
+                    patch). For a fixed picture, use a Still image node instead:
+                    it carries its own image.
                   </p>
                   <div className="patch-param-row">
+                    <button
+                      type="button"
+                      disabled={!runtime}
+                      aria-pressed={video === "film"}
+                      onClick={() => pickMedia(null)}
+                    >
+                      Stand-in film
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!runtime}
+                      aria-pressed={video === "camera"}
+                      onClick={pickCamera}
+                    >
+                      Camera
+                    </button>
                     <label className="pg-file">
                       <input
                         type="file"
@@ -903,14 +1015,19 @@ export default function Playground() {
                         disabled={!runtime}
                         onChange={(e) => pickMedia(e.target.files?.[0] ?? null)}
                       />
-                      {mediaName ? `Playing: ${mediaName}` : "Stand-in video…"}
+                      {typeof video === "object"
+                        ? `Playing: ${video.file}`
+                        : "Video file…"}
                     </label>
-                    {mediaName && (
-                      <button type="button" onClick={() => pickMedia(null)}>
-                        Clear
-                      </button>
-                    )}
                   </div>
+                </div>
+              ) : VISITOR_KINDS.has(node.kind) ? (
+                <div className="pg-visitors">
+                  <p className="hint">
+                    On the gate, people tap, draw and touch. Here, use the
+                    preview yourself, or let simulated visitors do it.
+                  </p>
+                  {visitorsToggle}
                 </div>
               ) : null
             }

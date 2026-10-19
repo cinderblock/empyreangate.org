@@ -287,6 +287,68 @@ test.describe("Pattern playground", () => {
       .toBeGreaterThan(0);
   });
 
+  test("simulated visitors tap when nobody does: Effect taps counts them", async ({
+    page,
+  }) => {
+    await expect(page.locator(".patch-name")).toHaveValue("Rainbow Sparkle", {
+      timeout: 20_000,
+    });
+    const stage = page.locator(".pg-stage");
+    await expect(stage).toHaveAttribute(
+      "data-preview",
+      /^(running|unavailable)$/,
+      { timeout: 20_000 },
+    );
+    test.skip(
+      (await stage.getAttribute("data-preview")) !== "running",
+      "no WebGPU in this browser: no meters",
+    );
+    await page.locator(".palette-item", { hasText: "Effect taps" }).click();
+    const node = page.locator(".pnode", { hasText: "Effect taps" });
+    await node.click();
+    // Its panel offers the visitors, the same switch as under People.
+    const panel = page.locator(".patch-side .pg-visitors");
+    await expect(panel).toBeVisible();
+    await panel.getByLabel("Simulated visitors").check();
+    await expect(
+      page.locator(".pg-inputs").getByLabel("Simulated visitors"),
+    ).toBeChecked();
+    await expect(node.locator(".mini-event")).toContainText(/×[1-9]/, {
+      timeout: 15_000,
+    });
+  });
+
+  test("Video in plays a stand-in film until a camera or file is chosen", async ({
+    page,
+  }) => {
+    await expect(page.locator(".patch-name")).toHaveValue("Rainbow Sparkle", {
+      timeout: 20_000,
+    });
+    await page.locator(".palette-item", { hasText: "Video in" }).click();
+    await page.locator(".pnode", { hasText: "Video in" }).click();
+    const panel = page.locator(".patch-side .pg-video-in");
+    await expect(panel).toContainText("stand-in film");
+    await expect(
+      panel.getByRole("button", { name: "Stand-in film" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await expect(panel.getByRole("button", { name: "Camera" })).toBeVisible();
+    await expect(panel.getByText("Video file…")).toBeVisible();
+  });
+
+  test("the hue pull is a global, beside brightness and speed", async ({
+    page,
+  }) => {
+    await expect(page.locator(".patch-name")).toHaveValue("Rainbow Sparkle", {
+      timeout: 20_000,
+    });
+    const card = page.locator(".patch-globals");
+    await expect(card.getByLabel("Hue pull")).toHaveValue("0");
+    await card.getByLabel("Hue pull").fill("0.5");
+    await card.getByLabel("Pull toward").fill("0.5");
+    await expect(card).toContainText("50%");
+    await expect(card).toContainText("180°");
+  });
+
   test("the Phone IMU node can be driven by hand from its panel", async ({
     page,
   }) => {
