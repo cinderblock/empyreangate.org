@@ -38,117 +38,132 @@ From Cameron's answers on 2026-10-18:
 - **The browser offers several views**, switchable: a tree (folders, patches
   expanding to their sub-patches), topic folders, and a flat list.
 
-## Design
+## Design (as built)
 
 ### URLs (site)
 
-- `/playground` — whatever was open last (as today).
-- `/playground/p/<uuid>` — a patch in your library.
+- `/playground/` — whatever was open last (the deploy serves the playground
+  at the directory form; a bare `/playground` redirects there).
+- `/playground/p/<uuid>` — a patch in this browser's library.
 - `/playground/builtin/<slug>` — a built-in, `slug` = its id without the
   `builtin-` prefix (`/playground/builtin/rainbow-sparkle`).
-- Either followed by `/<node id>/<node id>…` — inside that patch's sub-patch
+- Either followed by `/<node id>/<node id>…` — inside that patch's Sub-patch
   node(s), outermost first.
 - `#patch=…` share links keep working on any of these.
 
-Serving: the site is prerendered and the Worker only sees `/api/*`. The
-playground route becomes a splat (`playground/*`, prerendering `/playground`)
-and a static-assets rewrite serves `/playground/*` from the `/playground`
-document (`_redirects`: `/playground/* /playground 200`), so the Worker still
-isn't woken for pages. To verify on the Preview; fallback is adding
-`/playground/*` to `run_worker_first` with the Worker returning the asset.
+Code: `app/playground/urls.ts` (+ test). Serving: the route is the splat
+`playground/*` (prerendering `/playground`), and `public/_redirects` rewrites
+`/playground/p/*` and `/playground/builtin/*` to `/playground/` with status 200. Only those two prefixes: Cloudflare applies `_redirects` rules "regardless
+of whether or not an asset matches", and real files live under
+`/playground/` (`agents.md`, `registry.json`, …). `vite preview` gets the same
+rewrites from a small middleware in `vite.config.ts` that reads the built
+`_redirects`, so the Playwright suite exercises the real file.
 
-History: opening a patch, a built-in, or a sub-patch pushes an entry; Back and
-Forward reopen the entry's target. Things that rename the current location
-without moving (a new patch getting its UUID on first save, a fork replacing
-the built-in it came from) replace the entry instead.
+History: the editor reports each move through `onNavigate(loc, {replace})`;
+`Playground.tsx` turns it into React Router `navigate(path, {replace})`, and
+an effect on the router location calls `editorRef.navigate(loc)` when Back /
+Forward (or a typed URL) moved it. Opening a patch, a built-in or a Sub-patch
+pushes; a new patch's first save and a built-in's copy replace. A deep link to
+a library id this browser doesn't have, or an unknown built-in, shows a notice
+and falls back to the last patch.
 
 ### The editor (gate repo, packages/patch-web)
 
-Navigation lives in the shared editor so the gate app gets the browser and
-sub-patch drilling too; the URL mapping is the host's.
-
-- **Location**: `{ patch: string; path: string[] }` (`patch` = a library id or
-  a built-in id). New props: `location`-change callback
-  `onNavigate(loc, { replace })`; new handle method `navigate(loc)` for the
-  host to call on Back/Forward and on load.
-- **Open document vs. shown document**: the editor keeps the root document it
-  saves, and shows the document at `path` inside it. Edits on a shown inner
-  document are written back into the root's Sub-patch node. The preview keeps
-  rendering the root.
-- **Read-only frames**: a built-in, or a linked sub-patch, shows read-only. An
-  edit attempt (drag, connect, knob, palette) shows a bar: built-in → "Make a
-  copy"; linked sub-patch → "Clone for this project" (and, for a library
-  source, "Open <source>" to edit it everywhere).
-- **Double-click / double-tap a Sub-patch** opens it. A breadcrumb on the
-  canvas (Root › Sub › Sub) goes back up. On a phone the node's settings sheet
-  stays reachable from a ⚙ in the opened sub-patch's breadcrumb (its knobs
-  belong to the parent's node).
-- **Browser panel** (replaces the "Open patch…" and "New from preset…"
-  selects): views Tree / Topics / Flat. Topics are derived from what a patch
-  uses (Audio, DJ, Touch, Phone motion, Video, Code, Sub-patches…), so they
-  need no new field and apply to your patches too.
+- `editor/navigation.ts`: `EditorLocation {patch, path}`, `docAt`,
+  `validPath`, `lockAt` (built-in or inside a linked Sub-patch), `cloneAlong`,
+  `flatId` (minis inside a Sub-patch key on the flattened `"{sub}/{inner}"`
+  ids), `crumbs`.
+- `PatchEditor.tsx` keeps `root` (what saves and renders) and `path`, and shows
+  `docAt(root, path)`. Every mutation funnels through `mutateDoc`, which
+  refuses on a locked frame (bar: "Make a copy to edit" / "Clone for this
+  project" / "Edit <source> everywhere"). Undo history holds roots.
+- Double-click (or double-tap) a Sub-patch opens it; breadcrumb at the top of
+  the canvas (under the chips on a phone). On a phone the Sub-patch's own
+  settings stay one tap away via the "Sub-patch settings…" pill.
+- `editor/PatchBrowser.tsx`: 📁 Patches, views Tree / Topics / List (stored
+  in localStorage). Topics come from node kinds (a table in the file). On a
+  wide layout it replaces the palette while open and closes on a pick; on a
+  phone it is in the ☰ menu sheet.
+- Sub-patch panel: Open inside, Clone for this project, Open <source>, and on
+  a clone "Update from <source>" when `sourceRev(source) != source_rev`
+  (asks twice if the clone was changed too).
 
 ### Linked sub-patches (crate + stores)
 
-A Sub-patch node keeps its `sub` snapshot (so compiling, files and
-submissions stay self-contained, and the compiler needs no library access)
-and gains:
-
-- `source`: the id of the patch it came from (library UUID or built-in id);
-- `linked`: true while the snapshot follows the source;
-- `source_rev`: a content hash of the source as last copied, so a clone can
-  tell when "Update from <source>" applies.
-
-Keeping linked snapshots current: one crate function (`sync_links`), used by
-the gate's file store on save and by the playground's IndexedDB store (via
-wasm) on put, refreshes every linked snapshot of the saved patch in every
-other patch. The editor also refreshes on open, which covers built-ins
-changing with an app update.
-
-Existing documents: Sub-patch nodes without `source` are internal copies, as
-they are today. No format bump (all fields optional).
+`NodeInst.source / linked / source_rev` (crate `lib.rs`); the copy stays in
+`sub`, so compile/files/submissions are unchanged and no format bump was
+needed. `crate::links::{snapshot, links_to, sync_links}`; the gate's
+`patch::store::propagate_links` runs on `PatchSave` (bumping the engine when
+the active patch was refreshed); the TS mirror `editor/links.ts` serves the
+mock backend and the playground's `LocalPatchStore.put`. The editor also
+refreshes stale linked copies on open (built-ins change with the app).
+Library summaries gained `kinds` and the `subpatches` tree.
 
 ## Plan / steps
 
-1. [ ] Crate: `NodeInst.source / linked / source_rev`, `sync_links`, content
-       hash, tests; wasm exports. **← current**
-2. [ ] Gate store: propagate on save; test.
-3. [ ] Editor: location model, shown-vs-root document, write-back, breadcrumb,
-       double-click to open, read-only frames + warning bar.
-4. [ ] Editor: linked insert, Clone / Update buttons in the Sub-patch panel,
-       refresh on open, cycle guard in the palette.
-5. [ ] Editor: browser panel with Tree / Topics / Flat.
-6. [ ] Gate checks (cargo test, tsc, unit, behaviour specs) + new specs;
-       merge to gate master; web-dist bot bumps the site.
-7. [ ] Site: splat route, `_redirects`, URL ↔ location, history, store
-       `sync_links` on put, playground specs, README.
-8. [ ] Verify on the dev Preview (deep link, reload, Back/Forward, double-click).
+1. [x] Crate: link fields, `links` module, tests.
+2. [x] Gate store: propagate on save; summaries; test.
+3. [x] Editor: location model, shown-vs-root, write-back, breadcrumb,
+       double-click, read-only frames + bar.
+4. [x] Editor: linked insert, Clone / Update, refresh on open, cycle guard.
+5. [x] Editor: browser panel with Tree / Topics / List.
+6. [x] Gate checks + spec `patch-navigation`; on gate master as be3004b
+       (rebased over Agent L's palette overhaul and the Code-aids work).
+7. [ ] Site: splat route, `_redirects`, URLs, history, store, spec, README —
+       done on branch `playground-navigation` (worktree
+       `C:\Users\camer\.t3\worktrees\empyreangate.org\playground-navigation`),
+       tested against a locally assembled web-dist. **← current: waiting for
+       the web-dist bump of be3004b to land on dev, then rebase and push.**
+8. [ ] Verify on the dev Preview (deep link, reload, Back/Forward,
+       double-click). dev.empyreangate.org is behind Cloudflare Access now, so
+       through Cameron's Chrome session.
 
 ## Findings / gotchas
 
 - Serde ignores unknown fields here (no `deny_unknown_fields`), so the gate
-  would silently drop `source`/`linked` on save unless `NodeInst` declares them.
-- `wrangler.jsonc` assets use `not_found_handling: "404-page"` and
-  `run_worker_first: ["/api/*"]`: a bare `/playground/x` is a 404 today.
-- The editor's double-click today only opens the settings sheet, and only in
-  the compact layout (`onNodeOpen` returns early on a wide canvas).
-- `insertSubpatch` blanks the inner id, so today's sub-patches don't know
-  where they came from.
+  would have silently dropped `source`/`linked` on save without the fields.
+- `parsePatchFile` rebuilt nodes field by field and dropped `text`,
+  `collapsed` and `layers` (Open file…, `#patch=` links, the agent's
+  setPatch). Fixed separately: gate d66a69b.
+- The autosave timer was shared across patches: edit, open another patch and
+  edit within 600 ms, and the first patch's last edit was lost. Navigation
+  made this easy to hit (found by the spec). Fixed separately: gate be3004b
+  (flush on open and on unmount).
+- Playwright's `page.reload()` in Firefox adds a history entry of its own
+  (history.length 2 → 3 with no pushState from the page), so a test that
+  reloads and then goes Back fails there only. The site spec reloads last.
+- Matching Playwright filters against paths: a filter word equal to the
+  worktree's directory name (`patch-navigation`) matched every spec locally.
+  Run lists as `tests/<name>.spec` in this worktree.
+- A Bash heredoc through this tool turned `\\n` / `\\r` into real line breaks
+  inside Python string literals; write such edit scripts with the file tool
+  or build backslashes with `chr(92)`.
+- Unrelated flakes seen under full parallel load, passing alone: site
+  `home.spec.ts:74` (webkit), gate `multitouch.spec.ts:73` (webkit),
+  `patch-compact.spec.ts:31`.
 
 ## Progress log
 
-- 2026-10-18: explored; questions answered by Cameron; plan written. Gate
-  worktree `C:\Users\camer\.t3\worktrees\Empyrean\patch-navigation` (branch
-  `patch-navigation`, from gate master e620bbc).
+- 2026-10-18: explored; questions answered by Cameron; plan written.
+- 2026-10-19: gate work done and on master (d66a69b file fields, 9355344
+  link model + store, 6a8ef68 editor, be3004b save flush). Gate checks green
+  locally: typecheck, 142 unit, 137 crate + 341 app Rust tests, behaviour
+  suite (170, one webkit flake that passes alone). Site work done and green
+  locally on all three browsers (navigation spec 6/6), not yet pushed.
 
 ## Open questions for the user
 
 1. (Not blocking) Should the gate app's Patch tab also put the location in
    its URL? The browser and sub-patch drilling arrive there for free; URLs
    there are a separate small step. Recommendation: later, if wanted.
+2. (Not blocking) "Clone for this project … turns into an update as
+   appropriate" is read as: a clone remembers the source's revision and shows
+   "Update from <source>" once the source changes. Confirm.
 
 ## Things not to do
 
 - Don't bump the site's `bun.lock` by hand: the web-dist bot does it.
 - Don't push the site's master; dev only (Preview).
 - Shared site checkout: stage only this plan's files, `git commit --only`.
+- Don't widen `_redirects` to `/playground/*`: it would shadow the agent docs
+  and JSON files served from that directory.
