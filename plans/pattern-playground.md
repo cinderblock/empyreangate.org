@@ -318,6 +318,10 @@ playground's IndexedDB, files) migrated on load. Site `107e84c` (web-dist
 
 - **The site's `* { margin: 0; padding: 0 }` reset** would flatten the shared
   editor's controls; the editor's zero-specificity skin loads later and wins.
+  It also removes the user-agent `margin: auto` that centres a modal
+  `<dialog>`: the Code node's large body view sat in the top-left corner
+  until the editor set `margin: auto` on `.code-modal` itself (gate
+  `ef5e79d`, 2026-10-18). Any new dialog in the editor needs the same.
 - **Vite won't serve files outside the project in dev**, so a `file:`-linked
   local package's wasm gets a 403; `PATCH_WEB_DIR` widens `server.fs.allow`.
   Pre-bundling would also break the wasm URL, so the package is in
