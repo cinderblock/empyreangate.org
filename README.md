@@ -114,6 +114,10 @@ the patch; to share one, Save to disk or Submit. The **📁 Patches** browser
 lists the built-ins and your patches as a tree, by topic or as a list.
 Sub-patches arrive linked to their source (saving the source updates them;
 the store does it in `app/playground/store.ts`) until cloned for the project.
+A patch can also be a block: each **Patch in** node inside it is an input of
+its Sub-patch and each **Patch out** an output (a colour or grey field, a
+number, an event or LED data), so a Sub-patch can take a field and hand on
+several results instead of a picture.
 
 **Submit** posts the patch, a name, an optional contact and note to
 `/api/submit` (`worker/index.ts`), which checks Cloudflare Turnstile and the

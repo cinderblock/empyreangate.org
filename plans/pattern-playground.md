@@ -419,3 +419,13 @@ Site: the People fieldset, Video in's source buttons, Hue pull and Pull
 toward in the globals card; `motion.ts` gave way to patch-web's
 `syntheticMotion`. Simulated visitors start off (decided here, see the gate
 plan).
+
+### Sub-patch inlets and outlets (2026-10-19)
+
+Cameron: "sub-patches could not have outputs and just be more complicated
+intermediate things"; explicit nodes approved. Gate `f8cc944` to `66bab1c`
+(`plans/subpatch-ports.md` there): Patch in and Patch out (Structure group),
+pass-throughs of a chosen shape; inside a Sub-patch each is a port named by
+its id and labelled by its name. A block with Patch outs and no Output has
+no `out`. Dropping a wire on empty canvas offers a Patch out or Patch in
+shaped to it (last in the list).
