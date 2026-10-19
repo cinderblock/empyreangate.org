@@ -368,3 +368,13 @@ finished building on SwiftShader. It is now branchless, with identical output.
 Convert to Code also refuses an eight-layer Blend (17 inputs, one over a Code
 node's limit) and says so under the button. Safari's compiler stays
 untested: Playwright's WebKit has no WebGPU.
+
+### One Output per patch (2026-10-18)
+
+Cameron: "probably shouldn't be possible to have two outputs... right?" The
+core's `validate` already refused a second Output, but the palette offered
+it regardless, so one click made a broken patch. Gate `e620bbc`: the
+palette's Output is disabled, with "one per patch" beside it, while the
+patch has one, and `addNode` refuses a second. Deleting the Output (Delete
+key) brings the palette's back, since an outputless patch is legal. Spec
+`patch-one-output` in the gate's `test:behavior`.
