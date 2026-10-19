@@ -390,6 +390,15 @@ Preview builds also point their social card (`og:url`, `og:image`,
 pasted in a chat shows the image instead of fetching it from production. The
 canonical link and the sitemap always name https://empyreangate.org.
 
+`dev.empyreangate.org` is behind **Cloudflare Access**: a visitor gives an
+email and gets a one-time code before anything on the hostname answers,
+`/api/*` included. Who may log in is an allow list in
+github.com/cinderblock/ops (`cloudflare/config/projects/empyreangate.yaml`);
+a login lasts 30 days. Only that hostname is covered, so other branch Previews
+and `play.empyreangate.org` stay open. Anything that fetches the dev site
+without a browser login, `bun run launch-check https://dev.empyreangate.org`
+included, gets a redirect to the login page instead.
+
 Day to day, work on a branch (`dev`, or one per change) and open the Preview
 URL Cloudflare reports on the build. Going live is a dashboard change: set the
 deploy command to `bunx wrangler deploy` and push (or retry) a master build.
