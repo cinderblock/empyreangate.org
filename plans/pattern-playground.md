@@ -355,3 +355,16 @@ perlin noise field (with different harmonics)". Gate `81f8724`
 (`plans/noise-nodes.md` there): Full random, Random walk, Smooth noise
 (scalars), Perlin noise and Full random field (grey fields), preset Noise
 Garden. Reaches the playground through the web-dist bump.
+
+### Every patch shader through Chrome's compiler (2026-10-18)
+
+Cameron, after Chrome refused a shader naga had passed: "Do we need to update
+our test? Or are we using shaders that don't work on browser?" Gate `14d0ee1`
+to `4d59f15` (`plans/browser-shader-check.md` there). The gate's CI now
+compiles every shader the core can generate (294 distinct ones) with Chrome's
+own compiler on SwiftShader, and builds each pipeline within a budget.
+Nothing that shipped was refused, but the Perlin noise pipeline never
+finished building on SwiftShader. It is now branchless, with identical output.
+Convert to Code also refuses an eight-layer Blend (17 inputs, one over a Code
+node's limit) and says so under the button. Safari's compiler stays
+untested: Playwright's WebKit has no WebGPU.
