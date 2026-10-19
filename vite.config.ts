@@ -32,6 +32,10 @@ const patchWebAlias = patchWebDir
         find: "@empyrean-gate/patch-web/types",
         replacement: `${patchWebDir}/src/types.ts`,
       },
+      {
+        find: "@empyrean-gate/patch-web/agent",
+        replacement: `${patchWebDir}/src/agent/index.ts`,
+      },
     ]
   : [];
 
