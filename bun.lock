@@ -110,6 +110,8 @@
 
     "@codemirror/lint": ["@codemirror/lint@6.9.7", "", { "dependencies": { "@codemirror/state": "^6.0.0", "@codemirror/view": "^6.42.0", "crelt": "^1.0.5" } }, "sha512-28/+iWLYxKxsvGYhSYL7zaCZqLz5+FFFDq9tVsvGv9kv8RY4fFAchJ5WX9M3YrrRlTIsECjsXPqeNgnSmNP2dg=="],
 
+    "@codemirror/search": ["@codemirror/search@6.7.2", "", { "dependencies": { "@codemirror/state": "^6.0.0", "@codemirror/view": "^6.37.0", "crelt": "^1.0.5" } }, "sha512-gUYkYhT2+n/+VGZ+8EzE5WFkYZUZYm1VOKDudIsNqh42uRVQJ0a6Yss9sdKT3MeOYfuL1N6AZA57oza0Oyr0LA=="],
+
     "@codemirror/state": ["@codemirror/state@6.7.6", "", { "dependencies": { "@marijn/find-cluster-break": "^1.0.0" } }, "sha512-kAz+AncRtKuIknedxT1bq4XwXv4UowhbkHU1myPrtVb/jZtImWuV5BXzv5vK6i3kYACsdiZiQKFQQ5Mq7elW8w=="],
 
     "@codemirror/streamparser": ["@codemirror/streamparser@6.0.0", "", {}, "sha512-JTFPF6xrfjt0mnfGPgzcLiMwYmvIyNaoizp8BYzv8FE8KrT6GBGDZ190rtt+O7Wke3gG/MFHyiY9YGNeimof4w=="],
@@ -128,7 +130,7 @@
 
     "@emnapi/wasi-threads": ["@emnapi/wasi-threads@1.2.2", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-c95qOXkHdydNKhscBTebqEC1CVAZpyqOfVfBzQ1qgzyl3gfeldUjIggDbIZgDKsHLgnsM+igH7TJ/eAasaVuMA=="],
 
-    "@empyrean-gate/patch-web": ["@empyrean-gate/patch-web@github:TomSawyerLabs/empyrean-gate#609e29b", { "dependencies": { "@codemirror/autocomplete": "^6.20.3", "@codemirror/commands": "^6.11.1", "@codemirror/language": "^6.13.1", "@codemirror/lint": "^6.9.7", "@codemirror/state": "^6.7.6", "@codemirror/view": "^6.43.14", "@dagrejs/dagre": "^3.1.1", "@lezer/highlight": "^1.2.5", "@webgpu/types": "^0.1.66" }, "peerDependencies": { "@xyflow/react": "^12.11.3", "react": "^19.2.0", "react-dom": "^19.2.0", "webgpu": "^0.6.2" }, "optionalPeers": ["webgpu"], "bin": { "empyrean-patch": "cli/empyrean-patch.mjs" } }, "TomSawyerLabs-empyrean-gate-609e29b", "sha512-kCx2V0+29aaFyR+XdEH9kfgAPiYpJPyE4iQjGSK4UQyxOPwrLPLclqTJREwiWcaCcV4IAy4Prphmxq1d5lg36g=="],
+    "@empyrean-gate/patch-web": ["@empyrean-gate/patch-web@github:TomSawyerLabs/empyrean-gate#b221bb3", { "dependencies": { "@codemirror/autocomplete": "^6.20.3", "@codemirror/commands": "^6.11.1", "@codemirror/language": "^6.13.1", "@codemirror/lint": "^6.9.7", "@codemirror/search": "^6.7.2", "@codemirror/state": "^6.7.6", "@codemirror/view": "^6.43.14", "@dagrejs/dagre": "^3.1.1", "@lezer/highlight": "^1.2.5", "@webgpu/types": "^0.1.66" }, "peerDependencies": { "@xyflow/react": "^12.11.3", "react": "^19.2.0", "react-dom": "^19.2.0", "webgpu": "^0.6.2" }, "optionalPeers": ["webgpu"], "bin": { "empyrean-patch": "cli/empyrean-patch.mjs" } }, "TomSawyerLabs-empyrean-gate-b221bb3", "sha512-2UAE2RZJx1XjedjBrjQj8alhKnXuuTyRn7zKx5A6ULGSZG9oJSypKlDZ8+4B58SKF1Mers+7qoCxMkllLRuTqQ=="],
 
     "@esbuild/aix-ppc64": ["@esbuild/aix-ppc64@0.28.2", "", { "os": "aix", "cpu": "ppc64" }, "sha512-XExcO+dvLKvVtNTibSTBej1NCAbaGhWn9Ww1ZPx80qsahhPFe/8jgWP0IchNe0F3HwkU7n8ejhH8bjonqht8mQ=="],
 
