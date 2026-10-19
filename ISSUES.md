@@ -51,3 +51,19 @@ one by marking it `in progress — <thread/branch>` before working on it.
   ignore it.
 - **To look at:** whether the mocked `/api/live` route is in place before the
   page's first fetch on WebKit, or the 5 s wait is too short under load.
+
+## Two playground tests flake on WebKit under a parallel run
+
+- **What:** `tests/playground.spec.ts:321` ("edits are kept in the browser
+  across reloads", failing at line 327) and `:336` ("a patch that cannot run
+  says so", failing at line 344: `expect(page.locator(".pnode"))
+.toHaveCount(before - 1)`) failed on `[webkit]` in a full
+  `bunx playwright test playground` run on 2026-10-18 (branch `dj-sim`, off
+  dev `68b0fd2`). Re-run alone with `--project=webkit --repeat-each=3`, the
+  first failed once in three and the second passed every time. Chromium and
+  Firefox pass.
+- **Why it matters:** the same as the "Play it live" entry above: a red
+  suite hides real failures.
+- **To look at:** both change the graph right after the editor loads (one
+  adds a node and reloads, the other deletes one) and then count `.pnode`;
+  whether WebKit under load is slower than the default 5 s wait there.
