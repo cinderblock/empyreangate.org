@@ -24,9 +24,9 @@ From Cameron's answers on 2026-10-18:
 - **Sub-patches start linked.** Inserting a saved patch or a built-in as a
   Sub-patch links it to that source. A linked Sub-patch has a "Clone for this
   project" button that makes an internal copy; once cloned, that button turns
-  into "Update from <source>" whenever the source has changed since. My
-  reading of "(which turns in to an update as appropriate)"; confirm with
-  Cameron if the behaviour looks off.
+  into "Update from <source>" whenever the source has changed since. This
+  reading of "(which turns in to an update as appropriate)" was confirmed by
+  Cameron on 2026-10-19.
 - **Editing something that isn't yours to edit warns.** Opening a linked
   (non-internal) sub-patch and trying to edit it warns and offers the same
   clone. Built-ins are immutable the same way: they open read-only, and an
@@ -37,6 +37,9 @@ From Cameron's answers on 2026-10-18:
   path).
 - **The browser offers several views**, switchable: a tree (folders, patches
   expanding to their sub-patches), topic folders, and a flat list.
+- **The gate app's Patch tab keeps no URL for now** (2026-10-19). It gets the
+  browser and sub-patch drilling from the shared editor; putting the location
+  in its URL is a separate step for later, if Cameron asks.
 
 ## Design (as built)
 
@@ -118,7 +121,8 @@ Library summaries gained `kinds` and the `subpatches` tree.
        inside), Back comes out. A scratch patch made for this was deleted.
 9. [x] Follow-up nit found there: after deleting the open patch the editor
        reopened the page's first deep link. Gate e1e0bc2 (the host's
-       starting location counts once); reaches dev with the bot's next bump.
+       starting location counts once); on dev with the bot's bump d8eabf7
+       (web-dist fc19800).
 
 ## Findings / gotchas
 
@@ -161,15 +165,12 @@ Library summaries gained `kinds` and the `subpatches` tree.
   locally on all three browsers (navigation spec 6/6).
 - 2026-10-19: site on dev (e098ebc), Preview verified; gate e1e0bc2 nit.
   Unrelated failures logged in ISSUES.md (home/render on Firefox+WebKit).
+- 2026-10-19: e1e0bc2 reached dev with the bot's bump (d8eabf7). Cameron
+  confirmed the Clone / Update reading and agreed gate-app URLs wait. Done.
 
 ## Open questions for the user
 
-1. (Not blocking) Should the gate app's Patch tab also put the location in
-   its URL? The browser and sub-patch drilling arrive there for free; URLs
-   there are a separate small step. Recommendation: later, if wanted.
-2. (Not blocking) "Clone for this project … turns into an update as
-   appropriate" is read as: a clone remembers the source's revision and shows
-   "Update from <source>" once the source changes. Confirm.
+None.
 
 ## Things not to do
 
