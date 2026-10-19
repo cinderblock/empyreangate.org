@@ -728,7 +728,7 @@ export default function Playground() {
               </div>
             </fieldset>
 
-            <DjDecks dj={dj} />
+            <DjDecks dj={dj} runtime={runtime} />
 
             <fieldset>
               <legend>Motion</legend>

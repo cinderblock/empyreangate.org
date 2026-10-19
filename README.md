@@ -210,7 +210,10 @@ hold-to-cue, Loop 4, ±16-beat jumps, Master, a track picker and a channel
 fader; touching one turns the Auto DJ off. Below them are the crossfader,
 "LINK connected" (unchecked, `dj_link` reads as on a gate with no CDJs, to
 preview a patch's fallback) and what the patch sees: the node's outputs and
-its events lighting as they fire.
+its events lighting as they fire. "Listen to the set" plays it out loud
+(`DjSound`, Web Audio, started by that click): a groove whose parts follow
+each deck's phrases, through the faders and the crossfader, with a volume
+and a level meter. The patch still hears the set's synthetic features.
 
 On a phone the page stacks: the live gate docks at the top and shrinks into a
 bar (with the tool, color, brightness and speed beside it) as you scroll, so

@@ -7,11 +7,13 @@
 
 import {
   DJ_EVENTS,
+  DjSound,
   type DeckAction,
   type DjDeckState,
   type DjEvent,
   type DjLinkSim,
   type DjLinkState,
+  type PatchRuntime,
   type PhraseKind,
 } from "@empyrean-gate/patch-web/runtime";
 import { useEffect, useState, type KeyboardEvent } from "react";
@@ -52,8 +54,20 @@ const MODE_LABELS: Record<DjDeckState["mode"], string> = {
 /** How long an event's lamp stays lit, seconds. */
 const LAMP = 0.6;
 
-export default function DjDecks({ dj }: { dj: DjLinkSim | null }) {
+export default function DjDecks({
+  dj,
+  runtime,
+}: {
+  dj: DjLinkSim | null;
+  runtime: PatchRuntime | null;
+}) {
   const [state, setState] = useState<DjLinkState | null>(null);
+  // The set out loud, once the person asks (a click starts the audio).
+  const [sound, setSound] = useState<DjSound | null>(null);
+  const [volume, setVolume] = useState(0.6);
+  const [listenError, setListenError] = useState<string | null>(null);
+  useEffect(() => () => sound?.stop(), [sound]);
+  useEffect(() => () => setSound(null), [dj]);
 
   // The set moves with the preview's frames; read it ~15 times a second.
   useEffect(() => {
@@ -131,6 +145,57 @@ export default function DjDecks({ dj }: { dj: DjLinkSim | null }) {
           {clock(state.time)} · {state.bpm} BPM
         </span>
       </div>
+      <div className="pg-row pg-wrap">
+        <button
+          type="button"
+          aria-pressed={!!sound}
+          disabled={!runtime}
+          onClick={() => {
+            if (sound) {
+              setSound(null);
+              return;
+            }
+            if (!runtime) return;
+            setListenError(null);
+            DjSound.listen(runtime, dj, { volume })
+              .then(setSound)
+              .catch((e: unknown) =>
+                setListenError(e instanceof Error ? e.message : String(e)),
+              );
+          }}
+        >
+          {sound ? "Stop listening" : "Listen to the set"}
+        </button>
+        {sound && (
+          <>
+            <label className="pg-slider pg-dj-volume">
+              Volume
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.01}
+                value={volume}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  setVolume(v);
+                  sound.volume = v;
+                }}
+              />
+            </label>
+            <span className="pg-dj-meter pg-dj-out" aria-hidden="true">
+              <span style={{ width: `${Math.round(sound.level() * 100)}%` }} />
+            </span>
+          </>
+        )}
+      </div>
+      {listenError && <p className="pg-dj-hint">{listenError}</p>}
+      {sound && (
+        <p className="pg-dj-hint">
+          Each deck through its fader and the crossfader. With the microphone
+          on, use headphones.
+        </p>
+      )}
       <p className="pg-dj-hint">
         {state.connected
           ? "A two-deck set, read the way the gate reads real CDJs. Touch a deck to take over from the Auto DJ."

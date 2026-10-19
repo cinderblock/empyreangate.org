@@ -82,6 +82,30 @@ test.describe("DJ decks", () => {
     await expect(page.getByLabel("Auto DJ")).not.toBeChecked();
   });
 
+  test("Listen plays the set out loud, through the faders", async ({
+    page,
+  }) => {
+    test.skip(!(await preview(page)), "no WebGPU in this browser");
+    await page.getByRole("button", { name: "Listen to the set" }).click();
+    await expect(
+      page.getByRole("button", { name: "Stop listening" }),
+    ).toBeVisible();
+    const meter = page.locator(".pg-dj-out span");
+    const level = async () =>
+      Number.parseFloat((await meter.getAttribute("style")) ?? "") ||
+      Number((await meter.evaluate((e) => e.style.width)).replace("%", ""));
+    await expect.poll(level, { timeout: 5_000 }).toBeGreaterThan(0);
+    // Both faders down: silence.
+    for (const n of [0, 1]) {
+      await page.locator(".pg-dj-deck").nth(n).getByLabel("Fader").fill("0");
+    }
+    await expect.poll(level, { timeout: 5_000 }).toBe(0);
+    await page.getByRole("button", { name: "Stop listening" }).click();
+    await expect(
+      page.getByRole("button", { name: "Listen to the set" }),
+    ).toBeVisible();
+  });
+
   test("an agent works the decks through dj_deck", async ({ page }) => {
     test.skip(!(await preview(page)), "no WebGPU in this browser");
     const report = await page.evaluate(async () => {

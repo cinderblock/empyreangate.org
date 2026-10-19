@@ -406,6 +406,16 @@
   background: var(--teal);
 }
 
+.pg-dj-volume {
+  flex: 1;
+  min-width: 10rem;
+  grid-template-columns: 4rem 1fr;
+}
+
+.pg-dj-out {
+  width: 4rem;
+}
+
 .pg-dj-readout {
   font-size: 0.78rem;
   color: var(--ink-muted);
