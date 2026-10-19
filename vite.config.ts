@@ -1,5 +1,5 @@
 import { reactRouter } from "@react-router/dev/vite";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { defineConfig, searchForWorkspaceRoot, type Plugin } from "vite";
 import { siteOrigin } from "./scripts/build-context";
@@ -69,8 +69,42 @@ function trailingSlashLikeTheDeploy(): Plugin {
   };
 }
 
+// The deploy also applies `_redirects` (public/_redirects): its rewrites
+// (status 200, a trailing `*`) serve one page for many paths, as the
+// playground's patch URLs need. `vite preview` knows nothing of the file, so
+// apply those rules the same way here; the tests then exercise the real file.
+function rewritesLikeTheDeploy(): Plugin {
+  return {
+    name: "rewrites-like-the-deploy",
+    configurePreviewServer(server) {
+      const outDir = resolve(server.config.root, server.config.build.outDir);
+      const file = join(outDir, "_redirects");
+      const rules = existsSync(file)
+        ? readFileSync(file, "utf8")
+            .split(/\r?\n/)
+            .map((line) => line.trim().split(/\s+/))
+            .filter(
+              ([from, , status]) =>
+                status === "200" && from !== undefined && from.endsWith("*"),
+            )
+            .map(([from, to]) => ({ prefix: from!.slice(0, -1), to: to! }))
+        : [];
+      server.middlewares.use((req, _res, next) => {
+        const url = new URL(req.url ?? "/", "http://x");
+        const rule = rules.find((r) => url.pathname.startsWith(r.prefix));
+        if (rule) req.url = rule.to + url.search;
+        next();
+      });
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [reactRouter(), trailingSlashLikeTheDeploy()],
+  plugins: [
+    reactRouter(),
+    rewritesLikeTheDeploy(),
+    trailingSlashLikeTheDeploy(),
+  ],
   resolve: {
     alias: patchWebAlias,
     dedupe: ["react", "react-dom", "@xyflow/react"],

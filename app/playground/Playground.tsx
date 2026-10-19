@@ -9,9 +9,12 @@
 
 import { hasPatchLink, readPatchLink } from "@empyrean-gate/patch-web/agent";
 import {
+  isBuiltin,
   openPatchFromDisk,
   PatchEditor,
+  sameLocation,
   savePatchToDisk,
+  type EditorLocation,
   type GlobalControl,
   type PatchDoc,
   type PatchEditorHandle,
@@ -28,7 +31,7 @@ import {
   type RuntimeStatus,
 } from "@empyrean-gate/patch-web/runtime";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { PlayLive, useLive } from "../components/LiveLink";
 import { PLAYGROUND, SITE } from "../content/site";
 import { startPlaygroundAgent, type PlaygroundInputs } from "./agent";
@@ -36,6 +39,7 @@ import DjDecks from "./DjDecks";
 import SubmitDialog from "./SubmitDialog";
 import { syntheticMotion } from "./motion";
 import { LocalPatchStore } from "./store";
+import { parsePlaygroundPath, playgroundPath } from "./urls";
 import "./playground.css";
 
 /** What a first visit opens: a copy of this built-in preset. */
@@ -64,6 +68,13 @@ export default function Playground() {
     note?: string;
   }>({});
   const editorRef = useRef<PatchEditorHandle>(null);
+  // Where the editor is lives in the URL (see urls.ts): the editor reports
+  // each move, and Back/Forward (or a typed URL) move the editor.
+  const routerLocation = useLocation();
+  const navigate = useNavigate();
+  const [initialLocation, setInitialLocation] = useState<EditorLocation | null>(
+    null,
+  );
 
   const [tool, setTool] = useState<Tool>({ mode: "tap", effect: "burst" });
   const [hue, setHue] = useState(0.52);
@@ -117,6 +128,20 @@ export default function Playground() {
       if (linked) {
         history.replaceState(null, "", location.pathname + location.search);
         setNotice(linked);
+      } else {
+        const want = parsePlaygroundPath(location.pathname);
+        const known =
+          want &&
+          (isBuiltin(want.patch)
+            ? c.presets.some((p) => p.id === want.patch)
+            : await store.has(want.patch));
+        if (known) setInitialLocation(want);
+        else if (want)
+          setNotice(
+            isBuiltin(want.patch)
+              ? "That built-in pattern isn't in this version of the playground."
+              : "That patch isn't in this browser. Patches live in the browser they were made in: to share one, use Save to disk, or send it with Submit.",
+          );
       }
       if (await store.isEmpty()) {
         const starter =
@@ -167,12 +192,35 @@ export default function Playground() {
         history.replaceState(null, "", location.pathname + location.search);
         if (message) setNotice(message);
         const id = store.active;
-        if (id) store.get(id);
+        if (id) navigate(playgroundPath({ patch: id, path: [] }));
       });
     };
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
-  }, [core, store]);
+  }, [core, store, navigate]);
+
+  // The editor moved (opened a patch, a built-in, a Sub-patch): a new URL,
+  // or the same step renamed (a new patch's first save, a built-in's copy).
+  const onNavigate = useCallback(
+    (loc: EditorLocation, how: { replace: boolean }) => {
+      const path = playgroundPath(loc);
+      if (path === window.location.pathname) return;
+      navigate(path + window.location.search, {
+        replace: how.replace,
+        preventScrollReset: true,
+      });
+    },
+    [navigate],
+  );
+  // The URL moved (Back, Forward): take the editor there. Its own moves
+  // arrive here too, already where they say.
+  useEffect(() => {
+    if (!ready) return;
+    const loc = parsePlaygroundPath(routerLocation.pathname);
+    const editor = editorRef.current;
+    if (loc && editor && !sameLocation(loc, editor.location()))
+      editor.navigate(loc);
+  }, [ready, routerLocation.pathname]);
 
   // The runtime follows the canvas, its own status, and the open document.
   useEffect(() => {
@@ -776,6 +824,8 @@ export default function Playground() {
             }
             ready={ready}
             activeId={activeId}
+            initialLocation={initialLocation}
+            onNavigate={onNavigate}
             status={status}
             canEdit
             minis={runtime}

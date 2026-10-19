@@ -1,0 +1,5 @@
+# The playground's patch URLs (app/playground/urls.ts) are client-side: serve
+# its page for them. Only these prefixes, so the real files under
+# /playground/ (agents.md, registry.json, ...) are served as themselves.
+/playground/p/* /playground/ 200
+/playground/builtin/* /playground/ 200

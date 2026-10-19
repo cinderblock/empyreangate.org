@@ -6,11 +6,13 @@
  */
 
 import {
+  linksTo,
   PATCH_FORMAT,
+  summarize,
+  syncLinks,
   type PatchDoc,
   type PatchStore,
   type PatchStoreEvent,
-  type PatchSummary,
 } from "@empyrean-gate/patch-web/editor";
 
 const DB_NAME = "empyrean-playground";
@@ -35,15 +37,6 @@ function done<T>(req: IDBRequest<T>): Promise<T> {
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
-}
-
-function summary(doc: PatchDoc): PatchSummary {
-  return {
-    id: doc.id,
-    name: doc.name,
-    description: doc.description,
-    nodes: doc.nodes.length,
-  };
 }
 
 export class LocalPatchStore implements PatchStore {
@@ -85,6 +78,15 @@ export class LocalPatchStore implements PatchStore {
     );
   }
 
+  /** Whether the library holds the patch `id`. */
+  async has(id: string): Promise<boolean> {
+    const db = await this.db;
+    const key = await done(
+      db.transaction(PATCHES).objectStore(PATCHES).getKey(id),
+    );
+    return key !== undefined;
+  }
+
   /** Whether the library is empty (first visit). */
   async isEmpty(): Promise<boolean> {
     return (await this.all()).length === 0;
@@ -94,7 +96,9 @@ export class LocalPatchStore implements PatchStore {
     void this.all().then((docs) =>
       this.emit({
         type: "patches",
-        patches: docs.map(summary).sort((a, b) => a.name.localeCompare(b.name)),
+        patches: docs
+          .map(summarize)
+          .sort((a, b) => a.name.localeCompare(b.name)),
       }),
     );
   }
@@ -126,7 +130,29 @@ export class LocalPatchStore implements PatchStore {
     const db = await this.db;
     const tx = db.transaction(PATCHES, "readwrite");
     await done(tx.objectStore(PATCHES).put(stored));
+    await this.propagateLinks(stored);
     return stored;
+  }
+
+  /** As the gate's store does on save: the patches that link `saved` as a
+   * Sub-patch follow it, and so do the ones linking those. */
+  private async propagateLinks(saved: PatchDoc) {
+    const queue = [saved];
+    const seen = new Set([saved.id]);
+    for (let source = queue.pop(); source; source = queue.pop()) {
+      for (const doc of await this.all()) {
+        if (doc.id === source.id || !linksTo(doc, source.id)) continue;
+        const next = this.migrate(doc);
+        if (!syncLinks(next, source)) continue;
+        const db = await this.db;
+        const tx = db.transaction(PATCHES, "readwrite");
+        await done(tx.objectStore(PATCHES).put(next));
+        if (!seen.has(next.id)) {
+          seen.add(next.id);
+          queue.push(next);
+        }
+      }
+    }
   }
 
   save(doc: PatchDoc) {

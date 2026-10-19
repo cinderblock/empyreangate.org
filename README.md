@@ -99,6 +99,22 @@ to disk / Open file use the gate's own patch JSON, which its Patch tab imports.
 Without WebGPU the editor still works and validates; only the preview is
 missing.
 
+**Every place in the playground has a URL** (`app/playground/urls.ts`):
+`/playground/p/<id>` is a patch in this browser's library,
+`/playground/builtin/<name>` a built-in (read-only; an edit offers a copy),
+and either followed by `/<node>/<node>` is inside its Sub-patches (double-click
+one to open it). A reload reopens the place, and Back/Forward move between
+the patches and Sub-patches you opened; a bare `/playground/` reopens the last
+one. The page is the same prerendered `/playground/`: the `playground/*` route
+is a splat, and `public/_redirects` rewrites only those two prefixes to it
+(the files under `/playground/`, like `agents.md`, stay themselves). `vite
+preview` applies the same rewrites (`vite.config.ts`), so the tests exercise
+the real file. A library id only means something in the browser that made
+the patch; to share one, Save to disk or Submit. The **📁 Patches** browser
+lists the built-ins and your patches as a tree, by topic or as a list.
+Sub-patches arrive linked to their source (saving the source updates them;
+the store does it in `app/playground/store.ts`) until cloned for the project.
+
 **Submit** posts the patch, a name, an optional contact and note to
 `/api/submit` (`worker/index.ts`), which checks Cloudflare Turnstile and the
 patch's shape and stores one JSON object per submission in the R2 bucket
