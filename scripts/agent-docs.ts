@@ -30,15 +30,18 @@ function access(origin: string): string {
       "agent through [WebMCP](https://webmachinelearning.github.io/webmcp/) (`document.modelContext`), and as " +
       "`window.empyrean` to anything that can run a script in the page: `await empyrean.tools.get_guide()`, " +
       "`await empyrean.setPatch(doc)`, `await empyrean.edit(ops)`, `await empyrean.snapshot({ frames: 4 })` " +
-      "(`snapshotUrls` for data: URLs). There are three more there: `set_inputs` (the synthetic beat, the stand-in " +
-      "DJ deck, master brightness and speed, tap color), `trigger_effect` (tap the gate) and `open_submit` (open the " +
-      "Submit dialog filled in, for the person to send). Changes appear in the person's editor and live preview.",
+      "(`snapshotUrls` for data: URLs). There are four more there: `set_inputs` (the synthetic beat, master " +
+      "brightness and speed, tap color), `dj_deck` (the simulated PRO DJ LINK set that drives `dj_link` nodes: read " +
+      "the decks, unplug the LINK, take them over, start the set at a time), `trigger_effect` (tap the gate) and " +
+      "`open_submit` (open the Submit dialog filled in, for the person to send). Changes appear in the person's " +
+      "editor and live preview.",
     "- **With no browser**: write the patch JSON and give the person a link that opens it " +
       `(\`${origin}/playground#patch=\` + the JSON, percent-encoded; see Links below).`,
     "- **On the command line** (Node 22+): `npx -p webgpu -p " +
       `${GATE_PACKAGE} empyrean-patch <command>\` — \`guide\`, \`nodes\`, \`presets\`, \`validate\`, \`link\`, ` +
-      "`render` (PNG frames, through WebGPU from the `webgpu` package) and `mcp`, an MCP server on stdio with the " +
-      "same tools, which coding agents can add (e.g. `claude mcp add empyrean -- npx -y -p webgpu -p " +
+      "`render` (PNG frames, through WebGPU from the `webgpu` package; `--at <s>` starts the simulated DJ set " +
+      "there, `--no-link` unplugs it) and `mcp`, an MCP server on stdio with the same tools (and `dj_deck`), which " +
+      "coding agents can add (e.g. `claude mcp add empyrean -- npx -y -p webgpu -p " +
       `${GATE_PACKAGE} empyrean-patch mcp pattern.json\`).`,
   ].join("\n");
 }

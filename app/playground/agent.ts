@@ -18,9 +18,11 @@ import type {
 } from "@empyrean-gate/patch-web/editor";
 import {
   createPatchApi,
+  djTool,
   patchTools,
   registerWebMcp,
   type AgentTool,
+  type DjHost,
   type PatchApi,
   type ToolResult,
 } from "@empyrean-gate/patch-web/agent";
@@ -33,13 +35,11 @@ import {
 import { SITE } from "../content/site";
 import type { LocalPatchStore } from "./store";
 
-/** The playground's own controls an agent may set (the Sound, DJ and
- * master controls on the page). */
+/** The playground's own controls an agent may set (the Sound and master
+ * controls on the page; the DJ decks have their own tool, `dj_deck`). */
 export interface PlaygroundInputs {
   /** The synthetic beat (off: silence, unless the microphone is on). */
   groove: boolean;
-  /** The stand-in DJ deck's crossfader, 0..1. */
-  djMix: number;
   /** Master brightness 0..1 and speed 0..3, as the crew sets them. */
   brightness: number;
   speed: number;
@@ -52,6 +52,8 @@ export interface PlaygroundInputs {
 export interface PlaygroundAgentDeps {
   core: PatchCore;
   runtime: PatchRuntime | null;
+  /** The simulated DJ set the preview plays (null without a preview). */
+  dj: DjHost | null;
   store: LocalPatchStore;
   editor: { current: PatchEditorHandle | null };
   inputs(): PlaygroundInputs;
@@ -85,9 +87,9 @@ const ACCESS =
   "API is `window.empyrean` in the page: `await empyrean.tools.get_guide()`, " +
   "`await empyrean.setPatch(doc)`, `await empyrean.edit([...ops])`, `await empyrean.snapshot({ frames: 4 })`, " +
   "`await empyrean.link()`; `Object.keys(empyrean.tools)` lists them. Changes show in the person's editor and live " +
-  "preview, which plays a synthetic 122 BPM groove (or their microphone) as the music. set_inputs changes the " +
-  "playground's own controls; trigger_effect taps the gate; open_submit opens the Submit dialog filled in for the " +
-  "person to send.";
+  "preview, which plays a simulated 122 BPM DJ set (its sound as a synthetic groove, or their microphone) as the " +
+  "music and the DJ's decks. set_inputs changes the playground's own controls; dj_deck reads and works the DJ " +
+  "decks; trigger_effect taps the gate; open_submit opens the Submit dialog filled in for the person to send.";
 
 function text(value: unknown): ToolResult {
   return {
@@ -141,14 +143,13 @@ export function startPlaygroundAgent(deps: PlaygroundAgentDeps): () => void {
       name: "set_inputs",
       title: "Set the playground's controls",
       description:
-        "The playground's own controls (not part of the patch): groove (the synthetic 122 BPM beat standing in for " +
-        "the music), dj_mix (the stand-in DJ deck's crossfader 0..1), brightness (0..1) and speed (0..3) (the gate's " +
-        "master, set by the crew on the night), hue (0..1, the color of taps and strokes). Returns them all.",
+        "The playground's own controls (not part of the patch): groove (the synthetic 122 BPM beat, the DJ set's " +
+        "sound, standing in for the music), brightness (0..1) and speed (0..3) (the gate's master, set by the crew " +
+        "on the night), hue (0..1, the color of taps and strokes). Returns them all. The DJ decks are dj_deck's.",
       inputSchema: {
         type: "object",
         properties: {
           groove: { type: "boolean" },
-          dj_mix: { type: "number", minimum: 0, maximum: 1 },
           brightness: { type: "number", minimum: 0, maximum: 1 },
           speed: { type: "number", minimum: 0, maximum: 3 },
           hue: { type: "number", minimum: 0, maximum: 1 },
@@ -161,8 +162,6 @@ export function startPlaygroundAgent(deps: PlaygroundAgentDeps): () => void {
             : undefined;
         const next: Partial<Omit<PlaygroundInputs, "mic">> = {};
         if (typeof i.groove === "boolean") next.groove = i.groove;
-        const djMix = num(i.dj_mix, 0, 1);
-        if (djMix !== undefined) next.djMix = djMix;
         const brightness = num(i.brightness, 0, 1);
         if (brightness !== undefined) next.brightness = brightness;
         const speed = num(i.speed, 0, 3);
@@ -240,6 +239,7 @@ export function startPlaygroundAgent(deps: PlaygroundAgentDeps): () => void {
     },
   ];
 
+  if (deps.dj) extra.splice(1, 0, djTool(deps.dj));
   const tools = patchTools(api, extra);
   const byName: PlaygroundApi["tools"] = {};
   for (const t of tools) byName[t.name] = (input = {}) => t.execute(input);

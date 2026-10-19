@@ -274,6 +274,255 @@
   );
 }
 
+/* The DJ decks (DjDecks.tsx). */
+.pg-dj-hint {
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--ink-faint);
+}
+
+.pg-dj-clock {
+  margin-left: auto;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-faint);
+}
+
+.pg-dj-decks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 0.6rem;
+}
+
+.pg-dj-deck {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+  padding: 0.55rem 0.6rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+}
+
+.pg-dj-deck[data-on-air="true"] {
+  border-color: rgba(255, 179, 71, 0.45);
+}
+
+.pg-dj-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.pg-dj-num {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  font-size: 0.8rem;
+  color: var(--ink);
+}
+
+.pg-dj-title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+
+.pg-dj-artist {
+  color: var(--ink-faint);
+}
+
+.pg-dj-lamps,
+.pg-dj-sees,
+.pg-dj-events {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.pg-dj-lamp,
+.pg-dj-chip,
+.pg-dj-event {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.1rem 0.45rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.pg-dj-lamp[data-lit="true"] {
+  color: var(--gold);
+  border-color: rgba(255, 179, 71, 0.5);
+}
+
+.pg-dj-chip[data-lit="true"] {
+  color: var(--teal);
+}
+
+.pg-dj-event[data-lit="true"] {
+  color: var(--accent-ink);
+  background: var(--teal);
+  border-color: var(--teal);
+}
+
+.pg-dj-event-deck {
+  font-size: 0.65rem;
+  opacity: 0.75;
+}
+
+.pg-dj-sees-head {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  align-self: center;
+  margin-right: 0.15rem;
+}
+
+.pg-dj-meter {
+  display: inline-block;
+  width: 2.5rem;
+  height: 0.35rem;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.pg-dj-meter span {
+  display: block;
+  height: 100%;
+  background: var(--teal);
+}
+
+.pg-dj-readout {
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.pg-dj-buttons button {
+  padding: 0.3rem 0.55rem;
+}
+
+.pg-dj-cue {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.pg-dj-deck .pg-slider {
+  grid-template-columns: 3.5rem 1fr;
+}
+
+.pg-dj-deck select {
+  min-width: 0;
+}
+
+/* The phrase strip: one segment per phrase, colored by kind, the fill-in
+   hatched at its end, the playhead a white line. */
+.pg-dj-strip {
+  position: relative;
+  display: flex;
+  gap: 2px;
+  height: 0.7rem;
+  border-radius: 0.2rem;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.pg-dj-phrase {
+  position: relative;
+  flex-basis: 0;
+  min-width: 2px;
+}
+
+.pg-dj-k-intro,
+.pg-dj-k-outro {
+  background: #413f92;
+}
+
+.pg-dj-k-up {
+  background: #b07a2c;
+}
+
+.pg-dj-k-chorus {
+  background: #d9779f;
+}
+
+.pg-dj-k-down {
+  background: #1f6f6d;
+}
+
+.pg-dj-k-verse {
+  background: #2f9e9b;
+}
+
+.pg-dj-k-bridge {
+  background: #6d6a85;
+}
+
+.pg-dj-fill {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.55) 0 2px,
+    transparent 2px 4px
+  );
+}
+
+.pg-dj-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+}
+
+.pg-dj-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.pg-dj-swatch {
+  display: inline-block;
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 0.15rem;
+}
+
+.pg-dj-swatch-fill {
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.55) 0 2px,
+    #413f92 2px 4px
+  );
+}
+
+.pg-dj-head-pos {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: #fff;
+}
+
 .pg-editor {
   min-width: 0;
   min-height: 0;

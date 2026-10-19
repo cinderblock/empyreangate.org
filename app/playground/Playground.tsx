@@ -23,6 +23,7 @@ import {
   PatchRuntime,
   screenToPolar,
   WebGpuUnavailable,
+  type DjLinkSim,
   type PatchCore,
   type RuntimeStatus,
 } from "@empyrean-gate/patch-web/runtime";
@@ -31,6 +32,7 @@ import { Link } from "react-router";
 import { PlayLive, useLive } from "../components/LiveLink";
 import { PLAYGROUND, SITE } from "../content/site";
 import { startPlaygroundAgent, type PlaygroundInputs } from "./agent";
+import DjDecks from "./DjDecks";
 import SubmitDialog from "./SubmitDialog";
 import { syntheticMotion } from "./motion";
 import { LocalPatchStore } from "./store";
@@ -40,16 +42,6 @@ import "./playground.css";
 const STARTER = "Rainbow Sparkle";
 
 const PENS = ["glow", "ripple", "sparkle", "comet", "ring", "beam", "ember"];
-
-/** PRO DJ LINK event outputs, in `fireDjEvent` index order. */
-const DJ_EVENTS = [
-  ["Play", 0],
-  ["Cue", 1],
-  ["Loop wrap", 6],
-  ["Jump", 8],
-  ["Phrase", 9],
-  ["Fill-in", 10],
-] as const;
 
 type Tool = { mode: "tap"; effect: string } | { mode: "draw"; pen: string };
 
@@ -86,7 +78,7 @@ export default function Playground() {
   const [mediaName, setMediaName] = useState<string | null>(null);
   const [brightness, setBrightness] = useState(1);
   const [speed, setSpeed] = useState(1);
-  const [djMix, setDjMix] = useState(0.5);
+  const [dj, setDj] = useState<DjLinkSim | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -259,25 +251,27 @@ export default function Playground() {
     });
   }, [runtime, core, doc]);
 
-  // Continuous stand-ins: a synthetic groove (when no microphone) and a fake
-  // DJ deck riding the same beat, so audio- and DJ-driven nodes move. The
-  // gate's package keeps the clock, so an agent's restarted capture repeats.
+  // Music without music: the gate's package plays a simulated DJ set on the
+  // PRO DJ LINK inputs and its sound as a synthetic groove (when no
+  // microphone), so audio- and DJ-driven nodes move. It keeps the clock, so
+  // an agent's restarted capture repeats.
   const grooveRef = useRef<ReturnType<typeof attachGroove> | null>(null);
   useEffect(() => {
     if (!runtime) return;
     const g = attachGroove(runtime);
     grooveRef.current = g;
+    setDj(g.dj);
     return () => {
       g.stop();
       grooveRef.current = null;
+      setDj(null);
     };
   }, [runtime]);
   useEffect(() => {
     const g = grooveRef.current;
     if (!g) return;
     g.settings.audio = mic ? "off" : groove ? "groove" : "silent";
-    g.settings.djMix = djMix;
-  }, [runtime, groove, mic, djMix]);
+  }, [runtime, groove, mic]);
 
   useEffect(
     () => runtime?.setMaster(brightness, speed),
@@ -289,13 +283,12 @@ export default function Playground() {
   // stay registered across renders.
   const inputsRef = useRef<PlaygroundInputs>({
     groove,
-    djMix,
     brightness,
     speed,
     hue,
     mic,
   });
-  inputsRef.current = { groove, djMix, brightness, speed, hue, mic };
+  inputsRef.current = { groove, brightness, speed, hue, mic };
   const docRef = useRef(doc);
   docRef.current = doc;
   useEffect(() => {
@@ -303,12 +296,12 @@ export default function Playground() {
     return startPlaygroundAgent({
       core,
       runtime,
+      dj: grooveRef.current,
       store,
       editor: editorRef,
       inputs: () => inputsRef.current,
       setInputs: (next) => {
         if (next.groove !== undefined) setGroove(next.groove);
-        if (next.djMix !== undefined) setDjMix(next.djMix);
         if (next.brightness !== undefined) setBrightness(next.brightness);
         if (next.speed !== undefined) setSpeed(next.speed);
         if (next.hue !== undefined) setHue(next.hue);
@@ -722,7 +715,7 @@ export default function Playground() {
                     disabled={mic}
                     onChange={(e) => setGroove(e.target.checked)}
                   />
-                  Synthetic beat ({GROOVE_BPM} BPM)
+                  Synthetic beat (the DJ set, {GROOVE_BPM} BPM)
                 </label>
                 <button
                   type="button"
@@ -735,32 +728,7 @@ export default function Playground() {
               </div>
             </fieldset>
 
-            <fieldset>
-              <legend>DJ deck (stand-in)</legend>
-              <div className="pg-row pg-wrap">
-                {DJ_EVENTS.map(([name, index]) => (
-                  <button
-                    key={name}
-                    type="button"
-                    disabled={!runtime}
-                    onClick={() => runtime?.fireDjEvent(index)}
-                  >
-                    {name}
-                  </button>
-                ))}
-              </div>
-              <label className="pg-slider">
-                Mix
-                <input
-                  type="range"
-                  min={0}
-                  max={1}
-                  step={0.01}
-                  value={djMix}
-                  onChange={(e) => setDjMix(Number(e.target.value))}
-                />
-              </label>
-            </fieldset>
+            <DjDecks dj={dj} />
 
             <fieldset>
               <legend>Motion</legend>

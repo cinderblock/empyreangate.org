@@ -198,6 +198,20 @@ scalars, and Perlin noise (1-8 harmonics; smooth, billowy or ridged) and
 Full random field (per-LED, per-spoke or per-ring static) as grey fields.
 The "Noise Garden" preset shows them together.
 
+The music is a simulated DJ set from the gate's package (`DjLinkSim`), so
+`dj_link` (PRO DJ LINK) nodes can be built and checked away from the CDJs:
+two decks at 122 BPM, an Auto DJ mixing a crate of invented tracks with
+rekordbox phrases, fill-ins, loops, hot-cue jumps and crossfades, read with
+the gate's own rules, so the node's outputs and events behave as they will
+on the night. The synthetic beat is the set's sound: a breakdown drops the
+kick. The DJ decks panel (`app/playground/DjDecks.tsx`) shows each deck
+(track, phrase strip with the playhead, master, on air, loop) with Play,
+hold-to-cue, Loop 4, ±16-beat jumps, Master, a track picker and a channel
+fader; touching one turns the Auto DJ off. Below them are the crossfader,
+"LINK connected" (unchecked, `dj_link` reads as on a gate with no CDJs, to
+preview a patch's fallback) and what the patch sees: the node's outputs and
+its events lighting as they fire.
+
 On a phone the page stacks: the live gate docks at the top and shrinks into a
 bar (with the tool, color, brightness and speed beside it) as you scroll, so
 it stays in view over the controls and the node graph. "Keep the gate in view"
@@ -223,8 +237,10 @@ page, in the gate app and on the command line:
   validate the open patch, `set_patch` / `edit_patch` (small operations:
   add a node, connect, set knobs …), `snapshot` (frames over patch time as
   one PNG, plus numbers per frame), `share_link`, and the page's own
-  `set_inputs` (beat, DJ mix, master, tap color), `trigger_effect` and
-  `open_submit`. `<html data-webmcp="N">` says how many registered. Chrome
+  `set_inputs` (beat, master, tap color), `dj_deck` (read and work the DJ
+  set: unplug the LINK, take over a deck, start the set at a time),
+  `trigger_effect` and `open_submit`. `<html data-webmcp="N">` says how
+  many registered. Chrome
   ships WebMCP as an origin trial (Chrome 149–162): the playground's head
   carries the trial token (`PLAYGROUND.webmcpOriginTrial` in
   `app/content/site.ts`, for empyreangate.org and its subdomains, expiring
