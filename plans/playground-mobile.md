@@ -71,6 +71,11 @@ site yet." Push the site's `dev` only (never its `master`); the gate app's
   still no toolbar), and the patch chip leads with ☰ instead of a trailing
   ▾ so it reads as a menu, not a patch picker. Unit tests in `arrange.test.ts`; behaviour
   spec `tests/patch-arrange.spec.ts`; a site spec on the real preset.
+  **Same left-to-right layout on every screen size** (Cameron, 2026-10-18,
+  asked whether phones should arrange top to bottom: "No. Stable arranges
+  between mobile and desktop. Users should be able to go landscape if they
+  need."). An arranged patch is wider than a portrait phone; turning the
+  phone to landscape is the answer, not a second layout.
 - **Deleting a wire without a keyboard** (Cameron, 2026-10-18: "mobile/touch
   needs a way to delete a link between nodes"): wires are a custom
   `WireEdge`; a selected wire (tap or click, any layout) is drawn thicker
