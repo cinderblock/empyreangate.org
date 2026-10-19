@@ -176,7 +176,7 @@ sources (Touch strokes, Triggered effects, Event effect, Video in, Still
 image, Clip) get a ring thumbnail of what they hand on, scalar outputs an
 amplitude meter, event outputs a strip of their fires. The palette's **Code**
 group adds a node you write instead of wire: declare its inputs and outputs
-(scalars, events, grey or colour fields) in the side panel and type a WGSL
+(scalars, events, grey or colour fields or LEDs) in the side panel and type a WGSL
 body that sets the outputs by name; a field output puts it in the shader, and
 scalar/event ports only run it on the CPU through the engine's bounded
 WGSL-subset interpreter. The body is a real code editor (CodeMirror):
@@ -204,6 +204,15 @@ and bounce, wrap or stick edges) and Smooth noise (Perlin over time) as
 scalars, and Perlin noise (1-8 harmonics; smooth, billowy or ridged) and
 Full random field (per-LED, per-spoke or per-ring static) as grey fields.
 The "Noise Garden" preset shows them together.
+
+Fields come in two domains. Most are on the _plane_: defined at every
+position, so Transform can turn, zoom and fold them. Full random field (and
+a Code node that reads `c.spoke` or `c.i`) is _LED data_, defined only at
+the gate's physical LEDs, and its wires are drawn as a row of dots. LED data
+can go anywhere a field can, except into an input that reads it between the
+LEDs (Transform's): there the editor won't take the wire, and **Resample**
+turns it into the plane first (the nearest LED, or a blend of the four
+around).
 
 The music is a simulated DJ set from the gate's package (`DjLinkSim`), so
 `dj_link` (PRO DJ LINK) nodes can be built and checked away from the CDJs:

@@ -390,3 +390,16 @@ palette's Output is disabled, with "one per patch" beside it, while the
 patch has one, and `addNode` refuses a second. Deleting the Output (Delete
 key) brings the palette's back, since an outputless patch is legal. Spec
 `patch-one-output` in the gate's `test:behavior`.
+
+### LED data and the plane (2026-10-19)
+
+Cameron: "we need a distinction between a data type that matches the shape
+of our display, and one that matches things as mapped to a 2d grid". Gate
+`e9855b7` to `0efe863` (`plans/field-domains.md` there): fields are on the
+plane (`field_*`) or LED data (`led_*`, Full random field, or a Code body
+reading `c.spoke`/`c.i`); LED data can't go into Transform until the new
+Resample node turns it into the plane. LED wires are dotted. Sparkle,
+Meteors, Warp, Spoke chase and the glitter now key on the nearest LED's cell,
+so Transform moves them (their look at the LEDs is unchanged). A saved patch
+that already fed LED data into Transform gets a Resample on load. Next:
+sub-patch inlets/outlets.
