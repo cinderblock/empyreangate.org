@@ -365,10 +365,14 @@ test.describe("Pattern playground", () => {
     });
     // The starter patch has no touch nodes: the tool picker is there.
     await expect(page.locator(".pg-inputs").getByLabel("Tool")).toBeVisible();
+    // A built-in opens as itself (read-only), and renders like any patch.
+    await page.getByRole("button", { name: "📁 Patches" }).click();
     await page
-      .locator(".patch-toolbar select")
-      .nth(1)
-      .selectOption({ label: "Touch Ripples" });
+      .locator(".patch-browser-panel .browser-item", {
+        hasText: "Touch Ripples",
+      })
+      .first()
+      .click();
     await expect(page.locator(".pg-owns-touch")).toBeVisible();
     await expect(page.getByLabel("Tool")).toHaveCount(0);
   });
