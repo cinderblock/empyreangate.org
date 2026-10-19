@@ -43,8 +43,9 @@ test.describe("DJ decks", () => {
     await page.evaluate(() =>
       window.empyrean!.tools.dj_deck!({ start_at: 14 }),
     );
+    // A lamp is lit for 0.6 s; the chip keeps the deck that last fired it.
     await expect(
-      page.locator(".pg-dj-event[data-lit=true]", { hasText: "Phrase" }),
+      page.locator(".pg-dj-event", { hasText: /^Phrase1$/ }),
     ).toBeVisible({ timeout: 5_000 });
     await expect(sees).toContainText("Build");
   });
@@ -72,10 +73,10 @@ test.describe("DJ decks", () => {
     await page.mouse.down();
     await expect(deck2).toContainText("Cue-play (held)");
     await expect(
-      page.locator(".pg-dj-event[data-lit=true]", { hasText: /^Play/ }),
+      page.locator(".pg-dj-event", { hasText: /^Play2$/ }),
     ).toBeVisible();
     await expect(
-      page.locator(".pg-dj-event[data-lit=true]", { hasText: /^Cue\d?$/ }),
+      page.locator(".pg-dj-event", { hasText: /^Cue2$/ }),
     ).toBeVisible();
     await page.mouse.up();
     await expect(deck2).toContainText("At the cue");
