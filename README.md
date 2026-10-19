@@ -174,8 +174,9 @@ To develop against a local gate checkout instead of `web-dist`, run
 points to that directory and serves its wasm from outside this repo. Nothing
 in `package.json` or `bun.lock` changes.
 
-The master brightness and speed are not part of a patch (on the gate the crew
-sets them on the night), so the editor pins them as a "Gate globals" card in
+The master brightness, speed and hue pull are not part of a patch (on the
+gate the crew sets them on the night), so the editor pins them as a "Gate
+globals" card in
 the corner of its canvas rather than in the controls above: open with sliders
 on a wide screen, a one-line chip with the values on a phone. The gate app's
 Patch tab shows the same card, driving its Live tab's master. A patch that
@@ -184,7 +185,7 @@ brightness, speed and the master hue pull as scalars. **Arrange** (toolbar,
 or the ⇆ chip on a phone's canvas) lays the graph out left to right by its wires
 with a layered layout (dagre); it is deterministic for a given patch and one
 undo step. On a desk, "Simulate phone motion" feeds the Phone IMU node a
-stand-in (`app/playground/motion.ts`); a phone, judged by hover and pointer
+stand-in (patch-web's `syntheticMotion`); a phone, judged by hover and pointer
 media queries rather than by `DeviceOrientationEvent` (which desktop browsers
 expose with nothing behind it), offers its real sensors. Every node carries a
 live mini while the preview runs: field outputs and the stream and texture
@@ -214,12 +215,29 @@ Ripple Warp" is one made for that, with a Note node explaining it. A Code
 node can also read the touch strokes, the triggered effects and the video as
 inputs, and the engine refuses a body whose loops have no fixed bound.
 
-The palette has plain noise to wire into anything: Full random (a fresh
-value every frame), Random walk (Brownian drift with a pull to the middle
-and bounce, wrap or stick edges) and Smooth noise (Perlin over time) as
+The palette (the gate's own, from `@empyrean-gate/patch-web`) groups the
+node kinds by what they are for, each with an icon and a picture or trace
+of what it does; Building blocks and Patterns are a grid of thumbnails. Type
+to filter (`/` focuses it, Enter adds the best match; "walk" finds Random
+set to Walk), drag a kind onto the canvas, and the kinds added last come
+first.
+
+The palette has plain noise to wire into anything: Random in its Every frame
+(a fresh value every frame), Walk (Brownian drift with a pull to the middle
+and bounce, wrap or stick edges) and Smooth (Perlin over time) modes as
 scalars, and Perlin noise (1-8 harmonics; smooth, billowy or ridged) and
 Full random field (per-LED, per-spoke or per-ring static) as grey fields.
 The "Noise Garden" preset shows them together.
+
+Every node does something here, even those fed by what a browser lacks.
+Video in plays a stand-in film until you pick your camera or a video file
+(its panel has the three). **People** → Simulated visitors stands in for
+the crowd: taps on the beat, strokes now and then, and one or two fingers
+when the patch owns touch; the panel of every node that needs people
+(Effect taps, Touch, Touch strokes, Triggered effects, Touch mask, Touch
+glow, Render points, Render effects) offers the same switch. It starts off,
+so the presets look as they do on a quiet night. Waveform and Spectrum
+follow the synthetic beat when the microphone is off.
 
 Fields come in two domains. Most are on the _plane_: defined at every
 position, so Transform can turn, zoom and fold them. Full random field (and

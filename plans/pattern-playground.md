@@ -403,3 +403,19 @@ Meteors, Warp, Spoke chase and the glitter now key on the nearest LED's cell,
 so Transform moves them (their look at the LEDs is unchanged). A saved patch
 that already fed LED data into Transform gets a Resample on load. Next:
 sub-patch inlets/outlets.
+
+### The palette overhaul (2026-10-19)
+
+Cameron: "list of node types needs an overhaul. it's too long", then "do all
+3 at once ... more thumbnails and icons all around ... we should do 4 as
+well ... don't hide nodes. all nodes should have a browser standin at least.
+boil the ocean." Gate `a1dfea9` to `220df31` (`plans/palette-overhaul.md`
+there): eleven purpose groups, an icon and a thumbnail or trace for every
+kind, a filter with keyboard and option search, Recent, drag onto the
+canvas; Random's four modes and Rainbow with no turns replace five kinds
+(format 7, migrated on load). Stand-ins: a test film for Video in (or the
+camera), simulated visitors, the hue pull, a scope for the synthetic beat.
+Site: the People fieldset, Video in's source buttons, Hue pull and Pull
+toward in the globals card; `motion.ts` gave way to patch-web's
+`syntheticMotion`. Simulated visitors start off (decided here, see the gate
+plan).
