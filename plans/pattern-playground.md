@@ -205,6 +205,14 @@ Not in ops today: Turnstile widgets (no schema support) and worker secrets.
       (CPU tier interpreted, GPU tier pasted into the shader; format 5), on
       gate `master`; the web-dist bump bot lands it on `dev`. Plan: gate
       `plans/code-node.md`.
+- [x] Code body aids (2026-10-19, Cameron: "boil the ocean"): snippets,
+      signature help, search and carets, quick fixes, the large view's
+      reference column and text size, number scrubbing, colour swatches, a
+      phone key row, live values for CPU bodies. Gate round 6 in
+      `plans/code-node.md`. Checked on a local site build against the gate
+      checkout (`PATCH_WEB_DIR`, which needed an alias for `/agent`, site
+      `f8083aa`): live values, swatches and signature help in Chrome with
+      WebGPU, the phone layout at 390 px.
 - [x] Crew notifications (2026-10-16): Web Push to an installed PWA. `/admin`
       (noindex) + `public/sw.js` + manifest/icons; Worker `/api/notify/*`
       (`worker/webpush.ts`, RFC 8291/8292 in WebCrypto); subscriptions in the

@@ -182,8 +182,15 @@ scalar/event ports only run it on the CPU through the engine's bounded
 WGSL-subset interpreter. The body is a real code editor (CodeMirror):
 highlighting, completion and hover docs for the node's ports and the shader
 lib's helpers (the list comes from the engine itself), Tab indents, and
-errors marked on the body's own lines; ⤢ Expand opens it in a large modal
-(the whole screen on a phone). Every output of a Code node gets a live mini, on the node and beside the editor. Any built-in node's panel has
+errors marked on the body's own lines with quick fixes. Writing aids: snippets
+in the completion list, the parameters of the call being typed, search and
+several carets (Ctrl+F, Ctrl+D, Alt-drag), Alt-drag on a number to scrub it
+live, a colour swatch with a picker beside each colour written in numbers,
+and, for a CPU body, each `let`'s live value at the end of its line. ⤢ Expand
+opens it in a large view (the whole screen on a phone) with text size, a
+column of everything the body can use (a click inserts it), and on a touch
+screen a row of the keys a phone keyboard hides. Every output of a Code node
+gets a live mini, on the node and beside the editor. Any built-in node's panel has
 "Convert to Code": the node becomes a Code node in place, wires and knobs
 kept, with the body the engine generates for it, so every pattern in the
 palette is a starting point you can read and change; the preset "Code:
