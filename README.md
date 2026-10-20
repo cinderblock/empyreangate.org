@@ -194,12 +194,15 @@ media queries rather than by `DeviceOrientationEvent` (which desktop browsers
 expose with nothing behind it), offers its real sensors. Every node carries a
 live mini while the preview runs: field outputs and the stream and texture
 sources (Touch strokes, Triggered effects, Event effect, Video in, Still
-image, Clip) get a ring thumbnail of what they hand on, scalar outputs an
+image, Clip, and the rendered textures: Render to texture, Blur, Trails) get
+a ring thumbnail of what they hand on, scalar outputs an
 amplitude meter, event outputs a strip of their fires. The palette's **Code**
 group adds a node you write instead of wire: declare its inputs and outputs
-(scalars, events, grey or colour fields or LEDs) in the side panel and type a WGSL
-body that sets the outputs by name; a field output puts it in the shader, and
-scalar/event ports only run it on the CPU through the engine's bounded
+(scalars, events, grey or colour fields or LEDs, or a texture) in the side
+panel and type a WGSL body that sets the outputs by name; a field output puts
+it in the shader, a texture output runs it once per texture cell with its own
+last frame to read (cellular automata, feedback), and scalar/event ports only
+run it on the CPU through the engine's bounded
 WGSL-subset interpreter. The body is a real code editor (CodeMirror):
 highlighting, completion and hover docs for the node's ports and the shader
 lib's helpers (the list comes from the engine itself), Tab indents, and
