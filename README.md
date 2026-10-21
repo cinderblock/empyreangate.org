@@ -303,6 +303,13 @@ scalars, and Perlin noise (1-8 harmonics; smooth, billowy or ridged) and
 Full random field (per-LED, per-spoke or per-ring static) as grey fields.
 The "Noise Garden" preset shows them together.
 
+A **Debug** node (Structure) is a tap for looking inside a patch: wire any
+output into it and it shows that wire live and large, a ring for a picture,
+stream or texture, a meter for a number, a strip of fires for an event, on
+the node and bigger in its panel (a wire dragged to empty canvas offers it).
+It changes nothing the gate shows and costs nothing there; its Show on Live
+setting puts it in a strip on the gate's Live tab during a show.
+
 Every node does something here, even those fed by what a browser lacks.
 Video in plays a stand-in film until you pick your camera or a video file
 (its panel has the three). **People** → Simulated visitors stands in for
