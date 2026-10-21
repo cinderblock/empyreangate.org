@@ -253,7 +253,8 @@ live mini while the preview runs: field outputs and the stream and texture
 sources (Touch strokes, Triggered effects, Event effect, Video in, Still
 image, Clip, and the rendered textures: Render to texture, Blur, Trails) get
 a ring thumbnail of what they hand on, scalar outputs an
-amplitude meter, event outputs a strip of their fires. The rings draw through
+amplitude meter, event outputs a strip of their fires; the Output's ring is
+the frame the gate shows, its Master and the gate globals applied. The rings draw through
 WebGL2, or on a plain 2D canvas in a browser without it. The palette's **Code**
 group adds a node you write instead of wire: declare its inputs and outputs
 (scalars, events, grey or colour fields or LEDs, or a texture) in the side
