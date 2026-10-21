@@ -753,7 +753,7 @@ export default function Playground() {
         <a className="pg-agents" href="/playground/agents.md">
           Using an AI agent?
         </a>
-        <ReportProblem code="user-report" className="pg-report" />
+        <ReportProblem code="user-report" patch={doc} className="pg-report" />
         <nav className="pg-bar-links" aria-label="Source code">
           <a href={SITE.engine} rel="noopener" target="_blank">
             Engine ↗
@@ -770,7 +770,7 @@ export default function Playground() {
       {engineError && (
         <div className="pg-failure" role="alert">
           <span>{engineError}</span>
-          <ReportProblem code="engine-load" message={engineError} />
+          <ReportProblem code="engine-load" message={engineError} patch={doc} />
         </div>
       )}
 
@@ -800,7 +800,11 @@ export default function Playground() {
           {gpuError ? (
             <p className="pg-nogpu">
               {gpuError.text}{" "}
-              <ReportProblem code={gpuError.code} message={gpuError.error} />
+              <ReportProblem
+                code={gpuError.code}
+                message={gpuError.error}
+                patch={doc}
+              />
             </p>
           ) : (
             <div className="pg-dock" ref={dockRef}>

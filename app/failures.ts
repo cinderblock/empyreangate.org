@@ -12,11 +12,13 @@
  *   the failure's own screen (components/ReportProblem.tsx), after seeing
  *   every field of it (`POST /api/report`). The playground also offers one
  *   at any time ("Report a problem", code `user-report`), for what only a
- *   person notices; that one is never counted.
+ *   person notices; that one is never counted. A report from the
+ *   playground can carry the visitor's pattern, if they tick the box.
  *
  * The privacy page (routes/privacy.tsx) describes both; keep it in step.
  */
 
+import type { PatchDoc } from "@empyrean-gate/patch-web/types";
 import {
   FAILURE_CODES,
   firstStackUrl,
@@ -181,10 +183,33 @@ export async function gatherReport(
   };
 }
 
+/** What "Include my pattern" adds, in words: its name, size, and the
+ * images it holds (a Still node keeps its image inside the patch). */
+export function patchSummary(doc: PatchDoc): string {
+  const json = JSON.stringify(doc);
+  const kb = Math.max(
+    1,
+    Math.round(new TextEncoder().encode(json).length / 1024),
+  );
+  const images = json.split('"data:image/').length - 1;
+  const parts = [
+    `${doc.nodes.length} ${doc.nodes.length === 1 ? "node" : "nodes"}`,
+    `${kb} KB`,
+  ];
+  if (images) parts.push(`${images} ${images === 1 ? "image" : "images"}`);
+  return `“${doc.name || "Untitled"}”: ${parts.join(", ")}`;
+}
+
 /** Send a report; throws with the server's own words if it refuses. */
 export async function sendReport(
   report: Report,
-  extra: { note: string; contact: string; turnstile: string },
+  extra: {
+    note: string;
+    contact: string;
+    turnstile: string;
+    /** The visitor's pattern, only when they chose to include it. */
+    patch?: PatchDoc;
+  },
 ): Promise<void> {
   const res = await fetch("/api/report", {
     method: "POST",

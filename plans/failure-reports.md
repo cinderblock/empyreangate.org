@@ -181,6 +181,37 @@ problem" link in the playground's top bar, always there.
 - [x] Code, tests, /privacy, README (Playwright 324 passed, 0 failed; port 4180 was another worktree's preview, so a temporary config on 4182: Firefox and WebKit refuse 4190 as a restricted port)
 - [x] On `dev` (851fcc6) and checked on the Preview: the link sits between "Using an AI agent?" and the source links; the dialog is titled "Report a problem", has no error row, masks the patch id (`/playground/p/…`), and keeps Send disabled until there is a note. Not sent (a real report needs a person at Turnstile).
 
+## A report can carry the pattern (2026-10-21, in progress)
+
+Asked whether a report should be able to include the pattern if the
+visitor opts in; Cameron: "absolutely".
+
+- Every report sent from inside the playground (the top bar's "Report a
+  problem" and the playground's own failure screens) offers "Include my
+  pattern", unticked. The dialog says what that adds: the pattern's name,
+  how many nodes, its size, and how many images it holds (Still nodes keep
+  theirs inside the patch).
+- Sent as `patch` (the `PatchDoc`, as Submit sends it). The Worker checks it
+  like a submission (`parsePatchFile`, node and edge limits), then stores
+  it as a patch file (`exportPatch`, so the playground's Open file loads it)
+  at `report-patterns/<date>/<visitor>/<ms>-<id>.json`. The report record
+  points at it (`patch: <key>`).
+- Its own prefix, so it neither counts against the 5 reports a visitor may
+  send a day nor shows up as a report in `bun run reports`. Its own daily
+  cap (`patternsPerDay`): a pattern can be 3 MB (images), and reports allow
+  200 a day, so without one a day of abuse could be 600 MB on top of
+  submissions' 300 MB.
+- The report body limit grows to fit a submission-sized pattern.
+- `bun run reports` downloads each pattern to `reports/patterns/`.
+- /privacy (patterns now also leave the browser with a report, by
+  choice), README and tests follow.
+- [x] Code, tests, /privacy, README. Unit 82 passed. Playwright: the
+      failures spec 39 passed; the full suite 325 passed and 2 failed in WebKit
+      (`home.spec.ts:74`, `playground.spec.ts:470`, neither about reports) on a
+      run that took 8.9 min against the usual 4.6 under load; both passed 6 of 6
+      rerun alone.
+- [ ] On `dev` and checked on the Preview
+
 ## Things not to do
 
 - Don't add identifiers, the user agent or country to `/api/failure`: the

@@ -479,9 +479,21 @@ refuses a `user-report` without one. It is a report code only
 (`REPORT_CODES`), never a count: `/api/failure` still takes just the failure
 codes.
 
+**A report can carry the pattern.** Every report sent from inside the
+playground (the top bar's and its failure screens') offers **Include my
+pattern**, unticked, saying what it holds (name, nodes, size, images). Sent
+as `patch`, it is checked like a submitted one (`parsePatchFile`, the node
+and edge limits) and stored apart as a patch file (`exportPatch`) at
+`report-patterns/<date>/<visitor>/`, beside the report's own name; the
+report's `patch` field points at it. Its own prefix keeps it out of the
+reports' per-visitor cap and listing, and it has its own cap of 30 a day (a
+pattern with images can be 3 MB). A report without one is still refused
+over 16 KB.
+
 Both share Submit's rate-limit binding under their own keys.
-`bun run reports` downloads new reports into `reports/` (gitignored), prints
-them, then prints the last week's counts by failure, script, build and
+`bun run reports` downloads new reports into `reports/` (gitignored), and
+any pattern one carries into `reports/patterns/` (open it in the
+playground), prints them, then prints the last week's counts by failure, script, build and
 site; it
 needs a token that can read the bucket and account analytics, like
 `bun run submissions`.

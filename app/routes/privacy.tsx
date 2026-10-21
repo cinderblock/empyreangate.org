@@ -66,13 +66,20 @@ export default function Privacy() {
         everything first, and it carries the same details, except there's no
         error, just what you tell us went wrong. It isn't counted.
       </p>
+      <p>
+        A report from the playground can also carry your pattern, so the crew
+        can run it, but only if you tick <strong>Include my pattern</strong>.
+        The box starts unticked and says what the pattern holds, images
+        included.
+      </p>
 
       <h2>The pattern playground</h2>
       <p>
         Patterns you make stay in your browser's own storage. Nothing leaves it
-        until you press Submit. A submission carries the pattern, the name,
-        contact and note you type, your country and your browser's user-agent
-        string, for the crew to review.
+        until you press Submit, or send a report with your pattern included. A
+        submission carries the pattern, the name, contact and note you type,
+        your country and your browser's user-agent string, for the crew to
+        review.
       </p>
       <p>
         Submissions and reports both pass Cloudflare Turnstile, a spam check,

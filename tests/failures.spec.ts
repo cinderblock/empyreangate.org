@@ -200,7 +200,38 @@ test.describe("reporting a problem from a working playground", () => {
       note: "The hue slider turns the gate green.",
       turnstile: "test-token",
     });
+    // The pattern stays home unless asked for.
+    expect(sent[0].patch).toBeUndefined();
     expect(await codesCounted(page)).not.toContain("user-report");
+  });
+
+  test("includes the pattern only when its box is ticked, saying what it holds", async ({
+    page,
+  }) => {
+    const sent = await fakeReportBackend(page);
+    await page.goto("/playground");
+    await page
+      .locator(".pg-bar")
+      .getByRole("button", { name: "Report a problem" })
+      .click();
+    const dialog = page.getByRole("dialog", { name: "Report a problem" });
+    const include = dialog.getByRole("checkbox", {
+      name: /Include my pattern/,
+    });
+    await expect(include).not.toBeChecked();
+    await expect(dialog.getByText(/Include my pattern/)).toContainText(
+      /“.+”: \d+ nodes?, \d+ KB/,
+    );
+    await include.check();
+    await dialog.getByLabel("What went wrong?").fill("Wrong colours.");
+    await dialog.getByRole("button", { name: "Send" }).click();
+    await expect(dialog).toContainText("Thank you");
+    const patch = sent[0].patch as unknown as {
+      name: string;
+      nodes: unknown[];
+    };
+    expect(patch.nodes.length).toBeGreaterThan(0);
+    expect(typeof patch.name).toBe("string");
   });
 });
 

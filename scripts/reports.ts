@@ -8,6 +8,8 @@
  *
  * Reports are JSON objects under `reports/` in the submissions bucket
  * (worker/index.ts `report`), downloaded into `reports/` here (gitignored).
+ * A pattern a visitor included (under `report-patterns/`) is downloaded into
+ * `reports/patterns/`, a patch file the playground's Open file loads.
  * Counts come from Workers Analytics Engine (dataset `empyreangate_failures`,
  * worker/index.ts `failure`), grouped by failure, build and site.
  *
@@ -25,6 +27,7 @@ import { env, getObject, listObjects } from "./submissions";
 export const DATASET = "empyreangate_failures";
 const PREFIX = "reports/";
 const OUT = "reports";
+const PATTERNS = join(OUT, "patterns");
 
 /** What the Worker stores for a report (worker/index.ts `record`). */
 export interface ReportRecord {
@@ -42,6 +45,13 @@ export interface ReportRecord {
   note: string;
   contact: string;
   site: string;
+  /** Where the pattern the visitor included is, if they did. */
+  patch?: string;
+}
+
+/** Where a report's pattern lands here: `reports/patterns/<its file>`. */
+export function patternFile(key: string): string {
+  return `${OUT}/patterns/${key.slice(key.lastIndexOf("/") + 1)}`;
 }
 
 /** One row of the counts: a failure (for an unexpected one, in which of
@@ -73,12 +83,14 @@ export function describeReport(r: ReportRecord): string {
   const when = r.receivedAt.slice(0, 16).replace("T", " ");
   const lines = [
     `${when}  ${r.code} on ${r.site}${r.page} (build ${r.build})`,
-    `  ${r.message}`,
+    // A visitor's own report (`user-report`) has no error, just the note.
+    ...(r.message ? [`  ${r.message}`] : []),
     `  ${r.browser}`,
     `  WebGPU: ${r.webgpu}  |  ${r.webgl}  |  ${r.screen}`,
   ];
   if (r.note) lines.push(`  Note: “${r.note.replace(/\s+/g, " ")}”`);
   if (r.contact) lines.push(`  Contact: ${r.contact}`);
+  if (r.patch) lines.push(`  Pattern: ${patternFile(r.patch)}`);
   return lines.join("\n");
 }
 
@@ -146,8 +158,9 @@ async function main() {
   const days = daysAt >= 0 ? Number(args[daysAt + 1]) || 7 : 7;
   const { token, account } = env();
 
-  await mkdir(OUT, { recursive: true });
+  await mkdir(PATTERNS, { recursive: true });
   const have = new Set(await readdir(OUT));
+  const havePatterns = new Set(await readdir(PATTERNS));
   // In the order they arrived: the leaf starts with the time.
   const leaf = (key: string) => key.slice(key.lastIndexOf("/") + 1);
   const objects = (await listObjects(token, account, PREFIX)).sort((a, b) =>
@@ -165,7 +178,14 @@ async function main() {
     } else {
       text = await Bun.file(join(OUT, file)).text();
     }
-    records.push(JSON.parse(text) as ReportRecord);
+    const record = JSON.parse(text) as ReportRecord;
+    records.push(record);
+    if (record.patch && (all || !havePatterns.has(leaf(record.patch)))) {
+      await writeFile(
+        patternFile(record.patch),
+        await getObject(token, account, record.patch),
+      );
+    }
   }
   console.log(`${objects.length} reports (${fetched} new)\n`);
   for (const r of records) console.log(`${describeReport(r)}\n`);

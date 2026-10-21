@@ -15,7 +15,7 @@
  * it is imported, so this only needs to keep junk and abuse out.
  */
 
-import { parsePatchFile } from "@empyrean-gate/patch-web/files";
+import { exportPatch, parsePatchFile } from "@empyrean-gate/patch-web/files";
 import {
   isBuildId,
   isFailureCode,
@@ -895,7 +895,8 @@ async function failure(
 
 /** Limits on a report, generous for what the page gathers (app/failures.ts). */
 export const REPORT_LIMITS = {
-  bodyBytes: 16 * 1024,
+  // Room for the report itself and a pattern as big as a submission's.
+  bodyBytes: LIMITS.bodyBytes + 16 * 1024,
   // What the page gathered is cut to these rather than refused: the visitor
   // didn't write it and can't shorten it.
   message: 2000,
@@ -906,6 +907,9 @@ export const REPORT_LIMITS = {
   // A cap on growth: reports are tiny, but nobody reads 200 a day.
   perDay: 200,
   perVisitorPerDay: 5,
+  // How many reports a day may bring a pattern, in all. A pattern can be
+  // 3 MB (images), so this, not `perDay`, bounds their growth: 90 MB a day.
+  patternsPerDay: 30,
   // How much of the note the chat line quotes; the rest is in the bucket.
   notifyNote: 200,
 };
@@ -922,13 +926,18 @@ export interface ReportBody {
   note: string;
   contact: string;
   turnstile: string;
+  /** The visitor's pattern, when they chose to include it. */
+  patch?: unknown;
 }
 
 /** `POST /api/report`: a report a visitor chose to send from a failure's
  * screen, or from the playground's "Report a problem" (`user-report`, which
- * must say what went wrong), every field of which they saw first. Checked like a submission
- * (rate limit, size, Turnstile, daily caps), then stored under `reports/`
- * in the submissions bucket for the crew (`bun run reports`). */
+ * must say what went wrong), every field of which they saw first. Checked
+ * like a submission (rate limit, size, Turnstile, daily caps), then stored
+ * under `reports/` in the submissions bucket for the crew
+ * (`bun run reports`). A pattern the visitor chose to include is checked
+ * like a submitted one and stored apart, under `report-patterns/`, as a
+ * patch file the playground can open; it has its own daily cap. */
 async function report(
   request: Request,
   env: Env,
@@ -972,6 +981,27 @@ async function report(
   if (body.code === "user-report" && !note) {
     return json(400, { error: "Say what went wrong." });
   }
+  let patch = null;
+  if (body.patch !== undefined && body.patch !== null) {
+    try {
+      patch = parsePatchFile(JSON.stringify(body.patch));
+    } catch (e) {
+      return json(400, {
+        error: e instanceof Error ? e.message : "That pattern isn't a patch.",
+      });
+    }
+    if (
+      patch.nodes.length > LIMITS.nodes ||
+      patch.edges.length > LIMITS.edges
+    ) {
+      return json(400, {
+        error: "That pattern has more nodes than the gate allows.",
+      });
+    }
+  } else if (text.length > 16 * 1024) {
+    // Without a pattern, a report is small.
+    return json(413, { error: "That report is too big." });
+  }
   if (note.length > REPORT_LIMITS.note) {
     return json(400, { error: "That note is too long." });
   }
@@ -1003,10 +1033,31 @@ async function report(
           : "We've had all the reports we can read today. Please try tomorrow.",
     });
   }
+  const day = now.toISOString().slice(0, 10);
+  if (patch) {
+    const patterns = await env.SUBMISSIONS.list({
+      prefix: `report-patterns/${day}/`,
+      limit: REPORT_LIMITS.patternsPerDay,
+    });
+    if (
+      patterns.truncated ||
+      patterns.objects.length >= REPORT_LIMITS.patternsPerDay
+    ) {
+      return json(429, {
+        error:
+          "We've had all the patterns we can take with reports today. Send it without yours, or try tomorrow.",
+      });
+    }
+  }
 
   const gathered = (v: unknown, max = REPORT_LIMITS.field) =>
     typeof v === "string" ? clip(v, max) : "";
   const id = crypto.randomUUID();
+  const leaf = `${now.getTime()}-${id}.json`;
+  // Filed under the same scrambled visitor as the report, beside it.
+  const patchKey = patch
+    ? `report-patterns/${day}/${mine.slice(today.length)}${leaf}`
+    : null;
   const record = {
     id,
     receivedAt: now.toISOString(),
@@ -1022,8 +1073,15 @@ async function report(
     note,
     contact,
     site: url.hostname,
+    ...(patchKey ? { patch: patchKey } : {}),
   };
-  const key = `${mine}${now.getTime()}-${id}.json`;
+  if (patch && patchKey) {
+    await env.SUBMISSIONS.put(patchKey, exportPatch(patch), {
+      httpMetadata: { contentType: "application/json" },
+      customMetadata: { report: id },
+    });
+  }
+  const key = `${mine}${leaf}`;
   await env.SUBMISSIONS.put(key, JSON.stringify(record, null, 2), {
     httpMetadata: { contentType: "application/json" },
     customMetadata: { code: body.code },
@@ -1037,7 +1095,7 @@ async function report(
       note
         ? `: “${clip(note.replace(/\s+/g, " "), REPORT_LIMITS.notifyNote)}”`
         : ""
-    }. ${key}`,
+    }${patchKey ? " (pattern attached)" : ""}. ${key}`,
   );
   return json(200, { ok: true, id });
 }

@@ -8,16 +8,21 @@
  * the visitor noticed themselves: no error to show, so their note leads and
  * is required.
  *
+ * Given `patch` (the playground's), the dialog offers to include it,
+ * unticked, saying what it holds.
+ *
  * The button is phrasing content, so it can sit inside a failure message's
  * paragraph; the dialog goes to the end of the body.
  */
 
+import type { PatchDoc } from "@empyrean-gate/patch-web/types";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router";
 import {
   errorText,
   gatherReport,
+  patchSummary,
   REPORT_FIELDS,
   sendReport,
   type Report,
@@ -28,11 +33,14 @@ import { useTurnstile } from "../turnstile";
 export default function ReportProblem({
   code,
   message = "",
+  patch,
   className,
 }: {
   code: ReportCode;
   /** The error as the page saw it; none for a `user-report`. */
   message?: string;
+  /** The visitor's pattern, offered for the report (never sent unasked). */
+  patch?: PatchDoc | null;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -50,6 +58,7 @@ export default function ReportProblem({
           <ReportDialog
             code={code}
             message={message}
+            patch={patch ?? null}
             onClose={() => setOpen(false)}
           />,
           document.body,
@@ -67,13 +76,16 @@ type Phase =
 function ReportDialog({
   code,
   message,
+  patch,
   onClose,
 }: {
   code: ReportCode;
   message: string;
+  patch: PatchDoc | null;
   onClose: () => void;
 }) {
   const own = code === "user-report";
+  const [withPatch, setWithPatch] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [report, setReport] = useState<Report | null>(null);
   const [note, setNote] = useState("");
@@ -99,7 +111,12 @@ function ReportDialog({
     if (!report || !turnstile.token || (own && !note.trim())) return;
     setPhase({ kind: "sending" });
     try {
-      await sendReport(report, { note, contact, turnstile: turnstile.token });
+      await sendReport(report, {
+        note,
+        contact,
+        turnstile: turnstile.token,
+        ...(withPatch && patch ? { patch } : {}),
+      });
       setPhase({ kind: "sent" });
     } catch (e) {
       setPhase({ kind: "error", message: errorText(e) });
@@ -179,6 +196,19 @@ function ReportDialog({
             <p className="report-intro">Gathering the details…</p>
           )}
           {!own && noteField}
+          {patch && (
+            <label className="dialog-terms">
+              <input
+                type="checkbox"
+                checked={withPatch}
+                onChange={(e) => setWithPatch(e.target.checked)}
+              />
+              <span>
+                Include my pattern, so the crew can run it:{" "}
+                {patchSummary(patch)}
+              </span>
+            </label>
+          )}
           <label>
             Contact, if you'd like to hear back (optional)
             <input

@@ -42,6 +42,19 @@ describe("describeReport", () => {
     );
     expect(text).toContain("Note: “It flickered first.”");
     expect(text).not.toContain("Contact:");
+    expect(text).not.toContain("Pattern:");
+  });
+
+  test("a visitor's own report: no error line; where its pattern landed", () => {
+    const text = describeReport({
+      ...report,
+      code: "user-report",
+      message: "",
+      patch:
+        "report-patterns/2026-10-21/0123456789abcdef/1761069852000-0f3c.json",
+    });
+    expect(text.split("\n")[1]).toBe("  Mozilla/5.0 (Test)");
+    expect(text).toContain("Pattern: reports/patterns/1761069852000-0f3c.json");
   });
 });
 

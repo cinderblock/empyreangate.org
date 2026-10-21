@@ -972,6 +972,102 @@ describe("reports", () => {
     });
   });
 
+  test("stores an included pattern apart, as a patch file, and points at it", async () => {
+    await withTurnstile(true, async () => {
+      const { env: e, puts } = env();
+      const res = await worker.fetch(
+        postReport({ ...goodReport, patch }),
+        e,
+        ctx,
+      );
+      expect(res.status).toBe(200);
+      expect(puts).toHaveLength(2);
+      const [stored, report] = puts;
+      expect(stored.key).toMatch(
+        /^report-patterns\/\d{4}-\d\d-\d\d\/[0-9a-f]{16}\/\d+-[0-9a-f-]+\.json$/,
+      );
+      // The same visitor and file name as the report, under its own prefix.
+      expect(report.key.replace(/^reports\//, "report-patterns/")).toBe(
+        stored.key,
+      );
+      expect(JSON.parse(report.value).patch).toBe(stored.key);
+      expect(JSON.parse(stored.value)).toMatchObject({
+        name: "Test",
+        nodes: [{ kind: "rainbow" }, { kind: "output" }],
+      });
+    });
+  });
+
+  test("a report without a pattern has no patch field, and stays small", async () => {
+    await withTurnstile(true, async () => {
+      const { env: e, puts } = env();
+      expect((await worker.fetch(postReport(goodReport), e, ctx)).status).toBe(
+        200,
+      );
+      expect(JSON.parse(puts[0].value).patch).toBeUndefined();
+      // Room for a pattern isn't room for anything else.
+      const padded = { ...goodReport, browser: "x".repeat(20 * 1024) };
+      expect((await worker.fetch(postReport(padded), e, ctx)).status).toBe(413);
+    });
+  });
+
+  test("refuses a pattern that isn't a patch, or is bigger than the gate allows", async () => {
+    await withTurnstile(true, async () => {
+      const { env: e, puts } = env();
+      for (const bad of [
+        { nodes: "nope" },
+        {
+          ...patch,
+          nodes: Array.from({ length: LIMITS.nodes + 1 }, (_, i) => ({
+            id: `n${i}`,
+            kind: "rainbow",
+            name: "",
+            params: {},
+            pos: [0, 0],
+          })),
+          edges: [],
+        },
+      ]) {
+        const res = await worker.fetch(
+          postReport({ ...goodReport, patch: bad }),
+          e,
+          ctx,
+        );
+        expect(res.status).toBe(400);
+      }
+      expect(puts).toHaveLength(0);
+    });
+  });
+
+  test("caps the patterns reports bring a day, apart from the reports", async () => {
+    await withTurnstile(true, async () => {
+      const { env: e, puts } = env();
+      // A day's patterns already in, from others.
+      const day = new Date().toISOString().slice(0, 10);
+      for (let i = 0; i < REPORT_LIMITS.patternsPerDay; i++) {
+        await e.SUBMISSIONS!.put(
+          `report-patterns/${day}/${String(i).padStart(16, "0")}/1-x.json`,
+          "{}",
+        );
+      }
+      const before = puts.length;
+      const res = await worker.fetch(
+        postReport({ ...goodReport, patch }),
+        e,
+        ctx,
+      );
+      expect(res.status).toBe(429);
+      expect((await res.json()) as { error: string }).toMatchObject({
+        error: expect.stringContaining("without yours"),
+      });
+      expect(puts).toHaveLength(before);
+      // The same report without its pattern still gets through.
+      expect((await worker.fetch(postReport(goodReport), e, ctx)).status).toBe(
+        200,
+      );
+    });
+  });
+
   test("caps one visitor's reports a day", async () => {
     await withTurnstile(true, async () => {
       const { env: e, puts } = env();
