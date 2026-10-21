@@ -12,8 +12,9 @@ React 19 + React Router 8, Vite, TypeScript, Bun, Playwright, oxfmt + lefthook.
 Fully prerendered. Two pieces of live code: the WebGL render of the array on the
 home page, and the [pattern playground](#the-pattern-playground). The only
 server code is the small `/api/` Worker (`worker/index.ts`): the playground's
-Submit, the queue it feeds, the crew's notifications, and whether the gate is
-[live](#the-live-gate).
+Submit, the queue it feeds, the crew's notifications, whether the gate is
+[live](#the-live-gate), and hearing about
+[failures in visitors' browsers](#when-something-breaks).
 
 ## Getting started
 
@@ -35,16 +36,22 @@ bun run dev
 | `bun run photos`                | Web renditions of `photos/` + the photo manifest                           |
 | `bun run og`                    | Regenerate `public/og.png` from the built hero                             |
 | `bun run launch-check [origin]` | Check a deploy from outside: pages, 404, robots, redirects, Worker secrets |
+| `bun run reports [--days N]`    | Failure reports visitors sent, and the anonymous failure counts            |
 
 ## Structure
 
 ```
 app/
-  root.tsx                HTML shell
-  routes.ts               Route table: / and a real /404
+  root.tsx                HTML shell, with the failure watchdog (watchdog.ts)
+  routes.ts               Route table: /, /playground, /admin, /privacy, a real /404
   routes/home.tsx         The single page
   routes/playground.tsx   Shell for the playground (loads it after hydration)
+  routes/privacy.tsx      What the site learns about visitors, and when
   routes/404.tsx          Not found
+  failures.ts             Failure counts and "Send a report" (see below)
+  failure-codes.ts        The failures we hear about; shared with the Worker
+  watchdog.ts             Counts a page that never starts
+  turnstile.ts            The Turnstile widget, for Submit and reports
   playground/             The pattern playground: page, IndexedDB store, Submit,
                           and agent.ts (WebMCP tools and window.empyrean)
   content/                Everything editable without touching layout:
@@ -54,6 +61,7 @@ app/
     gallery.ts              photo slots, each naming an original in photos/
     photo-manifest.ts       generated: sizes of the web renditions
   components/GateRender.tsx  The live render: WebGL2 canvas, scene chips, pause
+  components/ReportProblem.tsx  "Send a report": the button and its dialog
   gate/
     geometry.ts             64 spokes x 378 px, inner/outer radius
     shaders.ts              GLSL port of a slice of the gate's WGSL layer shader
@@ -66,7 +74,9 @@ scripts/photos.ts         Resizes photos/ into public/photos/ (gitignored) + man
 scripts/postbuild.ts      404.html + sitemap.xml from the prerendered routes
 scripts/agent-docs.ts     /llms.txt and /playground/agents.md + JSON, from the patch core
 scripts/og.ts             Screenshots the hero into public/og.png
-worker/index.ts           The Worker: POST /api/submit only; assets serve the rest
+scripts/reports.ts        Pulls failure reports and counts (bun run reports)
+worker/index.ts           The Worker: /api/* (Submit, queue, notifications, live,
+                          failures, reports); assets serve the rest
 tests/                    Playwright: content, render states, responsiveness, playground
 plans/                    Working notes; start with empyreangate-site.md
 wrangler.jsonc            Cloudflare Workers static-assets config
@@ -356,6 +366,39 @@ gate's config on the show machine, typed under Settings → Submissions, never
 in a browser), opens one as a new patch credited to its sender, and marks it
 used or declined. `bun run submissions` remains for pulling the bucket to a
 laptop.
+
+## When something breaks
+
+The site hears about failures in visitors' browsers two ways
+(`app/failures.ts`), and says so on [/privacy](https://empyreangate.org/privacy):
+
+**Counts, without asking.** When the home page's render falls back (no
+WebGL2, or its shader won't compile on that GPU), when the playground has no
+WebGPU or its preview won't start, or when the patch engine or the
+playground's own code doesn't load, a beacon goes to `POST /api/failure` with
+the failure's code (`app/failure-codes.ts`) and the build (the commit Workers
+Builds built, or `local`). Nothing about the visitor: no IDs, cookies, user agent or
+country. The Worker writes the code, the build and its own hostname to
+Workers Analytics Engine (binding `FAILURE_COUNTS`, dataset
+`empyreangate_failures`). Two failures happen before React runs, so an inline
+script in every page's head counts them (`app/watchdog.ts`): one of the
+build's own scripts failing to load (`asset-load`, the manifest 404 after a
+deploy) and a page not hydrated 20 seconds after `load` (`page-stuck`).
+
+**Reports, when asked.** Each of those screens (all but the two before React)
+has a **Send a report** button. Its dialog shows every field first: the
+error, the page (a local patch's id masked), the build, the user-agent
+string, the WebGPU adapter and WebGL renderer, the window size; then an
+optional note and contact, Turnstile, and Send. `POST /api/report` checks it
+like a submission (rate limit, size, Turnstile, 5 per visitor and 200 in all
+a day) and stores it under `reports/<date>/<visitor>/` in the submissions
+bucket.
+
+Both share Submit's rate-limit binding under their own keys.
+`bun run reports` downloads new reports into `reports/` (gitignored), prints
+them, then prints the last week's counts by failure, build and site; it
+needs a token that can read the bucket and account analytics, like
+`bun run submissions`.
 
 ## Photos
 
