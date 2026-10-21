@@ -3,7 +3,9 @@
  * playground's Submit; `/api/notify/*`, the crew's push subscriptions;
  * `/api/submissions*`, the queue for the gate's Patch tab (admin token);
  * `GET /api/live`, whether the gate's public floor is up and what it is
- * playing. Everything else is the prerendered static site, served from
+ * playing; `POST /api/failure` and `POST /api/report`, hearing about the
+ * site failing in visitors' browsers (app/failures.ts). Everything else is
+ * the prerendered static site, served from
  * assets without waking this Worker (`assets.run_worker_first` in
  * wrangler.jsonc covers `/api/*` only).
  *
@@ -14,6 +16,7 @@
  */
 
 import { parsePatchFile } from "@empyrean-gate/patch-web/files";
+import { FAILURE_CODES, isBuildId, isFailureCode } from "../app/failure-codes";
 import { sendPush, type PushSubscriptionJSON, type Vapid } from "./webpush";
 
 /** The subset of the Workers runtime this file uses. */
@@ -43,13 +46,24 @@ interface Fetcher {
 interface ExecutionContext {
   waitUntil(promise: Promise<unknown>): void;
 }
+/** A Workers Analytics Engine dataset (`analytics_engine_datasets`). */
+interface AnalyticsEngineDataset {
+  writeDataPoint(point: {
+    indexes?: string[];
+    blobs?: string[];
+    doubles?: number[];
+  }): void;
+}
 
 export interface Env {
   ASSETS: Fetcher;
   /** Where submissions land. Absent on builds without it bound. */
   SUBMISSIONS?: R2Bucket;
-  /** Per-visitor rate limit (wrangler.jsonc: a few a minute per IP). */
+  /** Per-visitor rate limit (wrangler.jsonc: a few a minute per IP). Reports
+   * and failure counts use it too, under their own keys. */
   SUBMIT_LIMIT?: RateLimit;
+  /** Where failure counts go (`POST /api/failure`). Absent: not counted. */
+  FAILURE_COUNTS?: AnalyticsEngineDataset;
   /** Turnstile secret for the site key the page uses. */
   TURNSTILE_SECRET?: string;
   /** Optional: a Discord/Slack-style webhook told about each submission. */
@@ -202,6 +216,24 @@ async function visitorId(secret: string, address: string): Promise<string> {
 /** `text`, cut to `max` characters with an ellipsis if it was longer. */
 function clip(text: string, max: number): string {
   return text.length > max ? `${text.slice(0, max - 1)}…` : text;
+}
+
+/** Which of a day's caps is full, if either: `perVisitor` objects under the
+ * visitor's own prefix `mine`, or `perDay` under the whole day's `today`.
+ * One list call each; the visitor's first, so one visitor can't spend the
+ * day's cap alone. */
+async function dailyCapFull(
+  bucket: R2Bucket,
+  today: string,
+  mine: string,
+  perVisitor: number,
+  perDay: number,
+): Promise<"visitor" | "day" | null> {
+  const theirs = await bucket.list({ prefix: mine, limit: perVisitor });
+  if (theirs.truncated || theirs.objects.length >= perVisitor) return "visitor";
+  const all = await bucket.list({ prefix: today, limit: perDay });
+  if (all.truncated || all.objects.length >= perDay) return "day";
+  return null;
 }
 
 function parseSubscription(raw: unknown): PushSubscriptionJSON | null {
@@ -714,23 +746,23 @@ async function submit(
   const day = now.toISOString().slice(0, 10);
   // The daily caps, after the spam check so bots cannot spend them: first
   // this visitor's share (their own prefix under today's), then the day's.
-  const mine = `submissions/${day}/${await visitorId(env.TURNSTILE_SECRET, visitor)}/`;
-  const theirs = await env.SUBMISSIONS.list({
-    prefix: mine,
-    limit: LIMITS.perVisitorPerDay,
-  });
-  if (theirs.truncated || theirs.objects.length >= LIMITS.perVisitorPerDay) {
+  const today = `submissions/${day}/`;
+  const mine = `${today}${await visitorId(env.TURNSTILE_SECRET, visitor)}/`;
+  const full = await dailyCapFull(
+    env.SUBMISSIONS,
+    today,
+    mine,
+    LIMITS.perVisitorPerDay,
+    LIMITS.perDay,
+  );
+  if (full === "visitor") {
     return json(429, {
       error:
         "That's as many patterns as we can take from one person in a day. Save yours to disk and send it tomorrow.",
     });
   }
   // Full means we have all we can look at for one day.
-  const today = await env.SUBMISSIONS.list({
-    prefix: `submissions/${day}/`,
-    limit: LIMITS.perDay,
-  });
-  if (today.truncated || today.objects.length >= LIMITS.perDay) {
+  if (full === "day") {
     return json(429, {
       error:
         "We've received all the patterns we can look at today. Save yours to disk and send it tomorrow.",
@@ -790,6 +822,190 @@ async function submit(
   return json(200, { ok: true, id });
 }
 
+// ---------------------------------------------------------------------------
+// Failures in visitors' browsers: /api/failure, /api/report (app/failures.ts)
+// ---------------------------------------------------------------------------
+
+/** The longest failure count body: `{"code":…,"build":…}` is ~60 bytes. */
+const FAILURE_BODY_BYTES = 512;
+
+/**
+ * `POST /api/failure`: count one failure. The count keeps the failure's
+ * code, the build, and which site answered (production or a Preview), and
+ * nothing about who sent it: the address only keys the rate limit and is
+ * not stored. The privacy page promises exactly this; keep them in step.
+ */
+async function failure(
+  request: Request,
+  env: Env,
+  url: URL,
+): Promise<Response> {
+  const ip = request.headers.get("cf-connecting-ip");
+  // A page reloaded in a loop counts a few times, not hundreds.
+  if (env.SUBMIT_LIMIT && ip) {
+    const { success } = await env.SUBMIT_LIMIT.limit({
+      key: `failure:${visitorAddress(ip)}`,
+    });
+    if (!success) return json(429, { error: "Counted enough for now." });
+  }
+  const text = await request.text();
+  if (text.length > FAILURE_BODY_BYTES) {
+    return json(413, { error: "That's too long for a failure count." });
+  }
+  let body: { code?: unknown; build?: unknown };
+  try {
+    body = JSON.parse(text) as typeof body;
+  } catch {
+    return json(400, { error: "That request wasn't JSON." });
+  }
+  if (!isFailureCode(body.code)) {
+    return json(400, { error: "That isn't a failure this site knows." });
+  }
+  env.FAILURE_COUNTS?.writeDataPoint({
+    indexes: [body.code],
+    blobs: [
+      body.code,
+      isBuildId(body.build) ? body.build : "unknown",
+      url.hostname,
+    ],
+    doubles: [1],
+  });
+  return new Response(null, {
+    status: 204,
+    headers: { "cache-control": "no-store" },
+  });
+}
+
+/** Limits on a report, generous for what the page gathers (app/failures.ts). */
+export const REPORT_LIMITS = {
+  bodyBytes: 16 * 1024,
+  // What the page gathered is cut to these rather than refused: the visitor
+  // didn't write it and can't shorten it.
+  message: 2000,
+  field: 500,
+  // What the visitor typed is refused if too long, as the form caps it.
+  note: 2000,
+  contact: 200,
+  // A cap on growth: reports are tiny, but nobody reads 200 a day.
+  perDay: 200,
+  perVisitorPerDay: 5,
+};
+
+export interface ReportBody {
+  code: string;
+  message: string;
+  page: string;
+  build: string;
+  browser: string;
+  webgpu: string;
+  webgl: string;
+  screen: string;
+  note: string;
+  contact: string;
+  turnstile: string;
+}
+
+/** `POST /api/report`: a report a visitor chose to send from a failure's
+ * screen, every field of which they saw first. Checked like a submission
+ * (rate limit, size, Turnstile, daily caps), then stored under `reports/`
+ * in the submissions bucket for the crew (`bun run reports`). */
+async function report(request: Request, env: Env, url: URL): Promise<Response> {
+  if (!env.SUBMISSIONS || !env.TURNSTILE_SECRET) {
+    return json(503, { error: "Reports aren't open on this build yet." });
+  }
+  const ip = request.headers.get("cf-connecting-ip");
+  const visitor = visitorAddress(ip ?? "unknown");
+  if (env.SUBMIT_LIMIT && ip) {
+    const { success } = await env.SUBMIT_LIMIT.limit({
+      key: `report:${visitor}`,
+    });
+    if (!success) {
+      return json(429, {
+        error: "That's a lot of reports at once. Give it a minute.",
+      });
+    }
+  }
+  const length = Number(request.headers.get("content-length") ?? "0");
+  if (length > REPORT_LIMITS.bodyBytes) {
+    return json(413, { error: "That report is too big." });
+  }
+  const text = await request.text();
+  if (text.length > REPORT_LIMITS.bodyBytes) {
+    return json(413, { error: "That report is too big." });
+  }
+  let body: Partial<ReportBody>;
+  try {
+    body = JSON.parse(text) as Partial<ReportBody>;
+  } catch {
+    return json(400, { error: "That request wasn't JSON." });
+  }
+  if (!isFailureCode(body.code)) {
+    return json(400, { error: "That isn't a failure this site knows." });
+  }
+  const note = typeof body.note === "string" ? body.note.trim() : "";
+  const contact = typeof body.contact === "string" ? body.contact.trim() : "";
+  if (note.length > REPORT_LIMITS.note) {
+    return json(400, { error: "That note is too long." });
+  }
+  if (contact.length > REPORT_LIMITS.contact) {
+    return json(400, { error: "That contact is too long." });
+  }
+  if (
+    typeof body.turnstile !== "string" ||
+    !(await verifyTurnstile(env.TURNSTILE_SECRET, body.turnstile, ip))
+  ) {
+    return json(403, { error: "The spam check didn't pass. Try again." });
+  }
+
+  const now = new Date();
+  const today = `reports/${now.toISOString().slice(0, 10)}/`;
+  const mine = `${today}${await visitorId(env.TURNSTILE_SECRET, visitor)}/`;
+  const full = await dailyCapFull(
+    env.SUBMISSIONS,
+    today,
+    mine,
+    REPORT_LIMITS.perVisitorPerDay,
+    REPORT_LIMITS.perDay,
+  );
+  if (full) {
+    return json(429, {
+      error:
+        full === "visitor"
+          ? "Thanks, we have your reports from today already."
+          : "We've had all the reports we can read today. Please try tomorrow.",
+    });
+  }
+
+  const gathered = (v: unknown, max = REPORT_LIMITS.field) =>
+    typeof v === "string" ? clip(v, max) : "";
+  const id = crypto.randomUUID();
+  const record = {
+    id,
+    receivedAt: now.toISOString(),
+    code: body.code,
+    summary: FAILURE_CODES[body.code],
+    message: gathered(body.message, REPORT_LIMITS.message),
+    page: gathered(body.page),
+    build: isBuildId(body.build) ? body.build : "unknown",
+    browser: gathered(body.browser),
+    webgpu: gathered(body.webgpu),
+    webgl: gathered(body.webgl),
+    screen: gathered(body.screen),
+    note,
+    contact,
+    site: url.hostname,
+  };
+  await env.SUBMISSIONS.put(
+    `${mine}${now.getTime()}-${id}.json`,
+    JSON.stringify(record, null, 2),
+    {
+      httpMetadata: { contentType: "application/json" },
+      customMetadata: { code: body.code },
+    },
+  );
+  return json(200, { ok: true, id });
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext) {
     const url = new URL(request.url);
@@ -804,6 +1020,19 @@ export default {
         return json(500, {
           error: "Something went wrong saving that. Try again later.",
         });
+      }
+    }
+    if (url.pathname === "/api/failure" || url.pathname === "/api/report") {
+      if (request.method !== "POST") {
+        return json(405, { error: "POST it here." });
+      }
+      try {
+        return url.pathname === "/api/failure"
+          ? await failure(request, env, url)
+          : await report(request, env, url);
+      } catch (e) {
+        console.error(`${url.pathname} failed:`, e);
+        return json(500, { error: "Something went wrong. Try again later." });
       }
     }
     if (url.pathname.startsWith("/api/notify/")) {

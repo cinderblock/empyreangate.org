@@ -1,7 +1,8 @@
 {
   // Cloudflare Workers static-assets deploy, run by Workers Builds. The site is
   // prerendered HTML; the one Worker script (worker/index.ts) handles only
-  // `/api/*` — the playground's Submit — and everything else is served from
+  // `/api/*` — the playground's Submit, failure counts and reports, and the
+  // rest of the small API — and everything else is served from
   // assets without waking it. Host canonicalisation (www, .com →
   // empyreangate.org) is a zone redirect rule owned by github.com/cinderblock/ops,
   // which also provisions this worker, the submissions bucket, and attaches the
@@ -50,6 +51,10 @@
         "simple": { "limit": 5, "period": 60 },
       },
     ],
+    // Previews count into the same dataset; each count names its hostname.
+    "analytics_engine_datasets": [
+      { "binding": "FAILURE_COUNTS", "dataset": "empyreangate_failures" },
+    ],
   },
   // Where the gate's public floor answers (a cloudflared tunnel on the show
   // machine to the gate app's public listener, declared by ops with the rest
@@ -73,6 +78,14 @@
       "namespace_id": "1001",
       "simple": { "limit": 5, "period": 60 },
     },
+  ],
+  // Failure counts from visitors' browsers (`POST /api/failure`,
+  // app/failures.ts): a code, the build and the hostname per data point,
+  // nothing about the visitor. Workers Analytics Engine creates the dataset
+  // on its first write; `bun run reports` reads it back. Reports and failure
+  // counts share SUBMIT_LIMIT above, under their own keys.
+  "analytics_engine_datasets": [
+    { "binding": "FAILURE_COUNTS", "dataset": "empyreangate_failures" },
   ],
   // Secrets, set on the worker rather than here: TURNSTILE_SECRET (required
   // to accept submissions), NOTIFY_WEBHOOK (optional), and for the crew's

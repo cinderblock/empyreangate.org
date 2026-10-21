@@ -5,6 +5,7 @@ import worker, {
   forgetLive,
   keyTime,
   LIMITS,
+  REPORT_LIMITS,
   visitorAddress,
   type Env,
   type SubmissionSummary,
@@ -696,5 +697,259 @@ describe("the queue", () => {
       );
       expect([400, 404]).toContain(res.status);
     }
+  });
+});
+
+describe("failure counts", () => {
+  function countEnv(overrides: Partial<Env> = {}) {
+    const points: {
+      indexes?: string[];
+      blobs?: string[];
+      doubles?: number[];
+    }[] = [];
+    const keys: string[] = [];
+    const { env: e } = env({
+      FAILURE_COUNTS: { writeDataPoint: (p) => void points.push(p) },
+      SUBMIT_LIMIT: {
+        limit: async ({ key }) => {
+          keys.push(key);
+          return { success: true };
+        },
+      },
+      ...overrides,
+    });
+    return { env: e, points, keys };
+  }
+
+  function beacon(body: string, host = "empyreangate.org") {
+    return new Request(`https://${host}/api/failure`, {
+      method: "POST",
+      body,
+      // What sendBeacon sends for a string body.
+      headers: {
+        "content-type": "text/plain;charset=UTF-8",
+        "cf-connecting-ip": "203.0.113.7",
+        "user-agent": "Mozilla/5.0 (Test)",
+      },
+    });
+  }
+
+  test("counts a known failure with only its code, build and site", async () => {
+    const { env: e, points, keys } = countEnv();
+    const res = await worker.fetch(
+      beacon(
+        JSON.stringify({ code: "webgpu-unavailable", build: "f6f02be01234" }),
+        "dev.empyreangate.org",
+      ),
+      e,
+      ctx,
+    );
+    expect(res.status).toBe(204);
+    expect(points).toEqual([
+      {
+        indexes: ["webgpu-unavailable"],
+        blobs: ["webgpu-unavailable", "f6f02be01234", "dev.empyreangate.org"],
+        doubles: [1],
+      },
+    ]);
+    // Nothing about the visitor reaches the dataset.
+    expect(JSON.stringify(points)).not.toMatch(/203\.0\.113|Mozilla/);
+    expect(keys).toEqual(["failure:203.0.113.7"]);
+  });
+
+  test("an odd build is counted as unknown", async () => {
+    const { env: e, points } = countEnv();
+    await worker.fetch(
+      beacon(JSON.stringify({ code: "page-stuck", build: "<script>" })),
+      e,
+      ctx,
+    );
+    expect(points[0].blobs?.[1]).toBe("unknown");
+  });
+
+  test("refuses unknown codes, junk and long bodies", async () => {
+    const { env: e, points } = countEnv();
+    for (const body of [
+      JSON.stringify({ code: "made-up", build: "local" }),
+      JSON.stringify({ code: "toString", build: "local" }),
+      "not json",
+      JSON.stringify({ code: "page-stuck", pad: "x".repeat(600) }),
+    ]) {
+      const res = await worker.fetch(beacon(body), e, ctx);
+      expect(res.status).toBeGreaterThanOrEqual(400);
+    }
+    expect(points).toHaveLength(0);
+  });
+
+  test("a visitor over the rate limit isn't counted", async () => {
+    const { env: e, points } = countEnv({
+      SUBMIT_LIMIT: { limit: async () => ({ success: false }) },
+    });
+    const res = await worker.fetch(
+      beacon(JSON.stringify({ code: "page-stuck", build: "local" })),
+      e,
+      ctx,
+    );
+    expect(res.status).toBe(429);
+    expect(points).toHaveLength(0);
+  });
+
+  test("without the dataset bound it still answers", async () => {
+    const { env: e } = countEnv({ FAILURE_COUNTS: undefined });
+    const res = await worker.fetch(
+      beacon(JSON.stringify({ code: "asset-load", build: "local" })),
+      e,
+      ctx,
+    );
+    expect(res.status).toBe(204);
+  });
+
+  test("only POST", async () => {
+    const { env: e } = countEnv();
+    const res = await worker.fetch(
+      new Request("https://empyreangate.org/api/failure"),
+      e,
+      ctx,
+    );
+    expect(res.status).toBe(405);
+  });
+});
+
+describe("reports", () => {
+  const goodReport = {
+    code: "webgpu-start",
+    message: "GPUDevice was lost",
+    page: "/playground/",
+    build: "f6f02be01234",
+    browser: "Mozilla/5.0 (Test)",
+    webgpu: "nvidia, ampere",
+    webgl: "WebGL2: ANGLE (NVIDIA)",
+    screen: "1280×720 at 1×",
+    note: "It flickered first.",
+    contact: "",
+    turnstile: "tok",
+  };
+
+  function postReport(body: unknown, ip = "203.0.113.7") {
+    return new Request("https://empyreangate.org/api/report", {
+      method: "POST",
+      body: typeof body === "string" ? body : JSON.stringify(body),
+      headers: { "content-type": "application/json", "cf-connecting-ip": ip },
+    });
+  }
+
+  async function withTurnstile<T>(success: boolean, run: () => Promise<T>) {
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      Response.json({ success })) as unknown as typeof fetch;
+    try {
+      return await run();
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  }
+
+  test("is closed until the bucket and secret are bound", async () => {
+    const { env: e } = env({ TURNSTILE_SECRET: undefined });
+    const res = await worker.fetch(postReport(goodReport), e, ctx);
+    expect(res.status).toBe(503);
+  });
+
+  test("stores a verified report under reports/", async () => {
+    await withTurnstile(true, async () => {
+      const { env: e, puts } = env();
+      const res = await worker.fetch(postReport(goodReport), e, ctx);
+      expect(res.status).toBe(200);
+      expect(puts).toHaveLength(1);
+      expect(puts[0].key).toMatch(
+        /^reports\/\d{4}-\d\d-\d\d\/[0-9a-f]{16}\/\d+-[0-9a-f-]+\.json$/,
+      );
+      const record = JSON.parse(puts[0].value);
+      expect(record).toMatchObject({
+        code: "webgpu-start",
+        summary: "The playground's live preview didn't start.",
+        message: "GPUDevice was lost",
+        build: "f6f02be01234",
+        note: "It flickered first.",
+        site: "empyreangate.org",
+      });
+      expect(record.turnstile).toBeUndefined();
+    });
+  });
+
+  test("cuts what the page gathered, refuses what the visitor typed too long", async () => {
+    await withTurnstile(true, async () => {
+      const { env: e, puts } = env();
+      const long = { ...goodReport, browser: "x".repeat(5000) };
+      expect((await worker.fetch(postReport(long), e, ctx)).status).toBe(200);
+      expect(JSON.parse(puts[0].value).browser).toHaveLength(
+        REPORT_LIMITS.field,
+      );
+      const res = await worker.fetch(
+        postReport({ ...goodReport, note: "x".repeat(3000) }),
+        e,
+        ctx,
+      );
+      expect(res.status).toBe(400);
+      expect(puts).toHaveLength(1);
+    });
+  });
+
+  test("refuses a failed spam check, unknown codes and junk", async () => {
+    await withTurnstile(false, async () => {
+      const { env: e, puts } = env();
+      expect((await worker.fetch(postReport(goodReport), e, ctx)).status).toBe(
+        403,
+      );
+      expect(
+        (
+          await worker.fetch(
+            postReport({ ...goodReport, code: "made-up" }),
+            e,
+            ctx,
+          )
+        ).status,
+      ).toBe(400);
+      expect((await worker.fetch(postReport("nope"), e, ctx)).status).toBe(400);
+      expect(puts).toHaveLength(0);
+    });
+  });
+
+  test("caps one visitor's reports a day", async () => {
+    await withTurnstile(true, async () => {
+      const { env: e, puts } = env();
+      for (let i = 0; i < REPORT_LIMITS.perVisitorPerDay; i++) {
+        expect(
+          (await worker.fetch(postReport(goodReport), e, ctx)).status,
+        ).toBe(200);
+      }
+      const res = await worker.fetch(postReport(goodReport), e, ctx);
+      expect(res.status).toBe(429);
+      expect(puts).toHaveLength(REPORT_LIMITS.perVisitorPerDay);
+      // Someone else still gets through.
+      expect(
+        (await worker.fetch(postReport(goodReport, "198.51.100.2"), e, ctx))
+          .status,
+      ).toBe(200);
+    });
+  });
+
+  test("reports don't count against submissions", async () => {
+    await withTurnstile(true, async () => {
+      const { env: e } = env();
+      for (let i = 0; i < REPORT_LIMITS.perVisitorPerDay; i++) {
+        await worker.fetch(postReport(goodReport), e, ctx);
+      }
+      const res = await worker.fetch(
+        new Request("https://empyreangate.org/api/submit", {
+          method: "POST",
+          body: JSON.stringify(good),
+          headers: { "cf-connecting-ip": "203.0.113.7" },
+        }),
+        e,
+        ctx,
+      );
+      expect(res.status).toBe(200);
+    });
   });
 });
