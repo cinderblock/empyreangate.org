@@ -121,14 +121,12 @@ on being disclosed.
 
 ## Open questions for the user
 
-1. ~~Should a report notify the crew?~~ Cameron, 2026-10-21: yes, the
-   webhook only. Done (f364491): a stored report posts one line to
-   `NOTIFY_WEBHOOK` (what, where, build, the note shortened, the key; not the
-   contact or browser). **No webhook is set anywhere yet**:
-   `scripts/secrets-setup.ts` never sets it, and the deployed production
-   version lists no secrets. Turning it on needs a Discord/Slack webhook URL
-   from Cameron and his yes to set the secret on the Worker and the `dev`
-   Preview.
+1. ~~Should a report notify the crew?~~ Cameron, 2026-10-21: yes, webhook
+   only (f364491), then: "i don't have a webhook ready. i assumed we'd store
+   in some cloudflare database for later processing." That storage is what
+   already happens (reports in R2 under `reports/`, counts in Analytics
+   Engine, read with `bun run reports`). The webhook line stays dormant
+   until a `NOTIFY_WEBHOOK` exists; no local collection endpoint is needed.
 2. Move to `telemetry-collector` (github.com/cinderblock/telemetry-collector)?
    Researched 2026-10-21 at its `371a262`. Recommendation: not now. It adds
    a browsable UI, grouping by stack, resolve/ignore and automatic capture
