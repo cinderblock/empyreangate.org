@@ -121,9 +121,29 @@ on being disclosed.
 
 ## Open questions for the user
 
-1. Should a report notify the crew (Web Push, like a submission, and/or
-   `NOTIFY_WEBHOOK`)? Not done: today reports wait for `bun run reports`.
-   Recommendation: yes, the webhook only, if one is set.
+1. ~~Should a report notify the crew?~~ Cameron, 2026-10-21: yes, the
+   webhook only. Done (f364491): a stored report posts one line to
+   `NOTIFY_WEBHOOK` (what, where, build, the note shortened, the key; not the
+   contact or browser). **No webhook is set anywhere yet**:
+   `scripts/secrets-setup.ts` never sets it, and the deployed production
+   version lists no secrets. Turning it on needs a Discord/Slack webhook URL
+   from Cameron and his yes to set the secret on the Worker and the `dev`
+   Preview.
+2. Move to `telemetry-collector` (github.com/cinderblock/telemetry-collector)?
+   Researched 2026-10-21 at its `371a262`. Recommendation: not now. It adds
+   a browsable UI, grouping by stack, resolve/ignore and automatic capture
+   of _any_ uncaught error; but its error path always stores the user agent
+   and country (`native.ts:164-165`, `normalize.ts:262-268`), it has no
+   Turnstile and no alerting, and it may not be deployed yet (OpenSlate's
+   2026-10-14 notes: "no code is deployed there yet"). If we want it later,
+   the Worker can forward accepted reports to it server-side (signed, so
+   they're attested), keeping Turnstile, the caps and /privacy as they are;
+   /privacy would then have to say that reports also go there and that
+   country gets added. Waiting on Cameron.
+3. Gap, not yet raised as work: only the known failure points are counted.
+   An unexpected JS error anywhere else (`window.onerror`,
+   `unhandledrejection`) isn't. Could be one more code here, or the reason
+   to use telemetry-collector.
 
 ## Things not to do
 
