@@ -310,6 +310,14 @@ the node and bigger in its panel (a wire dragged to empty canvas offers it).
 It changes nothing the gate shows and costs nothing there; its Show on Live
 setting puts it in a strip on the gate's Live tab during a show.
 
+**Frame by frame**: a bar under the graph pauses the pattern and steps it a
+frame at a time (K plays and pauses, `,` and `.` step, Shift for ten), so
+every view and meter shows what happens within a single frame; an edit made
+while paused shows on the same frame without time moving. **Keep past
+frames** (off by default; 2 to 60 s, with the memory each takes, and lengths
+past a quarter of the device's memory not offered) records them on the GPU
+so you can step back through them exactly. The choice is remembered.
+
 Every node does something here, even those fed by what a browser lacks.
 Video in plays a stand-in film until you pick your camera or a video file
 (its panel has the three). **People** → Simulated visitors stands in for

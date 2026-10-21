@@ -992,6 +992,7 @@ export default function Playground() {
             status={editorStatus}
             canEdit
             minis={runtime}
+            transport={runtime}
             showActivate={false}
             globals={globals}
             globalsNote="On the gate, the crew sets these on the night; here they're yours. Speed scales every Time node and phase, brightness scales the Output, and the hue pull draws every color toward one hue. To react to them, add a Gate globals node."
