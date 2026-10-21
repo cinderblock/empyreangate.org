@@ -35,7 +35,7 @@ export interface SubmissionRecord {
   patch: PatchDoc;
 }
 
-interface R2Object {
+export interface R2Object {
   key: string;
   size: number;
   uploaded: string;
@@ -72,7 +72,7 @@ export function describe(record: SubmissionRecord): string {
   }${note}`;
 }
 
-function env(): { token: string; account: string } {
+export function env(): { token: string; account: string } {
   const token = process.env.CLOUDFLARE_API_TOKEN ?? process.env.CF_API_TOKEN;
   const account = process.env.CLOUDFLARE_ACCOUNT_ID;
   if (!token || !account) {
@@ -83,7 +83,7 @@ function env(): { token: string; account: string } {
   return { token, account };
 }
 
-async function api<T>(path: string, token: string): Promise<T> {
+export async function api<T>(path: string, token: string): Promise<T> {
   const res = await fetch(`https://api.cloudflare.com/client/v4${path}`, {
     headers: { authorization: `Bearer ${token}` },
   });
@@ -92,14 +92,16 @@ async function api<T>(path: string, token: string): Promise<T> {
   return (await res.json()) as T;
 }
 
-async function listObjects(
+/** Every object in the bucket under `prefix` (by default, the queue). */
+export async function listObjects(
   token: string,
   account: string,
+  prefix = PREFIX,
 ): Promise<R2Object[]> {
   const out: R2Object[] = [];
   let cursor: string | undefined;
   do {
-    const q = new URLSearchParams({ prefix: PREFIX, per_page: "1000" });
+    const q = new URLSearchParams({ prefix, per_page: "1000" });
     if (cursor) q.set("cursor", cursor);
     const page = await api<{
       result: R2Object[];
@@ -113,7 +115,7 @@ async function listObjects(
   return out;
 }
 
-async function getObject(
+export async function getObject(
   token: string,
   account: string,
   key: string,

@@ -48,3 +48,6 @@ playwright/.cache/
 
 # Downloaded playground submissions (bun run submissions)
 /submissions/
+
+# Downloaded failure reports (bun run reports)
+/reports/
