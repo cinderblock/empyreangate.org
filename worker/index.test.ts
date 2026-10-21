@@ -934,6 +934,45 @@ describe("reports", () => {
     });
   });
 
+  test("tells the webhook what broke and where, not who sent it", async () => {
+    const realFetch = globalThis.fetch;
+    const sent: { content: string; allowed_mentions: unknown }[] = [];
+    globalThis.fetch = (async (url: string, init?: RequestInit) => {
+      if (String(url).includes("turnstile"))
+        return Response.json({ success: true });
+      sent.push(JSON.parse(String(init?.body)));
+      return new Response(null, { status: 204 });
+    }) as unknown as typeof fetch;
+    try {
+      const { env: e, puts } = env({
+        NOTIFY_WEBHOOK: "https://hooks.example/x",
+      });
+      const res = await worker.fetch(
+        postReport({
+          ...goodReport,
+          contact: "ada@example.org",
+          note: "@everyone\n".repeat(100),
+        }),
+        e,
+        ctx,
+      );
+      expect(res.status).toBe(200);
+      expect(sent).toHaveLength(1);
+      const line = sent[0].content;
+      expect(line).toStartWith(
+        "Problem report: The playground's live preview didn't start. (webgpu-start) on empyreangate.org/playground/, build f6f02be01234: “@everyone @everyone",
+      );
+      expect(line).toContain("…”");
+      expect(line).toEndWith(` ${puts[0].key}`);
+      expect(line.length).toBeLessThan(500);
+      expect(line).not.toContain("ada@example.org");
+      expect(line).not.toContain("Mozilla");
+      expect(sent[0].allowed_mentions).toEqual({ parse: [] });
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  });
+
   test("reports don't count against submissions", async () => {
     await withTurnstile(true, async () => {
       const { env: e } = env();

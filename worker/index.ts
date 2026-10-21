@@ -651,6 +651,25 @@ async function submissions(
   return json(404, { error: "No such endpoint." });
 }
 
+/** One line to the crew's chat, if `NOTIFY_WEBHOOK` is set (Discord and
+ * Slack both read it). Sent after the response; a failure only logs. */
+function tellWebhook(env: Env, ctx: ExecutionContext, line: string): void {
+  if (!env.NOTIFY_WEBHOOK) return;
+  ctx.waitUntil(
+    fetch(env.NOTIFY_WEBHOOK, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      // Lines quote visitors' own text: Discord must not turn an
+      // "@everyone" in one into a ping.
+      body: JSON.stringify({
+        content: line,
+        text: line,
+        allowed_mentions: { parse: [] },
+      }),
+    }).catch((e: unknown) => console.error("Notify webhook failed:", e)),
+  );
+}
+
 /** Check a submission's fields; returns an error message or null. */
 export function checkSubmission(s: Partial<Submission>): string | null {
   if (typeof s.name !== "string" || !s.name.trim()) return "Tell us your name.";
@@ -803,22 +822,11 @@ async function submit(
       }).catch((e: unknown) => console.error("Push broadcast failed:", e)),
     );
   }
-  if (env.NOTIFY_WEBHOOK) {
-    const line = `New gate pattern "${patchName}" from ${record.name} (${patch.nodes.length} nodes): ${key}`;
-    ctx.waitUntil(
-      fetch(env.NOTIFY_WEBHOOK, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        // Names are the sender's own text: Discord must not turn an
-        // "@everyone" in one into a ping.
-        body: JSON.stringify({
-          content: line,
-          text: line,
-          allowed_mentions: { parse: [] },
-        }),
-      }).catch((e: unknown) => console.error("Notify webhook failed:", e)),
-    );
-  }
+  tellWebhook(
+    env,
+    ctx,
+    `New gate pattern "${patchName}" from ${record.name} (${patch.nodes.length} nodes): ${key}`,
+  );
   return json(200, { ok: true, id });
 }
 
@@ -889,6 +897,8 @@ export const REPORT_LIMITS = {
   // A cap on growth: reports are tiny, but nobody reads 200 a day.
   perDay: 200,
   perVisitorPerDay: 5,
+  // How much of the note the chat line quotes; the rest is in the bucket.
+  notifyNote: 200,
 };
 
 export interface ReportBody {
@@ -909,7 +919,12 @@ export interface ReportBody {
  * screen, every field of which they saw first. Checked like a submission
  * (rate limit, size, Turnstile, daily caps), then stored under `reports/`
  * in the submissions bucket for the crew (`bun run reports`). */
-async function report(request: Request, env: Env, url: URL): Promise<Response> {
+async function report(
+  request: Request,
+  env: Env,
+  ctx: ExecutionContext,
+  url: URL,
+): Promise<Response> {
   if (!env.SUBMISSIONS || !env.TURNSTILE_SECRET) {
     return json(503, { error: "Reports aren't open on this build yet." });
   }
@@ -995,13 +1010,21 @@ async function report(request: Request, env: Env, url: URL): Promise<Response> {
     contact,
     site: url.hostname,
   };
-  await env.SUBMISSIONS.put(
-    `${mine}${now.getTime()}-${id}.json`,
-    JSON.stringify(record, null, 2),
-    {
-      httpMetadata: { contentType: "application/json" },
-      customMetadata: { code: body.code },
-    },
+  const key = `${mine}${now.getTime()}-${id}.json`;
+  await env.SUBMISSIONS.put(key, JSON.stringify(record, null, 2), {
+    httpMetadata: { contentType: "application/json" },
+    customMetadata: { code: body.code },
+  });
+  // The chat hears about it; the crew's phones don't (Web Push stays for
+  // submissions). Only what says where to look, and the note, shortened.
+  tellWebhook(
+    env,
+    ctx,
+    `Problem report: ${record.summary} (${record.code}) on ${record.site}${clip(record.page, 80)}, build ${record.build}${
+      note
+        ? `: “${clip(note.replace(/\s+/g, " "), REPORT_LIMITS.notifyNote)}”`
+        : ""
+    }. ${key}`,
   );
   return json(200, { ok: true, id });
 }
@@ -1029,7 +1052,7 @@ export default {
       try {
         return url.pathname === "/api/failure"
           ? await failure(request, env, url)
-          : await report(request, env, url);
+          : await report(request, env, ctx, url);
       } catch (e) {
         console.error(`${url.pathname} failed:`, e);
         return json(500, { error: "Something went wrong. Try again later." });
