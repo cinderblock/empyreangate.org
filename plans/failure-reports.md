@@ -160,6 +160,10 @@ privacy promise.
   the privacy chunk are counted as `where: privacy`; errors from
   `page.evaluate` are not; a render crash shows the root boundary). Full
   suite 2026-10-21: 321 passed, 0 failed.
+- On the Preview (e2b73be): /privacy has the new wording; an error thrown
+  from the console (not the site's code) sent no beacon; a test count
+  `uncaught`/`privacy`/`local` showed in `bun run reports` with its script.
+  The two `local` rows in the dataset are these checks.
 
 ## Things not to do
 
