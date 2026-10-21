@@ -99,7 +99,21 @@
   color: var(--ink);
 }
 
-.pg-agents + .pg-bar-links {
+/* "Report a problem" (components/ReportProblem.tsx), always there for what
+   only a person notices; a link's look, not the failure screens' pill. */
+.pg-report.report-button {
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+  border: 0;
+  padding: 0;
+  white-space: nowrap;
+}
+
+.pg-report.report-button:hover {
+  color: var(--ink);
+}
+
+.pg-agents ~ .pg-bar-links {
   margin-left: 0;
 }
 

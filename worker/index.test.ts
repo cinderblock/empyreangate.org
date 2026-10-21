@@ -804,6 +804,8 @@ describe("failure counts", () => {
     for (const body of [
       JSON.stringify({ code: "made-up", build: "local" }),
       JSON.stringify({ code: "toString", build: "local" }),
+      // A visitor's own report is never a count: nothing failed on its own.
+      JSON.stringify({ code: "user-report", build: "local" }),
       "not json",
       JSON.stringify({ code: "page-stuck", pad: "x".repeat(600) }),
     ]) {
@@ -944,6 +946,29 @@ describe("reports", () => {
       ).toBe(400);
       expect((await worker.fetch(postReport("nope"), e, ctx)).status).toBe(400);
       expect(puts).toHaveLength(0);
+    });
+  });
+
+  test("takes a visitor's own report, which must say what went wrong", async () => {
+    await withTurnstile(true, async () => {
+      const { env: e, puts } = env();
+      const own = {
+        ...goodReport,
+        code: "user-report",
+        message: "",
+        note: "The hue slider turns the gate green, not red.",
+      };
+      expect(
+        (await worker.fetch(postReport({ ...own, note: "  " }), e, ctx)).status,
+      ).toBe(400);
+      expect(puts).toHaveLength(0);
+      expect((await worker.fetch(postReport(own), e, ctx)).status).toBe(200);
+      expect(JSON.parse(puts[0].value)).toMatchObject({
+        code: "user-report",
+        summary: "A visitor noticed something wrong.",
+        message: "",
+        note: "The hue slider turns the gate green, not red.",
+      });
     });
   });
 

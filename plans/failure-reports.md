@@ -165,6 +165,22 @@ privacy promise.
   `uncaught`/`privacy`/`local` showed in `bun run reports` with its script.
   The two `local` rows in the dataset are these checks.
 
+## Report a problem from the playground (2026-10-21, in progress)
+
+Cameron couldn't find a way to report from a working playground: "Send a
+report" only appears on failure screens. Asked, Cameron chose a "Report a
+problem" link in the playground's top bar, always there.
+
+- New report code `user-report`, accepted by `/api/report` only. It is not
+  a failure code: nothing failed on its own, so it is never counted in
+  Analytics Engine (`/api/failure` still takes only `FAILURE_CODES`).
+- Same dialog and the same preview of every field. With no error to show,
+  the note is the point: labelled "What went wrong?" and required (the
+  Worker refuses a `user-report` without one).
+- /privacy, README and tests follow.
+- [x] Code, tests, /privacy, README (Playwright 324 passed, 0 failed; port 4180 was another worktree's preview, so a temporary config on 4182: Firefox and WebKit refuse 4190 as a restricted port)
+- [ ] On `dev` and checked on the Preview
+
 ## Things not to do
 
 - Don't add identifiers, the user agent or country to `/api/failure`: the

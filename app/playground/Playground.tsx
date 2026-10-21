@@ -753,6 +753,7 @@ export default function Playground() {
         <a className="pg-agents" href="/playground/agents.md">
           Using an AI agent?
         </a>
+        <ReportProblem code="user-report" className="pg-report" />
         <nav className="pg-bar-links" aria-label="Source code">
           <a href={SITE.engine} rel="noopener" target="_blank">
             Engine ↗

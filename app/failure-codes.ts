@@ -2,7 +2,7 @@
  * The ways the site can fail in a visitor's browser that we want to hear
  * about. Shared by the pages (app/failures.ts, the watchdog in root.tsx) and
  * the Worker, which counts only these (`POST /api/failure`) and files
- * reports only about these (`POST /api/report`).
+ * reports only about these and `REPORT_CODES` (`POST /api/report`).
  *
  * Each code is what a count carries, so it must say nothing about the
  * visitor: only which part of the site broke.
@@ -25,6 +25,22 @@ export type FailureCode = keyof typeof FAILURE_CODES;
 
 export function isFailureCode(code: unknown): code is FailureCode {
   return typeof code === "string" && Object.hasOwn(FAILURE_CODES, code);
+}
+
+/**
+ * What a report can be about: any failure, or `user-report`, something a
+ * visitor noticed themselves (the playground's "Report a problem"). That one
+ * is never counted: nothing failed on its own.
+ */
+export const REPORT_CODES = {
+  ...FAILURE_CODES,
+  "user-report": "A visitor noticed something wrong.",
+} as const;
+
+export type ReportCode = keyof typeof REPORT_CODES;
+
+export function isReportCode(code: unknown): code is ReportCode {
+  return typeof code === "string" && Object.hasOwn(REPORT_CODES, code);
 }
 
 /** A count's `where`: one of the site's own scripts, by name. */

@@ -4,6 +4,10 @@
  * sent. An optional note and contact, then Turnstile, then
  * `POST /api/report` (worker/index.ts), which stores it for the crew.
  *
+ * With `code="user-report"` it is "Report a problem" instead, for something
+ * the visitor noticed themselves: no error to show, so their note leads and
+ * is required.
+ *
  * The button is phrasing content, so it can sit inside a failure message's
  * paragraph; the dialog goes to the end of the body.
  */
@@ -16,28 +20,30 @@ import {
   gatherReport,
   REPORT_FIELDS,
   sendReport,
-  type FailureCode,
   type Report,
+  type ReportCode,
 } from "../failures";
 import { useTurnstile } from "../turnstile";
 
 export default function ReportProblem({
   code,
-  message,
+  message = "",
+  className,
 }: {
-  code: FailureCode;
-  /** The error as the page saw it. */
-  message: string;
+  code: ReportCode;
+  /** The error as the page saw it; none for a `user-report`. */
+  message?: string;
+  className?: string;
 }) {
   const [open, setOpen] = useState(false);
   return (
     <>
       <button
         type="button"
-        className="report-button"
+        className={className ? `report-button ${className}` : "report-button"}
         onClick={() => setOpen(true)}
       >
-        Send a report
+        {code === "user-report" ? "Report a problem" : "Send a report"}
       </button>
       {open &&
         createPortal(
@@ -63,10 +69,11 @@ function ReportDialog({
   message,
   onClose,
 }: {
-  code: FailureCode;
+  code: ReportCode;
   message: string;
   onClose: () => void;
 }) {
+  const own = code === "user-report";
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [report, setReport] = useState<Report | null>(null);
   const [note, setNote] = useState("");
@@ -89,7 +96,7 @@ function ReportDialog({
   }, [code, message]);
 
   const send = async () => {
-    if (!report || !turnstile.token) return;
+    if (!report || !turnstile.token || (own && !note.trim())) return;
     setPhase({ kind: "sending" });
     try {
       await sendReport(report, { note, contact, turnstile: turnstile.token });
@@ -101,7 +108,28 @@ function ReportDialog({
   };
 
   const canSend =
-    report !== null && turnstile.token !== null && phase.kind !== "sending";
+    report !== null &&
+    turnstile.token !== null &&
+    (!own || note.trim() !== "") &&
+    phase.kind !== "sending";
+
+  const noteField = (
+    <label>
+      {own ? "What went wrong?" : "Anything to add? (optional)"}
+      <textarea
+        maxLength={2000}
+        rows={own ? 4 : 3}
+        required={own}
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder={
+          own
+            ? "What you were doing, what you saw, what you expected…"
+            : "What you were doing, what you expected…"
+        }
+      />
+    </label>
+  );
 
   return (
     <dialog
@@ -110,7 +138,7 @@ function ReportDialog({
       aria-labelledby="report-h"
       onClose={onClose}
     >
-      <h2 id="report-h">Send a report</h2>
+      <h2 id="report-h">{own ? "Report a problem" : "Send a report"}</h2>
       {phase.kind === "sent" ? (
         <>
           <p>Thank you. The crew will look into it.</p>
@@ -128,33 +156,29 @@ function ReportDialog({
             if (canSend) void send();
           }}
         >
+          {own && noteField}
           <p className="report-intro">
-            This sends the crew what's below, so we can work out what broke.
+            {own
+              ? "This sends the crew your note and what's below, so we can work out what's wrong."
+              : "This sends the crew what's below, so we can work out what broke."}{" "}
             Nothing else is sent, and nothing is sent until you press Send. See{" "}
             <Link to="/privacy">privacy</Link>.
           </p>
           {report ? (
             <dl className="report-fields">
-              {REPORT_FIELDS.map(({ key, label }) => (
-                <div key={key}>
-                  <dt>{label}</dt>
-                  <dd>{report[key]}</dd>
-                </div>
-              ))}
+              {REPORT_FIELDS.filter(({ key }) => report[key] !== "").map(
+                ({ key, label }) => (
+                  <div key={key}>
+                    <dt>{label}</dt>
+                    <dd>{report[key]}</dd>
+                  </div>
+                ),
+              )}
             </dl>
           ) : (
             <p className="report-intro">Gathering the details…</p>
           )}
-          <label>
-            Anything to add? (optional)
-            <textarea
-              maxLength={2000}
-              rows={3}
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="What you were doing, what you expected…"
-            />
-          </label>
+          {!own && noteField}
           <label>
             Contact, if you'd like to hear back (optional)
             <input

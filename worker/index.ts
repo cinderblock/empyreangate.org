@@ -17,10 +17,11 @@
 
 import { parsePatchFile } from "@empyrean-gate/patch-web/files";
 import {
-  FAILURE_CODES,
   isBuildId,
   isFailureCode,
+  isReportCode,
   isWhere,
+  REPORT_CODES,
 } from "../app/failure-codes";
 import { sendPush, type PushSubscriptionJSON, type Vapid } from "./webpush";
 
@@ -924,7 +925,8 @@ export interface ReportBody {
 }
 
 /** `POST /api/report`: a report a visitor chose to send from a failure's
- * screen, every field of which they saw first. Checked like a submission
+ * screen, or from the playground's "Report a problem" (`user-report`, which
+ * must say what went wrong), every field of which they saw first. Checked like a submission
  * (rate limit, size, Turnstile, daily caps), then stored under `reports/`
  * in the submissions bucket for the crew (`bun run reports`). */
 async function report(
@@ -962,11 +964,14 @@ async function report(
   } catch {
     return json(400, { error: "That request wasn't JSON." });
   }
-  if (!isFailureCode(body.code)) {
+  if (!isReportCode(body.code)) {
     return json(400, { error: "That isn't a failure this site knows." });
   }
   const note = typeof body.note === "string" ? body.note.trim() : "";
   const contact = typeof body.contact === "string" ? body.contact.trim() : "";
+  if (body.code === "user-report" && !note) {
+    return json(400, { error: "Say what went wrong." });
+  }
   if (note.length > REPORT_LIMITS.note) {
     return json(400, { error: "That note is too long." });
   }
@@ -1006,7 +1011,7 @@ async function report(
     id,
     receivedAt: now.toISOString(),
     code: body.code,
-    summary: FAILURE_CODES[body.code],
+    summary: REPORT_CODES[body.code],
     message: gathered(body.message, REPORT_LIMITS.message),
     page: gathered(body.page),
     build: isBuildId(body.build) ? body.build : "unknown",

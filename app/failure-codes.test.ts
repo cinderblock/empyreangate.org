@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { firstStackUrl, isFailureCode, ownScript } from "./failure-codes";
+import {
+  firstStackUrl,
+  isFailureCode,
+  isReportCode,
+  ownScript,
+} from "./failure-codes";
 
 const origin = "https://empyreangate.org";
 
@@ -8,6 +13,19 @@ describe("isFailureCode", () => {
     expect(isFailureCode("uncaught")).toBe(true);
     expect(isFailureCode("made-up")).toBe(false);
     expect(isFailureCode("toString")).toBe(false);
+  });
+
+  test("a visitor's own report isn't a failure, so it is never counted", () => {
+    expect(isFailureCode("user-report")).toBe(false);
+  });
+});
+
+describe("isReportCode", () => {
+  test("takes every failure, and a visitor's own report", () => {
+    expect(isReportCode("webgpu-start")).toBe(true);
+    expect(isReportCode("user-report")).toBe(true);
+    expect(isReportCode("made-up")).toBe(false);
+    expect(isReportCode("toString")).toBe(false);
   });
 });
 

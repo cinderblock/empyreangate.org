@@ -164,6 +164,46 @@ test.describe("playground without WebGPU", () => {
   });
 });
 
+test.describe("reporting a problem from a working playground", () => {
+  test("the top bar offers it; the note is required; nothing is counted", async ({
+    page,
+  }) => {
+    await recordCounts(page);
+    const sent = await fakeReportBackend(page);
+    await page.goto("/playground");
+    await page
+      .locator(".pg-bar")
+      .getByRole("button", { name: "Report a problem" })
+      .click();
+
+    const dialog = page.getByRole("dialog", { name: "Report a problem" });
+    await expect(dialog).toBeVisible();
+    const fields = dialog.locator(".report-fields");
+    await expect(fields).toContainText("Site version");
+    // No error to show, so no "What went wrong" row.
+    await expect(fields).not.toContainText("What went wrong");
+    const send = dialog.getByRole("button", { name: "Send" });
+    const note = dialog.getByLabel("What went wrong?");
+    await expect(send).toBeDisabled();
+    // Once the spam check has passed, only an empty note holds it back.
+    await note.fill("The hue slider turns the gate green.");
+    await expect(send).toBeEnabled();
+    await note.fill("   ");
+    await expect(send).toBeDisabled();
+    await note.fill("The hue slider turns the gate green.");
+    await send.click();
+    await expect(dialog).toContainText("Thank you");
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).toMatchObject({
+      code: "user-report",
+      message: "",
+      note: "The hue slider turns the gate green.",
+      turnstile: "test-token",
+    });
+    expect(await codesCounted(page)).not.toContain("user-report");
+  });
+});
+
 test.describe("the playground's code doesn't load", () => {
   test("says so, with Reload and a report, and counts it", async ({ page }) => {
     await recordCounts(page);

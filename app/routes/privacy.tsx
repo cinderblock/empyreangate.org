@@ -60,6 +60,12 @@ export default function Privacy() {
         add. Nothing is sent until you press Send. The crew reads reports to fix
         the site.
       </p>
+      <p>
+        The playground also has a <strong>Report a problem</strong> link at the
+        top, for something you notice yourself. It works the same way: you see
+        everything first, and it carries the same details, except there's no
+        error, just what you tell us went wrong. It isn't counted.
+      </p>
 
       <h2>The pattern playground</h2>
       <p>

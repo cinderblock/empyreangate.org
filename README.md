@@ -465,6 +465,13 @@ bucket. If `NOTIFY_WEBHOOK` is set, the Worker also posts one line about it
 there (what broke, where, the build, the note shortened; not the contact or
 the browser).
 
+**Reporting what only a person notices.** The playground's top bar always
+has **Report a problem**: the same dialog with code `user-report`, no error
+row, and the note ("What went wrong?") first and required; the Worker
+refuses a `user-report` without one. It is a report code only
+(`REPORT_CODES`), never a count: `/api/failure` still takes just the failure
+codes.
+
 Both share Submit's rate-limit binding under their own keys.
 `bun run reports` downloads new reports into `reports/` (gitignored), prints
 them, then prints the last week's counts by failure, script, build and

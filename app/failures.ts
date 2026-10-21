@@ -10,7 +10,9 @@
  *   runs there. `watchUncaught` counts the errors nobody planned for.
  * - `gatherReport` + `sendReport`: a report the visitor chooses to send from
  *   the failure's own screen (components/ReportProblem.tsx), after seeing
- *   every field of it (`POST /api/report`).
+ *   every field of it (`POST /api/report`). The playground also offers one
+ *   at any time ("Report a problem", code `user-report`), for what only a
+ *   person notices; that one is never counted.
  *
  * The privacy page (routes/privacy.tsx) describes both; keep it in step.
  */
@@ -18,11 +20,13 @@
 import {
   FAILURE_CODES,
   firstStackUrl,
+  isFailureCode,
   ownScript,
   type FailureCode,
+  type ReportCode,
 } from "./failure-codes";
 
-export { FAILURE_CODES, type FailureCode };
+export { FAILURE_CODES, type FailureCode, type ReportCode };
 
 const counted = new Set<string>();
 
@@ -83,8 +87,8 @@ export function watchUncaught(): () => void {
 
 /** What a report carries, every field shown to the visitor before sending. */
 export interface Report {
-  code: FailureCode;
-  /** The error itself, as the page saw it. */
+  code: ReportCode;
+  /** The error itself, as the page saw it; empty on a `user-report`. */
   message: string;
   /** The page's path, without the query or fragment (a fragment can hold a
    * whole patch), and without the id of a patch of the visitor's own. */
@@ -160,12 +164,12 @@ function webglInfo(): string {
 
 /** Everything a report about `code` would carry, gathered now. */
 export async function gatherReport(
-  code: FailureCode,
+  code: ReportCode,
   message: string,
 ): Promise<Report> {
   return {
     code,
-    message: message || FAILURE_CODES[code],
+    message: message || (isFailureCode(code) ? FAILURE_CODES[code] : ""),
     // A patch of their own lives only in their browser: its id tells the
     // crew nothing (playground/urls.ts). Built-ins keep their names.
     page: location.pathname.replace(/^(\/playground\/p\/)[^/]+/, "$1…"),
