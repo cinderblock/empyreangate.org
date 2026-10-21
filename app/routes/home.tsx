@@ -517,7 +517,8 @@ export default function Home() {
           <Link to={SITE.playground}>Pattern playground</Link> ·{" "}
           <External href={SITE.software}>Gate software</External> ·{" "}
           <External href={SITE.source}>This site's source</External> ·{" "}
-          <External href={SITE.entheos.instagram}>Instagram</External>
+          <External href={SITE.entheos.instagram}>Instagram</External> ·{" "}
+          <Link to="/privacy">Privacy</Link>
         </p>
       </footer>
 

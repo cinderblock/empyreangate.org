@@ -36,7 +36,9 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { PlayLive, useLive } from "../components/LiveLink";
+import ReportProblem from "../components/ReportProblem";
 import { PLAYGROUND, SITE } from "../content/site";
+import { countFailure, errorText, type FailureCode } from "../failures";
 import { startPlaygroundAgent, type PlaygroundInputs } from "./agent";
 import DjDecks from "./DjDecks";
 import SubmitDialog from "./SubmitDialog";
@@ -68,7 +70,15 @@ export default function Playground() {
   const store = useMemo(() => new LocalPatchStore(), []);
   const [core, setCore] = useState<PatchCore | null>(null);
   const [runtime, setRuntime] = useState<PatchRuntime | null>(null);
-  const [gpuError, setGpuError] = useState<string | null>(null);
+  // Why there is no live preview: what the page says, and what a report or
+  // count says (the error itself, without the advice around it).
+  const [gpuError, setGpuError] = useState<{
+    code: FailureCode;
+    text: string;
+    error: string;
+  } | null>(null);
+  // The patch engine (wasm) didn't load: nothing works without it.
+  const [engineError, setEngineError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(store.active);
   const [status, setStatus] = useState<RuntimeStatus | null>(null);
@@ -137,8 +147,9 @@ export default function Playground() {
       try {
         c = await loadPatchCore();
       } catch (e) {
-        setNotice(
-          `The playground could not load the gate's patch engine: ${e instanceof Error ? e.message : String(e)}`,
+        countFailure("engine-load");
+        setEngineError(
+          `The playground could not load the gate's patch engine: ${errorText(e)}`,
         );
         return;
       }
@@ -189,11 +200,19 @@ export default function Playground() {
         if (import.meta.env.DEV)
           Object.assign(window, { __playground: { runtime: rt, store } });
       } catch (e) {
-        setGpuError(
+        const code: FailureCode =
           e instanceof WebGpuUnavailable
-            ? `${e.message} The editor still works: you can build, save and submit patterns, but the live preview needs a browser with WebGPU (current Chrome, Edge or Safari).`
-            : `The live preview could not start: ${e instanceof Error ? e.message : String(e)}`,
-        );
+            ? "webgpu-unavailable"
+            : "webgpu-start";
+        countFailure(code);
+        setGpuError({
+          code,
+          error: errorText(e),
+          text:
+            code === "webgpu-unavailable"
+              ? `${errorText(e)} The editor still works: you can build, save and submit patterns, but the live preview needs a browser with WebGPU (current Chrome, Edge or Safari).`
+              : `The live preview could not start: ${errorText(e)}`,
+        });
       }
     })();
     return () => {
@@ -713,6 +732,13 @@ export default function Playground() {
         </nav>
       </header>
 
+      {engineError && (
+        <div className="pg-failure" role="alert">
+          <span>{engineError}</span>
+          <ReportProblem code="engine-load" message={engineError} />
+        </div>
+      )}
+
       {notice && (
         <div className="pg-notice" role="status">
           {notice}
@@ -737,7 +763,10 @@ export default function Playground() {
           data-dock={dockActive ? (docked ? "docked" : "on") : "off"}
         >
           {gpuError ? (
-            <p className="pg-nogpu">{gpuError}</p>
+            <p className="pg-nogpu">
+              {gpuError.text}{" "}
+              <ReportProblem code={gpuError.code} message={gpuError.error} />
+            </p>
           ) : (
             <div className="pg-dock" ref={dockRef}>
               <div className="pg-dock-side pg-dock-left" inert={!docked}>

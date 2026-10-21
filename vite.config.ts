@@ -2,7 +2,7 @@ import { reactRouter } from "@react-router/dev/vite";
 import { existsSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { defineConfig, searchForWorkspaceRoot, type Plugin } from "vite";
-import { siteOrigin } from "./scripts/build-context";
+import { buildId, siteOrigin } from "./scripts/build-context";
 
 // Developing the playground against a local gate checkout: `PATCH_WEB_DIR`
 // names its packages/patch-web (with the wasm built), and these aliases take
@@ -109,10 +109,12 @@ export default defineConfig({
     alias: patchWebAlias,
     dedupe: ["react", "react-dom", "@xyflow/react"],
   },
-  // Where this build is served: production, or a Preview's own subdomain.
-  // See scripts/build-context.ts.
+  // Where this build is served: production, or a Preview's own subdomain;
+  // and which build it is, for failure counts and reports. See
+  // scripts/build-context.ts.
   define: {
     __SITE_ORIGIN__: JSON.stringify(siteOrigin(process.env)),
+    __BUILD_ID__: JSON.stringify(buildId(process.env)),
   },
   server: {
     host: "0.0.0.0",

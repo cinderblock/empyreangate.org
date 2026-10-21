@@ -1,6 +1,8 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import type { MetaFunction } from "react-router";
+import ReportProblem from "../components/ReportProblem";
 import { PLAYGROUND, SITE } from "../content/site";
+import { countFailure, errorText } from "../failures";
 
 export const meta: MetaFunction = () => {
   const title = `Pattern playground · ${SITE.name}`;
@@ -54,6 +56,35 @@ export default function PlaygroundRoute() {
       <Suspense fallback={<Loading />}>
         <Playground />
       </Suspense>
+    </main>
+  );
+}
+
+/**
+ * The playground's code didn't load (most likely its chunk 404s right after
+ * a deploy) or threw while starting. Without this the visitor would get
+ * React Router's bare error page.
+ */
+export function ErrorBoundary({ error }: { error: unknown }) {
+  const message = errorText(error);
+  useEffect(() => countFailure("playground-load"), []);
+  return (
+    <main id="main" className="pg-loading">
+      <p className="kicker">Pattern playground</p>
+      <p className="lede">The playground didn't load.</p>
+      <p className="pg-load-error">
+        Reloading the page usually fixes it. If it doesn't, please tell us.
+      </p>
+      <p className="pg-load-actions">
+        <button
+          type="button"
+          className="button"
+          onClick={() => location.reload()}
+        >
+          Reload
+        </button>{" "}
+        <ReportProblem code="playground-load" message={message} />
+      </p>
     </main>
   );
 }

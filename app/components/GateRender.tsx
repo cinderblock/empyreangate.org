@@ -1,8 +1,10 @@
 import { useEffect, useId, useRef, useState } from "react";
+import { countFailure, type FailureCode } from "../failures";
 import { GateEngine } from "../gate/engine";
 import { INNER_OVER_OUTER, PIXELS, SPOKES, fromScreen } from "../gate/geometry";
 import { SCENES, type Scene } from "../gate/presets";
 import { FRAGMENT_SHADER, VERTEX_SHADER } from "../gate/shaders";
+import ReportProblem from "./ReportProblem";
 
 /**
  * The live render of the array: a WebGL2 point cloud, one dot per drawn LED,
@@ -24,24 +26,33 @@ interface GlProgram {
   loc: Record<string, WebGLUniformLocation | null>;
 }
 
+/** Why there is no render: the failure to count, and its details. */
+interface GlFailure {
+  failure: FailureCode;
+  message: string;
+}
+
+/** A compiled shader, or the compiler's complaint. */
 function compile(
   gl: WebGL2RenderingContext,
   type: number,
   src: string,
-): WebGLShader | null {
+): WebGLShader | string {
+  const which = type === gl.VERTEX_SHADER ? "vertex" : "fragment";
   const sh = gl.createShader(type);
-  if (!sh) return null;
+  if (!sh) return `The ${which} shader couldn't be created.`;
   gl.shaderSource(sh, src);
   gl.compileShader(sh);
   if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
-    console.error("gate shader failed to compile", gl.getShaderInfoLog(sh));
+    const log = gl.getShaderInfoLog(sh) ?? "";
+    console.error(`gate ${which} shader failed to compile`, log);
     gl.deleteShader(sh);
-    return null;
+    return `The ${which} shader didn't compile: ${log}`;
   }
   return sh;
 }
 
-function buildProgram(canvas: HTMLCanvasElement): GlProgram | null {
+function buildProgram(canvas: HTMLCanvasElement): GlProgram | GlFailure {
   const gl = canvas.getContext("webgl2", {
     alpha: true,
     premultipliedAlpha: true,
@@ -50,17 +61,27 @@ function buildProgram(canvas: HTMLCanvasElement): GlProgram | null {
     stencil: false,
     powerPreference: "low-power",
   });
-  if (!gl) return null;
+  if (!gl) {
+    return {
+      failure: "render-webgl",
+      message: "This browser gave the page no WebGL2 context.",
+    };
+  }
   const program = gl.createProgram();
   const vs = compile(gl, gl.VERTEX_SHADER, VERTEX_SHADER);
   const fs = compile(gl, gl.FRAGMENT_SHADER, FRAGMENT_SHADER);
-  if (!program || !vs || !fs) return null;
+  if (typeof vs === "string") return { failure: "render-shader", message: vs };
+  if (typeof fs === "string") return { failure: "render-shader", message: fs };
   gl.attachShader(program, vs);
   gl.attachShader(program, fs);
   gl.linkProgram(program);
   if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    console.error("gate program failed to link", gl.getProgramInfoLog(program));
-    return null;
+    const log = gl.getProgramInfoLog(program) ?? "";
+    console.error("gate program failed to link", log);
+    return {
+      failure: "render-shader",
+      message: `The shaders didn't link: ${log}`,
+    };
   }
   gl.useProgram(program);
   // Points only, no attributes: the vertex shader derives everything from
@@ -168,6 +189,8 @@ export default function GateRender({ className }: { className?: string }) {
   });
   const updateRef = useRef<() => void>(() => {});
   const [state, setState] = useState<RenderState>("idle");
+  // Why the render fell back, for "Send a report".
+  const [failure, setFailure] = useState<GlFailure | null>(null);
   const [scene, setScene] = useState<Scene>(SCENES[0]);
   const [reducedMotion, setReducedMotion] = useState(false);
   const labelId = useId();
@@ -182,7 +205,9 @@ export default function GateRender({ className }: { className?: string }) {
     if (!canvas) return;
 
     const prog = buildProgram(canvas);
-    if (!prog) {
+    if ("failure" in prog) {
+      countFailure(prog.failure);
+      setFailure(prog);
       setState("fallback");
       return;
     }
@@ -405,6 +430,15 @@ export default function GateRender({ className }: { className?: string }) {
         {state === "fallback" && (
           <p className="gate-note">
             Your browser can't run the live render; this is the array at rest.
+            {failure && (
+              <>
+                {" "}
+                <ReportProblem
+                  code={failure.failure}
+                  message={failure.message}
+                />
+              </>
+            )}
           </p>
         )}
         {reducedMotion && paused && (

@@ -122,6 +122,20 @@
   cursor: pointer;
 }
 
+/* A failure the playground can't work around (the patch engine didn't
+   load), with "Send a report" beside it. Not dismissable. */
+.pg-failure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 0.5rem 1rem;
+  background: #2a1020;
+  color: var(--pink);
+  font-size: 0.9rem;
+}
+
 .pg-body {
   flex: 1;
   min-height: 0;
@@ -747,100 +761,6 @@
 .pg-editor .pg-submit {
   border-color: var(--teal);
   color: var(--teal);
-}
-
-.pg-dialog {
-  margin: auto;
-  width: min(32rem, calc(100vw - 2rem));
-  padding: 1.25rem 1.5rem;
-  border: 1px solid var(--line);
-  border-radius: 0.9rem;
-  background: var(--bg-raised);
-  color: var(--ink);
-}
-
-.pg-dialog::backdrop {
-  background: rgba(3, 3, 10, 0.7);
-}
-
-.pg-dialog h2 {
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 500;
-  margin-bottom: 0.75rem;
-}
-
-.pg-dialog form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.pg-dialog label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  font-size: 0.85rem;
-  color: var(--ink-muted);
-}
-
-.pg-dialog input:not([type="checkbox"]),
-.pg-dialog textarea {
-  font: inherit;
-  color: var(--ink);
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 0.45rem;
-  padding: 0.45rem 0.6rem;
-}
-
-.pg-dialog .pg-dialog-terms {
-  flex-direction: row;
-  align-items: flex-start;
-  gap: 0.5rem;
-  line-height: 1.45;
-}
-
-.pg-dialog .pg-dialog-terms input {
-  margin-top: 0.2rem;
-}
-
-.pg-dialog-problem {
-  color: var(--pink);
-  font-size: 0.9rem;
-}
-
-.pg-turnstile {
-  min-height: 65px;
-}
-
-.pg-dialog-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.6rem;
-}
-
-.pg-dialog-actions button {
-  font: inherit;
-  font-size: 0.9rem;
-  color: var(--ink);
-  background: transparent;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 0.45rem 1.1rem;
-  cursor: pointer;
-}
-
-.pg-dialog-actions .pg-primary {
-  background: var(--accent);
-  color: var(--accent-ink);
-  border-color: var(--accent);
-  font-weight: 600;
-}
-
-.pg-dialog-actions button:disabled {
-  opacity: 0.45;
-  cursor: default;
 }
 
 /* Stand-in pickers in the editor's side panel: Video in's source, and the

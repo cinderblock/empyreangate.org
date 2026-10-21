@@ -29,6 +29,16 @@ export function buildKind(env: Record<string, string | undefined>): BuildKind {
 }
 
 /**
+ * Which build this is, as failure counts and reports name it: the commit
+ * Workers Builds is building (`WORKERS_CI_COMMIT_SHA`), shortened, or
+ * `local` for any build it didn't make.
+ */
+export function buildId(env: Record<string, string | undefined>): string {
+  const sha = env.WORKERS_CI_COMMIT_SHA?.toLowerCase();
+  return sha && /^[0-9a-f]{7,40}$/.test(sha) ? sha.slice(0, 12) : "local";
+}
+
+/**
  * `_headers` for a build. Every build gets the same few safety headers: no
  * MIME sniffing, no full URLs in the Referer sent to other sites, and no
  * framing by other sites (`frame-ancestors`, with X-Frame-Options for old

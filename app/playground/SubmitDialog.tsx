@@ -8,50 +8,7 @@
 import type { PatchDoc } from "@empyrean-gate/patch-web/editor";
 import { useEffect, useRef, useState } from "react";
 import { PLAYGROUND } from "../content/site";
-
-interface Turnstile {
-  render(
-    el: HTMLElement,
-    options: {
-      sitekey: string;
-      theme?: "dark" | "light" | "auto";
-      callback: (token: string) => void;
-      "expired-callback"?: () => void;
-      "error-callback"?: () => void;
-    },
-  ): string;
-  reset(id: string): void;
-  remove(id: string): void;
-}
-
-declare global {
-  interface Window {
-    turnstile?: Turnstile;
-  }
-}
-
-let turnstileLoading: Promise<Turnstile> | null = null;
-
-/** Load Turnstile's script once, only when someone opens the dialog. */
-function loadTurnstile(): Promise<Turnstile> {
-  turnstileLoading ??= new Promise((resolve, reject) => {
-    if (window.turnstile) return resolve(window.turnstile);
-    const script = document.createElement("script");
-    script.src =
-      "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
-    script.async = true;
-    script.onload = () =>
-      window.turnstile
-        ? resolve(window.turnstile)
-        : reject(new Error("Turnstile did not load"));
-    script.onerror = () => {
-      turnstileLoading = null;
-      reject(new Error("The spam check could not load."));
-    };
-    document.head.append(script);
-  });
-  return turnstileLoading;
-}
+import { useTurnstile } from "../turnstile";
 
 type Phase =
   | { kind: "form" }
@@ -73,42 +30,15 @@ export default function SubmitDialog({
   onClose: () => void;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const widgetRef = useRef<HTMLDivElement>(null);
-  const widgetId = useRef<string | null>(null);
   const [name, setName] = useState(initial.name ?? "");
   const [contact, setContact] = useState("");
   const [message, setMessage] = useState(initial.note ?? "");
   const [agreed, setAgreed] = useState(false);
-  const [token, setToken] = useState<string | null>(null);
+  const turnstile = useTurnstile();
   const [phase, setPhase] = useState<Phase>({ kind: "form" });
 
   useEffect(() => {
     dialogRef.current?.showModal();
-  }, []);
-
-  useEffect(() => {
-    let live = true;
-    void loadTurnstile()
-      .then((ts) => {
-        if (!live || !widgetRef.current) return;
-        widgetId.current = ts.render(widgetRef.current, {
-          sitekey: PLAYGROUND.turnstileSiteKey,
-          theme: "dark",
-          callback: setToken,
-          "expired-callback": () => setToken(null),
-          "error-callback": () => setToken(null),
-        });
-      })
-      .catch((e: unknown) =>
-        setPhase({
-          kind: "error",
-          message: e instanceof Error ? e.message : String(e),
-        }),
-      );
-    return () => {
-      live = false;
-      if (widgetId.current) window.turnstile?.remove(widgetId.current);
-    };
   }, []);
 
   const send = async () => {
@@ -123,7 +53,7 @@ export default function SubmitDialog({
           contact,
           message,
           agreed,
-          turnstile: token,
+          turnstile: turnstile.token,
         }),
       });
       const out = (await res.json().catch(() => ({}))) as { error?: string };
@@ -135,8 +65,7 @@ export default function SubmitDialog({
         kind: "error",
         message: e instanceof Error ? e.message : String(e),
       });
-      setToken(null);
-      if (widgetId.current) window.turnstile?.reset(widgetId.current);
+      turnstile.reset();
     }
   };
 
@@ -144,13 +73,13 @@ export default function SubmitDialog({
     !problem &&
     name.trim() !== "" &&
     agreed &&
-    token !== null &&
+    turnstile.token !== null &&
     phase.kind !== "sending";
 
   return (
     <dialog
       ref={dialogRef}
-      className="pg-dialog"
+      className="dialog"
       aria-labelledby="pg-submit-h"
       onClose={onClose}
     >
@@ -161,7 +90,7 @@ export default function SubmitDialog({
             Thank you. The crew will look at it, and it may light up the gate.
             Keep your own copy with Save to disk.
           </p>
-          <div className="pg-dialog-actions">
+          <div className="dialog-actions">
             <button type="button" onClick={() => dialogRef.current?.close()}>
               Close
             </button>
@@ -176,7 +105,7 @@ export default function SubmitDialog({
           }}
         >
           {problem && (
-            <p className="pg-dialog-problem">
+            <p className="dialog-problem">
               This patch can't run yet, so it can't be submitted: {problem}
             </p>
           )}
@@ -209,7 +138,7 @@ export default function SubmitDialog({
               placeholder="What it's for, which song, how to play it…"
             />
           </label>
-          <label className="pg-dialog-terms">
+          <label className="dialog-terms">
             <input
               type="checkbox"
               checked={agreed}
@@ -217,17 +146,21 @@ export default function SubmitDialog({
             />
             <span>{PLAYGROUND.terms}</span>
           </label>
-          <div ref={widgetRef} className="pg-turnstile" />
-          {phase.kind === "error" && (
-            <p className="pg-dialog-problem" role="alert">
-              {phase.message}
+          <div ref={turnstile.widgetRef} className="turnstile" />
+          {(phase.kind === "error" || turnstile.error) && (
+            <p className="dialog-problem" role="alert">
+              {phase.kind === "error" ? phase.message : turnstile.error}
             </p>
           )}
-          <div className="pg-dialog-actions">
+          <div className="dialog-actions">
             <button type="button" onClick={() => dialogRef.current?.close()}>
               Cancel
             </button>
-            <button type="submit" className="pg-primary" disabled={!canSend}>
+            <button
+              type="submit"
+              className="dialog-primary"
+              disabled={!canSend}
+            >
               {phase.kind === "sending" ? "Sending…" : "Submit"}
             </button>
           </div>

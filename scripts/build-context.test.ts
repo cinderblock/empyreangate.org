@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import {
+  buildId,
   buildKind,
   headersFile,
   previewLabel,
@@ -31,6 +32,22 @@ describe("buildKind", () => {
 
   test("refuses to guess when Workers Builds gives no branch", () => {
     expect(() => buildKind({ WORKERS_CI: "1" })).toThrow(/WORKERS_CI_BRANCH/);
+  });
+});
+
+describe("buildId", () => {
+  test("a Workers Builds build names its commit, shortened", () => {
+    expect(
+      buildId({
+        WORKERS_CI: "1",
+        WORKERS_CI_COMMIT_SHA: "F6F02BE0123456789abcdef0123456789abcdef0",
+      }),
+    ).toBe("f6f02be01234");
+  });
+
+  test("any other build is local", () => {
+    expect(buildId({})).toBe("local");
+    expect(buildId({ WORKERS_CI_COMMIT_SHA: "not a sha" })).toBe("local");
   });
 });
 
