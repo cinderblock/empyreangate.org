@@ -82,6 +82,53 @@ plans/                    Working notes; start with empyreangate-site.md
 wrangler.jsonc            Cloudflare Workers static-assets config
 ```
 
+## Code shared with the gate
+
+The playground runs the gate's own code; the home page's render is a port.
+Solid arrows are code shared as a dependency, so a change in the gate repo
+reaches this site with the next `bun.lock` bump; the dotted one is a port,
+kept in step by hand.
+
+```mermaid
+%%{init: {"flowchart": {"wrappingWidth": 400}}}%%
+flowchart TB
+  subgraph gate["TomSawyerLabs/empyrean-gate"]
+    core["<b>crates/empyrean-patch</b><br>the patch core (Rust): registry, validation,<br>evaluator, WGSL codegen + patch_lib.wgsl"]
+    engine["<b>src-tauri</b> engine<br>gate.wgsl + compiled patches<br>on wgpu, out to the LEDs"]
+    wasm["<b>crates/empyrean-patch-wasm</b><br>the core, built to wasm"]
+    pw["<b>packages/patch-web</b><br>editor, WebGPU runtime,<br>agent tools, CLI"]
+    ui["<b>src/</b> operator UI<br>Patch tab"]
+    core -- path dependency --> engine
+    core --> wasm --> pw
+  end
+  pw -- "Web dist workflow" --> dist[("<b>web-dist</b> branch")]
+  pw -- "workspace:*" --> ui
+  %% Layout only: keeps the web-dist arrow from running through the Patch tab.
+  ui ~~~ wasm
+  subgraph site["empyreangate.org (this repo)"]
+    port["<b>app/gate/</b><br>GLSL port of a<br>slice of gate.wgsl"]
+    home["<b>/</b> home page<br>GateRender, WebGL2"]
+    play["<b>/playground</b><br>editor + runtime<br>on WebGPU, WebMCP"]
+    docs["<b>scripts/agent-docs.ts</b><br>llms.txt, agents.md"]
+    worker["<b>worker/</b><br>Submit and the queue"]
+    port --> home
+    play -- Submit --> worker
+  end
+  dist -- "bun.lock pin<br>(Web dist bump)" --> play
+  dist --> docs
+  dist -- patch file checks --> worker
+  engine -. "ported by hand,<br>not shared" .-> port
+  worker -- "Submissions… drawer" --> ui
+```
+
+One Rust crate, `empyrean-patch`, holds every patch rule and writes every
+patch's WGSL. The gate app links it natively and runs that WGSL on wgpu; the
+playground gets the same crate as wasm inside `@empyrean-gate/patch-web` and
+runs the same WGSL on the browser's WebGPU, which is why a pattern looks the
+same in both. The gate's Patch tab and the playground share the editor too.
+Patches come back the other way as data, not code: Submit stores them, and
+the gate's Submissions… drawer reads them (see [The live gate](#the-live-gate)).
+
 ## The render
 
 The gate's engine evaluates every light as a pure function of its polar
