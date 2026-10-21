@@ -80,3 +80,21 @@ one by marking it `in progress — <thread/branch>` before working on it.
 - **To look at:** both change the graph right after the editor loads (one
   adds a node and reloads, the other deletes one) and then count `.pnode`;
   whether WebKit under load is slower than the default 5 s wait there.
+
+## Two playground tests fail every time on Firefox/WebKit at dev `ee557a2`
+
+- **What:** on dev `ee557a2` (web-dist `c7b55cc`, "the built-in patches are
+  laid out as Arrange leaves them"), 2026-10-21, both alone and in the full
+  suite:
+  - `tests/playground.spec.ts:451` ("a patch that cannot run says so"),
+    `[firefox]` and `[webkit]`: the click on
+    `.pnode` with text "Output" (line 457) retries until timeout with
+    "element is outside of the viewport".
+  - `tests/playground-navigation.spec.ts:76` ("a double-clicked Sub-patch
+    has a URL; Back comes out of it"), `[webkit]`: `toHaveURL` fails.
+    Chromium passes both.
+- **Why it matters:** not a flake like the entry above: these fail on
+  every run, so the three-browser suite is red on dev.
+- **To look at:** whether the new layout puts Output off-canvas at the
+  test's window size (scroll or fit-view before clicking), and the WebKit
+  double-click.
