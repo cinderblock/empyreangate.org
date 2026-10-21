@@ -165,7 +165,7 @@ privacy promise.
   `uncaught`/`privacy`/`local` showed in `bun run reports` with its script.
   The two `local` rows in the dataset are these checks.
 
-## Report a problem from the playground (2026-10-21, in progress)
+## Report a problem from the playground (2026-10-21, done)
 
 Cameron couldn't find a way to report from a working playground: "Send a
 report" only appears on failure screens. Asked, Cameron chose a "Report a
@@ -179,7 +179,7 @@ problem" link in the playground's top bar, always there.
   Worker refuses a `user-report` without one).
 - /privacy, README and tests follow.
 - [x] Code, tests, /privacy, README (Playwright 324 passed, 0 failed; port 4180 was another worktree's preview, so a temporary config on 4182: Firefox and WebKit refuse 4190 as a restricted port)
-- [ ] On `dev` and checked on the Preview
+- [x] On `dev` (851fcc6) and checked on the Preview: the link sits between "Using an AI agent?" and the source links; the dialog is titled "Report a problem", has no error row, masks the patch id (`/playground/p/…`), and keeps Send disabled until there is a note. Not sent (a real report needs a person at Turnstile).
 
 ## Things not to do
 
