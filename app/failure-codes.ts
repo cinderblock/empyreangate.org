@@ -18,12 +18,39 @@ export const FAILURE_CODES = {
   "webgpu-unavailable":
     "The playground's live preview needs WebGPU, and this browser has none.",
   "webgpu-start": "The playground's live preview didn't start.",
+  uncaught: "Something in the site's code failed unexpectedly.",
 } as const;
 
 export type FailureCode = keyof typeof FAILURE_CODES;
 
 export function isFailureCode(code: unknown): code is FailureCode {
   return typeof code === "string" && Object.hasOwn(FAILURE_CODES, code);
+}
+
+/** A count's `where`: one of the site's own scripts, by name. */
+export function isWhere(where: unknown): where is string {
+  return typeof where === "string" && /^[A-Za-z0-9_.-]{1,40}$/.test(where);
+}
+
+/**
+ * Which of the site's own scripts `url` is, by name without its hash: a
+ * built chunk `<origin>/assets/<name>-<8-char hash>.js` gives `<name>`
+ * (`Playground`, `react-dom`). Anything else (another origin, an
+ * extension, an inline script) is null: not ours to count.
+ */
+export function ownScript(url: string, origin: string): string | null {
+  if (!url.startsWith(`${origin}/assets/`)) return null;
+  const m = /^([\w.-]+?)-[\w-]{8}\.js$/.exec(
+    url.slice(origin.length + "/assets/".length).replace(/[?#].*$/, ""),
+  );
+  return m && isWhere(m[1]) ? m[1] : null;
+}
+
+/** The first script URL in a stack trace (V8's `at f (url:1:2)` or
+ * Firefox/Safari's `f@url:1:2`): where the error was thrown. Any scheme,
+ * so an extension's frame on top is found as what it is. */
+export function firstStackUrl(stack: string): string | null {
+  return /([a-z][a-z0-9+.-]*:\/\/[^\s()@]+?):\d+:\d+/i.exec(stack)?.[1] ?? null;
 }
 
 /** A build id as the pages send it: a commit (Workers Builds) or `local`. */

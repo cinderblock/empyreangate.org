@@ -16,7 +16,12 @@
  */
 
 import { parsePatchFile } from "@empyrean-gate/patch-web/files";
-import { FAILURE_CODES, isBuildId, isFailureCode } from "../app/failure-codes";
+import {
+  FAILURE_CODES,
+  isBuildId,
+  isFailureCode,
+  isWhere,
+} from "../app/failure-codes";
 import { sendPush, type PushSubscriptionJSON, type Vapid } from "./webpush";
 
 /** The subset of the Workers runtime this file uses. */
@@ -839,7 +844,8 @@ const FAILURE_BODY_BYTES = 512;
 
 /**
  * `POST /api/failure`: count one failure. The count keeps the failure's
- * code, the build, and which site answered (production or a Preview), and
+ * code, the build, which site answered (production or a Preview) and, for
+ * an unexpected error, which of the site's scripts threw it (`where`);
  * nothing about who sent it: the address only keys the rate limit and is
  * not stored. The privacy page promises exactly this; keep them in step.
  */
@@ -860,7 +866,7 @@ async function failure(
   if (text.length > FAILURE_BODY_BYTES) {
     return json(413, { error: "That's too long for a failure count." });
   }
-  let body: { code?: unknown; build?: unknown };
+  let body: { code?: unknown; build?: unknown; where?: unknown };
   try {
     body = JSON.parse(text) as typeof body;
   } catch {
@@ -875,6 +881,8 @@ async function failure(
       body.code,
       isBuildId(body.build) ? body.build : "unknown",
       url.hostname,
+      // A script's name or nothing: anything else is dropped, not stored.
+      isWhere(body.where) ? body.where : "",
     ],
     doubles: [1],
   });

@@ -44,9 +44,12 @@ export interface ReportRecord {
   site: string;
 }
 
-/** One row of the counts: a failure, on a build, on a site. */
+/** One row of the counts: a failure (for an unexpected one, in which of
+ * the site's scripts), on a build, on a site. */
 export interface CountRow {
   code: string;
+  /** The script an unexpected error came from; empty for the rest. */
+  script: string;
   build: string;
   site: string;
   count: number;
@@ -57,11 +60,11 @@ export interface CountRow {
  * Engine samples under load; `_sample_interval` weights each row back up. */
 export function countsQuery(days: number): string {
   const n = Math.max(1, Math.min(90, Math.floor(days)));
-  return `SELECT blob1 AS code, blob2 AS build, blob3 AS site,
+  return `SELECT blob1 AS code, blob4 AS script, blob2 AS build, blob3 AS site,
   SUM(_sample_interval) AS count, MAX(timestamp) AS last
 FROM ${DATASET}
 WHERE timestamp > NOW() - INTERVAL '${n}' DAY
-GROUP BY code, build, site
+GROUP BY code, script, build, site
 ORDER BY count DESC`;
 }
 
@@ -82,10 +85,11 @@ export function describeReport(r: ReportRecord): string {
 /** The counts as a table. */
 export function formatCounts(rows: CountRow[]): string {
   if (!rows.length) return "No failures counted.";
-  const header = ["count", "failure", "build", "site", "last"];
+  const header = ["count", "failure", "script", "build", "site", "last"];
   const body = rows.map((r) => [
     String(r.count),
     r.code,
+    r.script || "-",
     r.build,
     r.site,
     r.last.slice(0, 16),

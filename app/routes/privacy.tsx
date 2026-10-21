@@ -45,10 +45,12 @@ export default function Privacy() {
       <h2>When something breaks</h2>
       <p>
         If part of the site fails in your browser (the home page's live render,
-        the playground, or a page that never finishes loading), your browser
-        tells us which part failed and which version of the site it was. Nothing
-        else: not your address, your browser, or any ID. We count these to
-        notice when a new version breaks something.
+        the playground, a page that never finishes loading, or an error in the
+        site's own code), your browser tells us which part failed and which
+        version of the site it was. For an unexpected error, that part is the
+        name of the site's script it came from. Nothing else: not the error's
+        text, your address, your browser, or any ID. We count these to notice
+        when a new version breaks something.
       </p>
       <p>
         Where a failure shows a <strong>Send a report</strong> button, pressing

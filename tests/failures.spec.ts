@@ -208,6 +208,105 @@ test.describe("watchdog", () => {
   });
 });
 
+test.describe("unexpected errors", () => {
+  /** Serve one of the build's chunks with `extra` appended: code that runs
+   * as part of that script, as if the bug were in it. */
+  async function plant(page: Page, chunk: string, extra: string) {
+    await page.route(`**/assets/${chunk}-*.js`, async (route) => {
+      const res = await route.fetch();
+      await route.fulfill({
+        response: res,
+        body: `${await res.text()}\n${extra}`,
+      });
+    });
+  }
+
+  /** Runs `then` (source) once the page has hydrated, from the chunk. */
+  const afterHydration = (then: string) =>
+    `const __t = setInterval(() => {
+      if (!document.documentElement.hasAttribute("data-hydrated")) return;
+      clearInterval(__t);
+      setTimeout(() => { ${then} }, 0);
+    }, 20);`;
+
+  test.beforeEach(async ({ page }) => {
+    await recordCounts(page);
+    await page.route("**/api/live", (route) =>
+      route.fulfill({ json: { live: false } }),
+    );
+  });
+
+  test("an error thrown by the site's own script is counted, by script", async ({
+    page,
+  }) => {
+    await plant(page, "privacy", afterHydration(`throw new Error("planted");`));
+    await page.goto("/privacy");
+    await expect
+      .poll(() => counts(page))
+      .toContainEqual(
+        expect.objectContaining({ code: "uncaught", where: "privacy" }),
+      );
+    // Never the error's text.
+    expect(JSON.stringify(await counts(page))).not.toContain("planted");
+  });
+
+  test("so is an unhandled rejection", async ({ page }) => {
+    await plant(
+      page,
+      "privacy",
+      afterHydration(`Promise.reject(new Error("planted rejection"));`),
+    );
+    await page.goto("/privacy");
+    await expect
+      .poll(() => counts(page))
+      .toContainEqual(
+        expect.objectContaining({ code: "uncaught", where: "privacy" }),
+      );
+  });
+
+  test("errors from code that isn't the site's are not counted", async ({
+    page,
+  }) => {
+    await page.goto("/privacy");
+    await expect(page.locator("html")).toHaveAttribute("data-hydrated", "");
+    await page.evaluate(() => {
+      setTimeout(() => {
+        throw new Error("from elsewhere");
+      }, 0);
+      void Promise.reject(new Error("also from elsewhere"));
+    });
+    // Give both a moment to reach the handlers.
+    await page.waitForTimeout(300);
+    expect(await codesCounted(page)).toEqual([]);
+  });
+
+  test("a page that crashes while rendering says so, counts it, offers a report", async ({
+    page,
+  }) => {
+    await page.route("**/assets/privacy-*.js", (route) =>
+      route.fulfill({
+        contentType: "text/javascript",
+        body: `export const meta = () => [];
+export default function Privacy() { throw new Error("planted render error"); }`,
+      }),
+    );
+    await page.goto("/privacy");
+    await expect(
+      page.getByRole("heading", { name: "Something went wrong." }),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Reload" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Send a report" }),
+    ).toBeVisible();
+    await expect(page.locator("html")).toHaveAttribute("data-hydrated", "");
+    await expect
+      .poll(() => counts(page))
+      .toContainEqual(
+        expect.objectContaining({ code: "uncaught", where: "privacy" }),
+      );
+  });
+});
+
 test.describe("privacy page", () => {
   test("is linked from the home page's footer", async ({ page }) => {
     await page.route("**/api/live", (route) =>

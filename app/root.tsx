@@ -3,6 +3,14 @@ import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
 import "@fontsource-variable/cormorant/index.css";
 import "@fontsource-variable/inter/index.css";
 import "./styles/global.css";
+import ReportProblem from "./components/ReportProblem";
+import { SITE } from "./content/site";
+import {
+  countFailure,
+  errorScript,
+  errorText,
+  watchUncaught,
+} from "./failures";
 import { watchdogScript } from "./watchdog";
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -38,9 +46,44 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  // The page started: the watchdog stops waiting for it.
+  // The page started: the watchdog stops waiting for it, and errors nobody
+  // planned for are counted from here on.
   useEffect(() => {
     document.documentElement.setAttribute("data-hydrated", "");
+    return watchUncaught();
   }, []);
   return <Outlet />;
+}
+
+/**
+ * A page crashed while rendering (the playground has its own boundary).
+ * Without this React Router would show its bare error page.
+ */
+export function ErrorBoundary({ error }: { error: unknown }) {
+  const message = errorText(error);
+  useEffect(() => {
+    // It did start, so this isn't the watchdog's stuck page.
+    document.documentElement.setAttribute("data-hydrated", "");
+    countFailure("uncaught", errorScript(error) ?? undefined);
+  }, [error]);
+  return (
+    <main id="main" className="notfound">
+      <p className="kicker">{SITE.name}</p>
+      <h1>Something went wrong.</h1>
+      <p className="lede">
+        This page hit an error. Reloading usually fixes it; if it doesn't,
+        please tell us.
+      </p>
+      <p className="crash-actions">
+        <button
+          type="button"
+          className="button"
+          onClick={() => location.reload()}
+        >
+          Reload
+        </button>{" "}
+        <ReportProblem code="uncaught" message={message} />
+      </p>
+    </main>
+  );
 }

@@ -905,12 +905,14 @@ p {
   text-align: center;
 }
 
-/* The playground's code didn't load (routes/playground.tsx ErrorBoundary). */
+/* The playground's code didn't load (routes/playground.tsx ErrorBoundary),
+   or any page crashed (root.tsx ErrorBoundary). */
 .pg-load-error {
   color: var(--ink-muted);
 }
 
-.pg-load-actions {
+.pg-load-actions,
+.crash-actions {
   margin-top: 1rem;
   display: flex;
   flex-wrap: wrap;
@@ -919,7 +921,13 @@ p {
   gap: 0.75rem;
 }
 
-.pg-load-actions .button {
+/* The crash screen is laid out like the 404 page: left-aligned. */
+.crash-actions {
+  justify-content: flex-start;
+}
+
+.pg-load-actions .button,
+.crash-actions .button {
   border: none;
   font-family: inherit;
   font-size: inherit;

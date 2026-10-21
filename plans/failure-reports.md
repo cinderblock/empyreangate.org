@@ -127,21 +127,39 @@ on being disclosed.
    already happens (reports in R2 under `reports/`, counts in Analytics
    Engine, read with `bun run reports`). The webhook line stays dormant
    until a `NOTIFY_WEBHOOK` exists; no local collection endpoint is needed.
-2. Move to `telemetry-collector` (github.com/cinderblock/telemetry-collector)?
-   Researched 2026-10-21 at its `371a262`. Recommendation: not now. It adds
-   a browsable UI, grouping by stack, resolve/ignore and automatic capture
-   of _any_ uncaught error; but its error path always stores the user agent
-   and country (`native.ts:164-165`, `normalize.ts:262-268`), it has no
-   Turnstile and no alerting, and it may not be deployed yet (OpenSlate's
-   2026-10-14 notes: "no code is deployed there yet"). If we want it later,
-   the Worker can forward accepted reports to it server-side (signed, so
-   they're attested), keeping Turnstile, the caps and /privacy as they are;
-   /privacy would then have to say that reports also go there and that
-   country gets added. Waiting on Cameron.
-3. Gap, not yet raised as work: only the known failure points are counted.
-   An unexpected JS error anywhere else (`window.onerror`,
-   `unhandledrejection`) isn't. Could be one more code here, or the reason
-   to use telemetry-collector.
+2. ~~Move to `telemetry-collector`?~~ Cameron, 2026-10-21: no. (Researched
+   at its `371a262`: its error path always stores the user agent and
+   country, there's no Turnstile or alerting, and it may not be deployed.)
+3. ~~Count unexpected JS errors?~~ Cameron, 2026-10-21: yes. See
+   "Unexpected errors" below.
+
+## Unexpected errors (2026-10-21, done)
+
+Goal: count JavaScript errors nobody planned for, without giving up the
+privacy promise.
+
+- New code `uncaught`. A count may also carry `where`: the name of the
+  site's own script the error came from, without its hash (e.g.
+  `Playground`). That says which part of the site broke, nothing about the
+  visitor. The error message stays out of counts (it can quote what a
+  visitor typed); reports still carry it, by choice.
+- Only errors thrown by the site's own `/assets/` scripts count: the
+  throwing script's URL (`ErrorEvent.filename`, else the first URL in the
+  stack) must be ours. Extensions, Turnstile, the analytics beacon and
+  "Script error." from other origins are ignored.
+- `window` `error` and `unhandledrejection`, watched from App's mount
+  (`watchUncaught` in failures.ts). Once per (code, where) per page.
+- A root `ErrorBoundary` (root.tsx) for a page that crashes while
+  rendering: counts `uncaught`, shows Reload and "Send a report". The
+  playground keeps its own boundary.
+- Worker: optional `where` (validated, else dropped) → blob4.
+  `bun run reports` groups by it.
+- /privacy, README and tests follow.
+- Done: unit tests (`app/failure-codes.test.ts`, Worker, reports) and
+  Playwright (`tests/failures.spec.ts`: an error and a rejection planted in
+  the privacy chunk are counted as `where: privacy`; errors from
+  `page.evaluate` are not; a render crash shows the root boundary). Full
+  suite 2026-10-21: 321 passed, 0 failed.
 
 ## Things not to do
 

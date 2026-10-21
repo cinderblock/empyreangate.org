@@ -27,6 +27,7 @@ const report: ReportRecord = {
 describe("countsQuery", () => {
   test("reads the dataset over the asked days, kept within 1–90", () => {
     expect(countsQuery(7)).toContain(`FROM ${DATASET}`);
+    expect(countsQuery(7)).toContain("blob4 AS script");
     expect(countsQuery(7)).toContain("INTERVAL '7' DAY");
     expect(countsQuery(0)).toContain("INTERVAL '1' DAY");
     expect(countsQuery(1000)).toContain("INTERVAL '90' DAY");
@@ -49,13 +50,15 @@ describe("formatCounts", () => {
     const text = formatCounts([
       {
         code: "webgpu-unavailable",
+        script: "",
         build: "f6f02be01234",
         site: "empyreangate.org",
         count: 12,
         last: "2026-10-21 18:00:00",
       },
       {
-        code: "page-stuck",
+        code: "uncaught",
+        script: "Playground",
         build: "f6f02be01234",
         site: "empyreangate.org",
         count: 1,
@@ -63,9 +66,14 @@ describe("formatCounts", () => {
       },
     ]);
     const lines = text.split("\n");
-    expect(lines[0]).toMatch(/^count\s+failure\s+build\s+site\s+last$/);
-    expect(lines[1]).toMatch(/^12\s+webgpu-unavailable\s+f6f02be01234/);
-    expect(text).toContain("page-stuck: The page didn't finish loading.");
+    expect(lines[0]).toMatch(
+      /^count\s+failure\s+script\s+build\s+site\s+last$/,
+    );
+    expect(lines[1]).toMatch(/^12\s+webgpu-unavailable\s+-\s+f6f02be01234/);
+    expect(lines[2]).toMatch(/^1\s+uncaught\s+Playground\s+f6f02be01234/);
+    expect(text).toContain(
+      "uncaught: Something in the site's code failed unexpectedly.",
+    );
   });
 
   test("says so when there is nothing", () => {

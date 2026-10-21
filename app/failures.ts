@@ -2,10 +2,12 @@
  * Hearing about failures in visitors' browsers, two ways:
  *
  * - `countFailure`: an anonymous count, sent without asking. It carries the
- *   failure's code and the build, nothing about the visitor (no IDs,
- *   cookies, user agent). The Worker adds it to Workers Analytics Engine
- *   (`POST /api/failure`). The page that never hydrates is counted by the
- *   watchdog in root.tsx instead, since this module never runs there.
+ *   failure's code and the build, and for an unexpected error which of the
+ *   site's own scripts threw it; nothing about the visitor (no IDs,
+ *   cookies, user agent, error text). The Worker adds it to Workers
+ *   Analytics Engine (`POST /api/failure`). The page that never hydrates is
+ *   counted by the watchdog in root.tsx instead, since this module never
+ *   runs there. `watchUncaught` counts the errors nobody planned for.
  * - `gatherReport` + `sendReport`: a report the visitor chooses to send from
  *   the failure's own screen (components/ReportProblem.tsx), after seeing
  *   every field of it (`POST /api/report`).
@@ -13,17 +15,28 @@
  * The privacy page (routes/privacy.tsx) describes both; keep it in step.
  */
 
-import { FAILURE_CODES, type FailureCode } from "./failure-codes";
+import {
+  FAILURE_CODES,
+  firstStackUrl,
+  ownScript,
+  type FailureCode,
+} from "./failure-codes";
 
 export { FAILURE_CODES, type FailureCode };
 
-const counted = new Set<FailureCode>();
+const counted = new Set<string>();
 
-/** Count one failure, once per page load. Never throws, never waits. */
-export function countFailure(code: FailureCode): void {
-  if (import.meta.env.DEV || counted.has(code)) return;
-  counted.add(code);
-  const body = JSON.stringify({ code, build: __BUILD_ID__ });
+/** Count one failure, once per page load (per script, for `where`). Never
+ * throws, never waits. */
+export function countFailure(code: FailureCode, where?: string): void {
+  const key = where ? `${code}:${where}` : code;
+  if (import.meta.env.DEV || counted.has(key)) return;
+  counted.add(key);
+  const body = JSON.stringify(
+    where
+      ? { code, build: __BUILD_ID__, where }
+      : { code, build: __BUILD_ID__ },
+  );
   try {
     if (navigator.sendBeacon?.("/api/failure", body)) return;
   } catch {
@@ -32,6 +45,40 @@ export function countFailure(code: FailureCode): void {
   void fetch("/api/failure", { method: "POST", body, keepalive: true }).catch(
     () => {},
   );
+}
+
+/** Which of the site's own scripts threw `error`, or null if none did: its
+ * stack's top frame decides, so an extension or a third-party script
+ * calling into ours isn't counted as ours. */
+export function errorScript(error: unknown, filename?: string): string | null {
+  const url =
+    filename ||
+    (error instanceof Error && error.stack ? firstStackUrl(error.stack) : null);
+  return url ? ownScript(url, location.origin) : null;
+}
+
+/**
+ * Count errors nobody planned for: anything thrown by the site's own
+ * scripts that reaches `window` (`error`, `unhandledrejection`). Errors from
+ * elsewhere (extensions, Turnstile, the analytics beacon, the browser's own
+ * "ResizeObserver loop" notices) aren't ours and aren't counted. Returns the
+ * cleanup.
+ */
+export function watchUncaught(): () => void {
+  const onError = (e: ErrorEvent) => {
+    const where = errorScript(e.error, e.filename);
+    if (where) countFailure("uncaught", where);
+  };
+  const onRejection = (e: PromiseRejectionEvent) => {
+    const where = errorScript(e.reason);
+    if (where) countFailure("uncaught", where);
+  };
+  addEventListener("error", onError);
+  addEventListener("unhandledrejection", onRejection);
+  return () => {
+    removeEventListener("error", onError);
+    removeEventListener("unhandledrejection", onRejection);
+  };
 }
 
 /** What a report carries, every field shown to the visitor before sending. */

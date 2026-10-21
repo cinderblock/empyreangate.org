@@ -378,25 +378,40 @@ WebGPU or its preview won't start, or when the patch engine or the
 playground's own code doesn't load, a beacon goes to `POST /api/failure` with
 the failure's code (`app/failure-codes.ts`) and the build (the commit Workers
 Builds built, or `local`). Nothing about the visitor: no IDs, cookies, user agent or
-country. The Worker writes the code, the build and its own hostname to
+country. The Worker writes the code, the build, its own hostname and any
+`where` to
 Workers Analytics Engine (binding `FAILURE_COUNTS`, dataset
 `empyreangate_failures`). Two failures happen before React runs, so an inline
 script in every page's head counts them (`app/watchdog.ts`): one of the
 build's own scripts failing to load (`asset-load`, the manifest 404 after a
 deploy) and a page not hydrated 20 seconds after `load` (`page-stuck`).
 
-**Reports, when asked.** Each of those screens (all but the two before React)
-has a **Send a report** button. Its dialog shows every field first: the
+**Unexpected errors.** Anything the site's own scripts throw that reaches
+`window` (`error`, `unhandledrejection`) is counted as `uncaught`, with
+`where`: the name of the chunk that threw it, without its hash (e.g.
+`Playground`). Only errors whose top stack frame is one of the build's
+`/assets/` scripts count; extensions, Turnstile, the analytics beacon and the
+browser's own notices don't. The error's text never goes into a count (it
+can quote what a visitor typed). A page that crashes while rendering gets
+the root `ErrorBoundary` (`app/root.tsx`): Reload and **Send a report**, and
+the same count.
+
+**Reports, when asked.** Each of those screens (all but the two before
+React, and stray errors with no screen of their own) has a **Send a
+report** button. Its dialog shows every field first: the
 error, the page (a local patch's id masked), the build, the user-agent
 string, the WebGPU adapter and WebGL renderer, the window size; then an
 optional note and contact, Turnstile, and Send. `POST /api/report` checks it
 like a submission (rate limit, size, Turnstile, 5 per visitor and 200 in all
 a day) and stores it under `reports/<date>/<visitor>/` in the submissions
-bucket.
+bucket. If `NOTIFY_WEBHOOK` is set, the Worker also posts one line about it
+there (what broke, where, the build, the note shortened; not the contact or
+the browser).
 
 Both share Submit's rate-limit binding under their own keys.
 `bun run reports` downloads new reports into `reports/` (gitignored), prints
-them, then prints the last week's counts by failure, build and site; it
+them, then prints the last week's counts by failure, script, build and
+site; it
 needs a token that can read the bucket and account analytics, like
 `bun run submissions`.
 

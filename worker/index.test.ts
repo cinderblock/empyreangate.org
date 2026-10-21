@@ -748,13 +748,45 @@ describe("failure counts", () => {
     expect(points).toEqual([
       {
         indexes: ["webgpu-unavailable"],
-        blobs: ["webgpu-unavailable", "f6f02be01234", "dev.empyreangate.org"],
+        blobs: [
+          "webgpu-unavailable",
+          "f6f02be01234",
+          "dev.empyreangate.org",
+          "",
+        ],
         doubles: [1],
       },
     ]);
     // Nothing about the visitor reaches the dataset.
     expect(JSON.stringify(points)).not.toMatch(/203\.0\.113|Mozilla/);
     expect(keys).toEqual(["failure:203.0.113.7"]);
+  });
+
+  test("an unexpected error names the script that threw it, nothing more", async () => {
+    const { env: e, points } = countEnv();
+    await worker.fetch(
+      beacon(
+        JSON.stringify({
+          code: "uncaught",
+          build: "local",
+          where: "Playground",
+        }),
+      ),
+      e,
+      ctx,
+    );
+    await worker.fetch(
+      beacon(
+        JSON.stringify({
+          code: "uncaught",
+          build: "local",
+          where: "TypeError: cannot read 'my secret patch'",
+        }),
+      ),
+      e,
+      ctx,
+    );
+    expect(points.map((p) => p.blobs?.[3])).toEqual(["Playground", ""]);
   });
 
   test("an odd build is counted as unknown", async () => {
