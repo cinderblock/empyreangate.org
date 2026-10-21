@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { bringIntoView } from "./canvas";
 
 /**
  * The pattern playground. Headless browsers may or may not have WebGPU; the
@@ -454,7 +455,9 @@ test.describe("Pattern playground", () => {
     });
     const before = await page.locator(".pnode").count();
     // Without an Output node there is nothing to render.
-    await page.locator(".pnode", { hasText: "Output" }).click();
+    const output = page.locator(".pnode", { hasText: "Output" });
+    await bringIntoView(page, output);
+    await output.click();
     await page.keyboard.press("Delete");
     await expect(page.locator(".pnode")).toHaveCount(before - 1);
     await expect(page.locator(".patch-status.error")).toContainText("Output");

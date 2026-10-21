@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { bringIntoView } from "./canvas";
 
 /**
  * Every place in the playground has a URL (app/playground/urls.ts): a patch
@@ -83,6 +84,7 @@ test.describe("Playground navigation", () => {
     await page.locator(".palette-sub", { hasText: "Scope" }).click();
     const sub = page.locator(".pnode", { hasText: "Sub-patch" });
     await expect(sub).toBeVisible();
+    await bringIntoView(page, sub);
 
     // Near its corner: the first click opens the side panel, which may cover
     // the middle of a node near the canvas edge.
