@@ -287,6 +287,59 @@ test.describe("Pattern playground", () => {
       .toBeGreaterThan(0);
   });
 
+  // A browser can run the preview on WebGPU and still have no WebGL2 (a
+  // blocklisted GPU, a privacy setting), and the thumbnails used to stay
+  // blank there (reported 2026-10-20). They draw on a 2D canvas instead.
+  test("the thumbnails draw without WebGL2", async ({ page }) => {
+    await page.addInitScript(() => {
+      type GetContext = (
+        this: HTMLCanvasElement,
+        id: string,
+        options?: unknown,
+      ) => RenderingContext | null;
+      const real = HTMLCanvasElement.prototype.getContext as GetContext;
+      HTMLCanvasElement.prototype.getContext = function (id, options) {
+        return id === "webgl2" ? null : real.call(this, id, options);
+      } as GetContext as typeof HTMLCanvasElement.prototype.getContext;
+    });
+    const notes: string[] = [];
+    page.on("console", (m) => notes.push(m.text()));
+    await page.goto("/playground");
+    await expect(page.locator(".patch-name")).toHaveValue("Rainbow Sparkle", {
+      timeout: 20_000,
+    });
+    const stage = page.locator(".pg-stage");
+    await expect(stage).toHaveAttribute(
+      "data-preview",
+      /^(running|unavailable)$/,
+      { timeout: 20_000 },
+    );
+    test.skip(
+      (await stage.getAttribute("data-preview")) !== "running",
+      "no WebGPU in this browser: no thumbnails",
+    );
+    const mostLit = () =>
+      page.locator(".pnode .mini-ring").evaluateAll((rings) =>
+        Math.max(
+          0,
+          ...rings.map((c) => {
+            const canvas = c as HTMLCanvasElement;
+            const data = canvas
+              .getContext("2d")!
+              .getImageData(0, 0, canvas.width, canvas.height).data;
+            // Colour, not alpha: a dark LED paints opaque black.
+            let lit = 0;
+            for (let i = 0; i < data.length; i += 4) {
+              if (Math.max(data[i], data[i + 1], data[i + 2]) > 32) lit++;
+            }
+            return lit;
+          }),
+        ),
+      );
+    await expect.poll(mostLit, { timeout: 15_000 }).toBeGreaterThan(0);
+    expect(notes.some((n) => n.includes("no WebGL2"))).toBe(true);
+  });
+
   test("simulated visitors tap when nobody does: Effect taps counts them", async ({
     page,
   }) => {
