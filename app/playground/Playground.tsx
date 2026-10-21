@@ -18,6 +18,7 @@ import {
   type GlobalControl,
   type PatchDoc,
   type PatchEditorHandle,
+  type PatchStatus,
 } from "@empyrean-gate/patch-web/editor";
 import {
   attachGroove,
@@ -31,6 +32,7 @@ import {
   WebGpuUnavailable,
   type DjLinkSim,
   type PatchCore,
+  type RuntimeStats,
   type RuntimeStatus,
 } from "@empyrean-gate/patch-web/runtime";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -82,6 +84,7 @@ export default function Playground() {
   const [ready, setReady] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(store.active);
   const [status, setStatus] = useState<RuntimeStatus | null>(null);
+  const [stats, setStats] = useState<RuntimeStats | null>(null);
   const [doc, setDoc] = useState<PatchDoc | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   // The real gate, when it is up: a chip in the bar to go play it.
@@ -270,8 +273,10 @@ export default function Playground() {
     runtime.attach(canvas);
     runtime.start();
     const off = runtime.onStatus(setStatus);
+    const offStats = runtime.onStats(setStats);
     return () => {
       off();
+      offStats();
       runtime.detach(canvas);
       runtime.stop();
     };
@@ -328,6 +333,35 @@ export default function Playground() {
         stage.style.removeProperty(v);
     };
   }, [dockActive]);
+
+  // The editor's status: the runtime's verdict, beating with each frame-rate
+  // report (about once a second, only while frames render), or why nothing
+  // renders here at all, with what the check of the patch found.
+  const editorStatus = useMemo((): PatchStatus | null => {
+    if (gpuError)
+      return {
+        active: false,
+        error: status?.error ?? null,
+        unavailable: {
+          label:
+            gpuError.code === "webgpu-unavailable" ? "no WebGPU" : "no preview",
+          reason: gpuError.text,
+        },
+        details: [
+          [
+            "This patch",
+            status?.error ? "can't run as it is" : "checks out: it would run",
+          ],
+        ],
+      };
+    if (!runtime || !status) return status;
+    return {
+      ...status,
+      beat: stats?.frames ?? 0,
+      details: runtime.statusDetails(stats),
+      note: "Rendered in this browser. The gate runs the same patch on its own GPU.",
+    };
+  }, [gpuError, runtime, status, stats]);
 
   // Without a runtime, still tell the visitor whether the patch would run.
   useEffect(() => {
@@ -950,7 +984,7 @@ export default function Playground() {
             activeId={activeId}
             initialLocation={initialLocation}
             onNavigate={onNavigate}
-            status={status}
+            status={editorStatus}
             canEdit
             minis={runtime}
             showActivate={false}

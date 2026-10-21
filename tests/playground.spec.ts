@@ -69,11 +69,29 @@ test.describe("Pattern playground", () => {
     );
     if ((await stage.getAttribute("data-preview")) === "running") {
       await expect(page.locator("canvas.pg-gate")).toBeVisible();
-      await expect(page.locator(".patch-status.ok")).toHaveText(
-        "patch rendering",
-      );
+      // The status beats with the frames, and says so on hover.
+      const live = page.locator(".patch-toolbar .patch-live");
+      await expect(live).toHaveAttribute("data-liveness", "live");
+      const beat = Number(await live.getAttribute("data-beat"));
+      await expect
+        .poll(async () => Number(await live.getAttribute("data-beat")), {
+          timeout: 5_000,
+        })
+        .toBeGreaterThan(beat);
+      await live.hover();
+      const details = page.getByRole("dialog", { name: "Patch status" });
+      await expect(details).toContainText("All OK");
+      await expect(details).toContainText(/Frame rate\s*\d+ fps/);
     } else {
       await expect(page.locator(".pg-nogpu")).toContainText("WebGPU");
+      // The editor's status says it too, and why, on a tap.
+      const status = page.locator(".patch-toolbar .patch-live");
+      await expect(status).toHaveAttribute("data-liveness", "unavailable");
+      await expect(status).toHaveText("no WebGPU");
+      await status.click();
+      await expect(
+        page.getByRole("dialog", { name: "Patch status" }),
+      ).toContainText("checks out: it would run");
     }
   });
 

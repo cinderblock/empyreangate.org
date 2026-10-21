@@ -156,6 +156,14 @@ to disk / Open file use the gate's own patch JSON, which its Patch tab imports.
 Without WebGPU the editor still works and validates; only the preview is
 missing.
 
+**The editor's status** (right of the toolbar) is live: its dot beats with
+each frame-rate report from the runtime (about once a second, only while
+frames render) and turns amber, "stalled", when the beats stop for three
+seconds. Hover it, or tap it on a phone, for "All OK" and the numbers: frame
+rate, CPU per frame, frames, the GPU adapter and the array. Without WebGPU it
+reads "no WebGPU", and its details give the reason and whether the open patch
+would run.
+
 **Every place in the playground has a URL** (`app/playground/urls.ts`):
 `/playground/p/<id>` is a patch in this browser's library,
 `/playground/builtin/<name>` a built-in (read-only; an edit offers a copy),
@@ -338,7 +346,8 @@ turns that off; both it and the one-time "works best on a desktop" toast are
 remembered in localStorage. Narrower than 640 px the editor itself drops its
 toolbar: the open patch is a ☰ chip on the canvas (tap it for a menu sheet with
 rename, status, undo, open, new, save, submit and delete), ↶ and ⇆ beside it
-undo and arrange, ＋ opens the palette as a sheet, a ⚠ chip appears only while the patch cannot run, and a node's
+undo and arrange, ＋ opens the palette as a sheet, a status chip beats while
+the patch renders (⚠ while it cannot run; tap it for the details), and a node's
 settings open on double-tap or from a pill. A tapped wire (or a clicked one on
 a desk) carries a ✕ at its middle that deletes it, since a phone has no Delete
 key.
