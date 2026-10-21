@@ -181,7 +181,7 @@ problem" link in the playground's top bar, always there.
 - [x] Code, tests, /privacy, README (Playwright 324 passed, 0 failed; port 4180 was another worktree's preview, so a temporary config on 4182: Firefox and WebKit refuse 4190 as a restricted port)
 - [x] On `dev` (851fcc6) and checked on the Preview: the link sits between "Using an AI agent?" and the source links; the dialog is titled "Report a problem", has no error row, masks the patch id (`/playground/p/…`), and keeps Send disabled until there is a note. Not sent (a real report needs a person at Turnstile).
 
-## A report can carry the pattern (2026-10-21, in progress)
+## A report can carry the pattern (2026-10-21, done)
 
 Asked whether a report should be able to include the pattern if the
 visitor opts in; Cameron: "absolutely".
@@ -210,7 +210,9 @@ visitor opts in; Cameron: "absolutely".
       (`home.spec.ts:74`, `playground.spec.ts:470`, neither about reports) on a
       run that took 8.9 min against the usual 4.6 under load; both passed 6 of 6
       rerun alone.
-- [ ] On `dev` and checked on the Preview
+- [x] On `dev` (37e685a) and checked on the Preview: the dialog's "Include my
+      pattern" box starts unticked and reads, for the open patch, “<name>”: 9
+      nodes, 1 KB. Not sent (a real report needs a person at Turnstile).
 
 ## Things not to do
 
