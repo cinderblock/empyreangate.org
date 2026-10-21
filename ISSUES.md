@@ -83,6 +83,8 @@ one by marking it `in progress — <thread/branch>` before working on it.
 
 ## Two playground tests fail every time on Firefox/WebKit at dev `ee557a2`
 
+In progress — arrange-tests (the arranged presets open cropped: the editor gets a lower minZoom, and the tests fit the view before clicking).
+
 - **What:** on dev `ee557a2` (web-dist `c7b55cc`, "the built-in patches are
   laid out as Arrange leaves them"), 2026-10-21, both alone and in the full
   suite:
