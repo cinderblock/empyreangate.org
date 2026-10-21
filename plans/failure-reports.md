@@ -72,7 +72,7 @@ on being disclosed.
 8. `/privacy` page, home footer link, linked from the report dialog.
 9. `scripts/reports.ts` (`bun run reports`).
 10. Playwright `tests/failures.spec.ts`; README; typecheck, fmt, tests.
-11. **(current)** Fast-forward `dev`, push, check the Preview in Chrome.
+11. Fast-forward `dev`, push, check the Preview in Chrome. Done.
 
 ## Findings / gotchas
 
@@ -95,8 +95,29 @@ on being disclosed.
 - [x] Plan
 - [x] Steps 1–10 (Worker in c0d76ce on branch `failure-reports`; the rest
       committed after it)
-- [ ] Step 11: land on `dev`, check the Preview (Workers Builds creates the
-      dataset on first write; confirm with `bun run reports`)
+- [x] Step 11: on `dev` (4f6a0fc, then the empty retry 423ffe9). On the
+      Preview (2026-10-21): /privacy renders; `POST /api/failure` 204 for a
+      known code, 400 for an unknown one; `POST /api/report` 403 with a
+      fake Turnstile token (so the route and secret are there); the
+      watchdog is in the head and the page sets `data-hydrated`. One test
+      count (`page-stuck`, build `local`, dev.empyreangate.org) showed up
+      in `bun run reports` about a minute later.
+- [ ] A real report through the dialog with a real Turnstile pass: needs a
+      person (agents don't complete CAPTCHAs). Covered by Playwright with a
+      stand-in Turnstile.
+
+## Findings from landing
+
+- The first Workers Build of 4f6a0fc (60cd86e8) built, then every asset
+  upload batch got `401 Unauthorized` from `/workers/assets/upload`
+  (`wrangler preview`), before bindings came into it. An empty commit
+  (423ffe9) rebuilt the same tree and deployed. Read the log with the ops
+  env's `CF_BUILDS_TOKEN`:
+  `GET /accounts/<id>/builds/builds/<build uuid>/logs`.
+- The full Playwright suite: 306 passed, 3 failed. The same 3 fail on
+  untouched dev `ee557a2`, so they were already failing; logged in
+  ISSUES.md (4f6a0fc).
+- The Analytics Engine SQL API took about a minute to show the first write.
 
 ## Open questions for the user
 
