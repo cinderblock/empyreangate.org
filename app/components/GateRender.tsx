@@ -156,7 +156,17 @@ function GateStill() {
       focusable="false"
     >
       <defs>
-        <radialGradient id="gate-still-glow">
+        {/* In the ring's own coordinates, centred on it. The default
+            (objectBoundingBox) sizes the gradient to each line, which can't
+            paint a perfectly vertical or horizontal spoke: its box has no
+            width or no height. */}
+        <radialGradient
+          id="gate-still-glow"
+          gradientUnits="userSpaceOnUse"
+          cx="0"
+          cy="0"
+          r="96"
+        >
           <stop offset="30%" stopColor="#ffb5d7" stopOpacity="0.9" />
           <stop offset="70%" stopColor="#32d5d2" stopOpacity="0.55" />
           <stop offset="100%" stopColor="#413f92" stopOpacity="0.15" />
