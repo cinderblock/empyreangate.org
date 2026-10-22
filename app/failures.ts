@@ -100,7 +100,8 @@ export interface Report {
   browser: string;
   /** What WebGPU offers: the adapter's vendor, architecture and device. */
   webgpu: string;
-  /** What WebGL reports as its renderer. */
+  /** What WebGL reports as its renderer, and the browser's reason when it
+   * refuses WebGL2. */
   webgl: string;
   /** Window size and pixel ratio. */
   screen: string;
@@ -145,20 +146,40 @@ async function webgpuInfo(): Promise<string> {
   }
 }
 
+/** A context of `kind` on a fresh canvas, or why the browser refused one:
+ * the statusMessage of its webglcontextcreationerror, which in Firefox
+ * names the blocklist entry or driver failure (what about:support shows). */
+function tryContext(
+  kind: "webgl2" | "webgl",
+): WebGLRenderingContext | { refused: string } {
+  const canvas = document.createElement("canvas");
+  let reason = "";
+  // Fired synchronously, inside getContext.
+  canvas.addEventListener("webglcontextcreationerror", (e) => {
+    reason = (e as WebGLContextEvent).statusMessage;
+  });
+  const gl = canvas.getContext(kind) as WebGLRenderingContext | null;
+  return gl ?? { refused: reason.trim() || "no reason given" };
+}
+
 function webglInfo(): string {
   try {
-    const canvas = document.createElement("canvas");
-    const gl = (canvas.getContext("webgl2") ??
-      canvas.getContext("webgl")) as WebGLRenderingContext | null;
-    if (!gl) return "Not available";
+    const gl2 = tryContext("webgl2");
+    const gl = "refused" in gl2 ? tryContext("webgl") : gl2;
+    const why2 = "refused" in gl2 ? `WebGL2 refused: ${gl2.refused}` : "";
+    if ("refused" in gl) return `${why2}. WebGL1 refused: ${gl.refused}`;
     const version = gl instanceof WebGL2RenderingContext ? "WebGL2" : "WebGL1";
-    // Firefox has deprecated the extension and answers RENDERER in full.
+    // Firefox has deprecated the extension and answers RENDERER, but with a
+    // generic name ("…, or similar") unless webgl.sanitize-unmasked-renderer
+    // is off.
     const ext = gl.getExtension("WEBGL_debug_renderer_info");
     const renderer = String(
       gl.getParameter(ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER),
     );
     gl.getExtension("WEBGL_lose_context")?.loseContext();
-    return `${version}: ${renderer}`;
+    return why2
+      ? `${version}: ${renderer}. ${why2}`
+      : `${version}: ${renderer}`;
   } catch (e) {
     return `Couldn't ask: ${errorText(e)}`;
   }

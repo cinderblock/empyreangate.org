@@ -475,7 +475,8 @@ the same count.
 React, and stray errors with no screen of their own) has a **Send a
 report** button. Its dialog shows every field first: the
 error, the page (a local patch's id masked), the build, the user-agent
-string, the WebGPU adapter and WebGL renderer, the window size; then an
+string, the WebGPU adapter and WebGL renderer (and the browser's reason when it
+refuses WebGL2), the window size; then an
 optional note and contact, Turnstile, and Send. `POST /api/report` checks it
 like a submission (rate limit, size, Turnstile, 5 per visitor and 200 in all
 a day) and stores it under `reports/<date>/<visitor>/` in the submissions

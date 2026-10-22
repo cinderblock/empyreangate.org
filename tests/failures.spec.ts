@@ -67,7 +67,15 @@ test.describe("home page without WebGL2", () => {
         kind: string,
         ...rest: unknown[]
       ) {
-        if (kind === "webgl2") return null;
+        if (kind === "webgl2") {
+          // As Firefox refuses it, with its reason.
+          this.dispatchEvent(
+            new WebGLContextEvent("webglcontextcreationerror", {
+              statusMessage: "FEATURE_FAILURE_TEST_BLOCKLIST",
+            }),
+          );
+          return null;
+        }
         return (get as (...a: unknown[]) => RenderingContext | null).call(
           this,
           kind,
@@ -105,6 +113,9 @@ test.describe("home page without WebGL2", () => {
     const fields = dialog.locator(".report-fields");
     await expect(fields).toContainText("What went wrong");
     await expect(fields).toContainText("no WebGL2 context");
+    await expect(fields).toContainText(
+      "WebGL2 refused: FEATURE_FAILURE_TEST_BLOCKLIST",
+    );
     const ua = await page.evaluate(() => navigator.userAgent);
     await expect(fields).toContainText(ua);
     expect(sent).toHaveLength(0);
@@ -120,6 +131,9 @@ test.describe("home page without WebGL2", () => {
       code: "render-webgl",
       page: "/",
       browser: ua,
+      webgl: expect.stringContaining(
+        "WebGL2 refused: FEATURE_FAILURE_TEST_BLOCKLIST",
+      ),
       note: "Old laptop.",
       contact: "",
       turnstile: "test-token",
