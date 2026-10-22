@@ -311,8 +311,11 @@ stream or texture, a meter for a number, a strip of fires for an event, on
 the node and bigger in its panel (a wire dragged to empty canvas offers it).
 It changes nothing the gate shows and costs nothing there; its Show on Live
 setting puts it in a strip on the gate's Live tab during a show. Its
-Resolution is Mini (16 samples along each spoke, as every thumbnail) or
-Every LED (the array's own 378), rendered here in a pass of its own.
+Resolution is Mini (worked out at 16 points along each spoke, as every
+thumbnail, so it can miss a thin ring or make up a pattern) or Full detail.
+Full detail is worked out at every LED (the array's own 378) in a pass of
+its own, then averaged down to what the view can show, here and on the
+gate.
 
 **Frame by frame**: a bar under the graph pauses the pattern and steps it a
 frame at a time (K plays and pauses, `,` and `.` step, Shift for ten), so
