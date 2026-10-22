@@ -30,7 +30,12 @@ why, make the minis work where they can, and say clearly where they can't.
   "is it worth adding fallback support?", then went ahead).
 - Reports should carry the browser's reason for refusing WebGL2 (Cameron:
   "sounds useful").
-- A script for the friend to run on that machine (Cameron's idea).
+- A script for the friend to run on that machine (Cameron's idea). It ends
+  with a short status: each problem, and a copyable command that fixes it.
+  The friend is a Linux pro but new to GPUs, so it stays terse.
+- The script recommends open-source packages only (the friend is an
+  open-source enthusiast). AMD's firmware is closed: say when it's missing,
+  never suggest installing it. Never suggest Chrome.
 
 ## Plan / steps
 
@@ -64,6 +69,9 @@ why, make the minis work where they can, and say clearly where they can't.
 - [x] 2D-canvas minis: gate `27a1040`, web-dist `4c5bf46`; site `6260068`
 - [x] Reports carry the WebGL2 refusal reason: site `84171ec`
 - [x] Linux GPU check script and README section
+- [x] The script's summary with fixes, tried in WSL against faked machines
+      (a bound AMD card with no Vulkan driver and a snap Firefox; a card with no
+      driver and no firmware)
 - [ ] The friend's script output or report
 - [ ] Open question 1
 - [ ] Open question 2

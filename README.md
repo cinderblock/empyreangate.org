@@ -520,7 +520,11 @@ read-only, no sudo. It writes `~/empyrean-gpu-check.txt` with the GPU and its
 kernel driver, the Mesa and Vulkan packages, `glxinfo`/`eglinfo`/`vulkaninfo`
 summaries, how Firefox is installed (deb, snap or flatpak, and the snaps it
 takes its graphics libraries from), the graphics prefs its profiles have
-changed, and any Chrome:
+changed, and any Chrome. It ends with a summary: each problem found, with
+the command that fixes it. It only ever suggests open-source packages
+(Ubuntu's own, and Mozilla's Firefox deb in place of the snap); AMD's
+closed firmware, which `amdgpu` can't start without, it names but doesn't
+recommend.
 
 ```sh
 curl -fsSLO https://raw.githubusercontent.com/cinderblock/empyreangate.org/dev/scripts/linux-gpu-check.sh
