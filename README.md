@@ -75,6 +75,7 @@ scripts/postbuild.ts      404.html + sitemap.xml from the prerendered routes
 scripts/agent-docs.ts     /llms.txt and /playground/agents.md + JSON, from the patch core
 scripts/og.ts             Screenshots the hero into public/og.png
 scripts/reports.ts        Pulls failure reports and counts (bun run reports)
+scripts/linux-gpu-check.sh  For a visitor on Linux: their GPU, drivers, Firefox, Chrome
 worker/index.ts           The Worker: /api/* (Submit, queue, notifications, live,
                           failures, reports); assets serve the rest
 tests/                    Playwright: content, render states, responsiveness, playground
@@ -509,6 +510,19 @@ playground), prints them, then prints the last week's counts by failure, script,
 site; it
 needs a token that can read the bucket and account analytics, like
 `bun run submissions`.
+
+When a report comes from Linux and the page can't say why WebGL2 or WebGPU is
+missing, `scripts/linux-gpu-check.sh` is for the visitor to run: plain bash,
+read-only, no sudo. It writes `~/empyrean-gpu-check.txt` with the GPU and its
+kernel driver, the Mesa and Vulkan packages, `glxinfo`/`eglinfo`/`vulkaninfo`
+summaries, how Firefox is installed (deb, snap or flatpak, and the snaps it
+takes its graphics libraries from), the graphics prefs its profiles have
+changed, and any Chrome:
+
+```sh
+curl -fsSLO https://raw.githubusercontent.com/cinderblock/empyreangate.org/dev/scripts/linux-gpu-check.sh
+bash linux-gpu-check.sh
+```
 
 ## Photos
 
