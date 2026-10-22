@@ -267,8 +267,9 @@ WebGL2, or on a plain 2D canvas in a browser without it. The palette's **Code**
 group adds a node you write instead of wire: declare its inputs and outputs
 (scalars, events, grey or colour fields or LEDs, or a texture) in the side
 panel and type a WGSL body that sets the outputs by name; a field output puts
-it in the shader, a texture output runs it once per texture cell with its own
-last frame to read (cellular automata, feedback), and scalar/event ports only
+it in the shader, a texture output runs it once per texture cell (64, 128 or
+256 a side, set on the port) with its own last frame to read (cellular
+automata, feedback), and scalar/event ports only
 run it on the CPU through the engine's bounded
 WGSL-subset interpreter. The body is a real code editor (CodeMirror):
 highlighting, completion and hover docs for the node's ports and the shader
