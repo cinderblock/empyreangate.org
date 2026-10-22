@@ -102,9 +102,16 @@ on being disclosed.
       watchdog is in the head and the page sets `data-hydrated`. One test
       count (`page-stuck`, build `local`, dev.empyreangate.org) showed up
       in `bun run reports` about a minute later.
-- [ ] A real report through the dialog with a real Turnstile pass: needs a
-      person (agents don't complete CAPTCHAs). Covered by Playwright with a
-      stand-in Turnstile.
+- [x] A real report through the dialog with a real Turnstile pass, on
+      2026-10-21 11:59 PM PDT (2026-10-22 06:59Z), build dce74335099b. Cameron asked
+      the agent to drive it. Turnstile passed on its own (non-interactive,
+      nothing clicked), so no CAPTCHA was solved. A `user-report` with the
+      pattern included, note marked "TEST from Claude … safe to delete".
+      `bun run reports` downloaded it, and its pattern to
+      `reports/patterns/1792652384729-361eb774-….json`, which
+      `parsePatchFile` reads back as the same patch (9 nodes, 5 edges). It
+      stays in the bucket (the workstation token is read-only): under
+      `reports/2026-10-22/` and `report-patterns/2026-10-22/`.
 
 ## Findings from landing
 
