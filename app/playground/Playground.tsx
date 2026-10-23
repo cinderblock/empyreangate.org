@@ -37,6 +37,7 @@ import {
 } from "@empyrean-gate/patch-web/runtime";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
+import BrowserCheck from "../components/BrowserCheck";
 import { PlayLive, useLive } from "../components/LiveLink";
 import ReportProblem from "../components/ReportProblem";
 import { PLAYGROUND, SITE } from "../content/site";
@@ -67,6 +68,16 @@ const STARTER = "Rainbow Sparkle";
 const PENS = ["glow", "ripple", "sparkle", "comet", "ring", "beam", "ember"];
 
 type Tool = { mode: "tap"; effect: string } | { mode: "draw"; pen: string };
+
+/** What the playground can't do without its live preview, in a sentence:
+ * the reduced-mode banner, and the browser check's report. */
+function reducedSummary(code: FailureCode): string {
+  return `${
+    code === "webgpu-unavailable"
+      ? "This browser has no WebGPU, so there's no live preview, and no previews on nodes."
+      : "The live preview couldn't start, so there are no previews on nodes either."
+  } Building, saving and submitting patterns still work.`;
+}
 
 export default function Playground() {
   const store = useMemo(() => new LocalPatchStore(), []);
@@ -213,7 +224,7 @@ export default function Playground() {
           error: errorText(e),
           text:
             code === "webgpu-unavailable"
-              ? `${errorText(e)} The editor still works: you can build, save and submit patterns, but the live preview needs a browser with WebGPU (current Chrome, Edge or Safari).`
+              ? `${errorText(e)} The editor still works: you can build, save and submit patterns, but the live preview needs WebGPU. The What's missing? button at the top says how to get it here.`
               : `The live preview could not start: ${errorText(e)}`,
         });
       }
@@ -771,6 +782,18 @@ export default function Playground() {
         <div className="pg-failure" role="alert">
           <span>{engineError}</span>
           <ReportProblem code="engine-load" message={engineError} patch={doc} />
+        </div>
+      )}
+
+      {gpuError && (
+        <div className="pg-reduced" role="status">
+          <span>
+            <strong>Reduced mode.</strong> {reducedSummary(gpuError.code)}
+          </span>
+          <BrowserCheck
+            summary={reducedSummary(gpuError.code)}
+            preview={gpuError.error}
+          />
         </div>
       )}
 

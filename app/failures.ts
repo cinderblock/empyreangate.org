@@ -105,6 +105,9 @@ export interface Report {
   webgl: string;
   /** Window size and pixel ratio. */
   screen: string;
+  /** The browser check's results (components/BrowserCheck.tsx), one line
+   * per test; empty on any other report. */
+  selftest: string;
 }
 
 /** The fields of a report, labelled, in the order the dialog shows them. */
@@ -116,6 +119,7 @@ export const REPORT_FIELDS: { key: keyof Report; label: string }[] = [
   { key: "webgpu", label: "WebGPU" },
   { key: "webgl", label: "WebGL" },
   { key: "screen", label: "Screen" },
+  { key: "selftest", label: "Self-test" },
 ];
 
 /** The subset of WebGPU this file uses; the DOM lib has no WebGPU types. */
@@ -149,16 +153,17 @@ async function webgpuInfo(): Promise<string> {
 /** A context of `kind` on a fresh canvas, or why the browser refused one:
  * the statusMessage of its webglcontextcreationerror, which in Firefox
  * names the blocklist entry or driver failure (what about:support shows). */
-function tryContext(
+export function tryContext(
   kind: "webgl2" | "webgl",
+  canvas = document.createElement("canvas"),
+  options?: WebGLContextAttributes,
 ): WebGLRenderingContext | { refused: string } {
-  const canvas = document.createElement("canvas");
   let reason = "";
   // Fired synchronously, inside getContext.
   canvas.addEventListener("webglcontextcreationerror", (e) => {
     reason = (e as WebGLContextEvent).statusMessage;
   });
-  const gl = canvas.getContext(kind) as WebGLRenderingContext | null;
+  const gl = canvas.getContext(kind, options) as WebGLRenderingContext | null;
   return gl ?? { refused: reason.trim() || "no reason given" };
 }
 
@@ -189,6 +194,7 @@ function webglInfo(): string {
 export async function gatherReport(
   code: ReportCode,
   message: string,
+  selftest = "",
 ): Promise<Report> {
   return {
     code,
@@ -201,6 +207,7 @@ export async function gatherReport(
     webgpu: await webgpuInfo(),
     webgl: webglInfo(),
     screen: `${innerWidth}×${innerHeight} at ${devicePixelRatio}×`,
+    selftest,
   };
 }
 

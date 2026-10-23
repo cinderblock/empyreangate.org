@@ -67,6 +67,13 @@ export default function Privacy() {
         error, just what you tell us went wrong. It isn't counted.
       </p>
       <p>
+        When the playground runs in reduced mode (your browser can't run its
+        live preview), <strong>What's missing?</strong> tests what your
+        browser's graphics can do, there in the page. Nothing leaves your
+        browser unless you choose <strong>Send the results</strong>, which opens
+        the same report dialog with the test's results added.
+      </p>
+      <p>
         A report from the playground can also carry your pattern, so the crew
         can run it, but only if you tick <strong>Include my pattern</strong>.
         The box starts unticked and says what the pattern holds, images

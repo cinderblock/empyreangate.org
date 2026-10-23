@@ -901,6 +901,8 @@ export const REPORT_LIMITS = {
   // didn't write it and can't shorten it.
   message: 2000,
   field: 500,
+  // The browser check's results: a line per test, renderer names and all.
+  selftest: 2000,
   // What the visitor typed is refused if too long, as the form caps it.
   note: 2000,
   contact: 200,
@@ -923,6 +925,8 @@ export interface ReportBody {
   webgpu: string;
   webgl: string;
   screen: string;
+  /** The browser check's results, on a `browser-check` report. */
+  selftest?: string;
   note: string;
   contact: string;
   turnstile: string;
@@ -1070,6 +1074,9 @@ async function report(
     webgpu: gathered(body.webgpu),
     webgl: gathered(body.webgl),
     screen: gathered(body.screen),
+    ...(typeof body.selftest === "string" && body.selftest
+      ? { selftest: gathered(body.selftest, REPORT_LIMITS.selftest) }
+      : {}),
     note,
     contact,
     site: url.hostname,

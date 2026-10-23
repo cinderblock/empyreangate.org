@@ -28,13 +28,16 @@ export function isFailureCode(code: unknown): code is FailureCode {
 }
 
 /**
- * What a report can be about: any failure, or `user-report`, something a
- * visitor noticed themselves (the playground's "Report a problem"). That one
- * is never counted: nothing failed on its own.
+ * What a report can be about: any failure, `user-report`, something a
+ * visitor noticed themselves (the playground's "Report a problem"), or
+ * `browser-check`, the results of the playground's test of what the
+ * browser lacks ("What's missing?"). Those two are never counted: nothing
+ * failed on its own.
  */
 export const REPORT_CODES = {
   ...FAILURE_CODES,
   "user-report": "A visitor noticed something wrong.",
+  "browser-check": "A visitor sent the results of the browser check.",
 } as const;
 
 export type ReportCode = keyof typeof REPORT_CODES;

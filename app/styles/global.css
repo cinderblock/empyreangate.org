@@ -1076,5 +1076,94 @@ p {
 .report-fields dd {
   margin: 0;
   overflow-wrap: anywhere;
+  white-space: pre-line;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* "What's missing?" (components/BrowserCheck.tsx): what the browser lacks,
+   and each part's test, works / limited / missing. */
+.check-dialog {
+  width: min(38rem, calc(100vw - 2rem));
+}
+
+.check-dialog[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.check-dialog .dialog-actions {
+  flex-wrap: wrap;
+}
+
+.check-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.check-list li {
+  display: grid;
+  grid-template-columns: 5rem 1fr;
+  gap: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.45rem;
+  background: var(--bg);
+}
+
+.check-state {
+  align-self: start;
+  justify-self: start;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+}
+
+.check-list [data-state="works"] .check-state {
+  color: var(--teal);
+}
+
+.check-list [data-state="limited"] .check-state {
+  color: var(--gold);
+}
+
+.check-list [data-state="missing"] .check-state {
+  color: var(--pink);
+}
+
+.check-use {
+  color: var(--ink-muted);
+}
+
+.check-detail {
+  margin-top: 0.25rem;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+}
+
+.check-advice {
+  margin-top: 0.3rem;
+  color: var(--ink);
+}
+
+.check-linux pre {
+  margin-top: 0.4rem;
+  padding: 0.6rem 0.75rem;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 0.45rem;
+  background: var(--bg);
+  font-size: 0.78rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  user-select: all;
 }

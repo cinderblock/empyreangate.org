@@ -56,6 +56,19 @@ describe("describeReport", () => {
     expect(text.split("\n")[1]).toBe("  Mozilla/5.0 (Test)");
     expect(text).toContain("Pattern: reports/patterns/1761069852000-0f3c.json");
   });
+
+  test("a browser check: a line per test", () => {
+    const text = describeReport({
+      ...report,
+      code: "browser-check",
+      selftest:
+        "WebGPU: missing. No navigator.gpu (0 ms)\nWebGL2: works. (3 ms)",
+    });
+    expect(text).toContain(
+      "  Test: WebGPU: missing. No navigator.gpu (0 ms)\n  Test: WebGL2: works. (3 ms)",
+    );
+    expect(describeReport(report)).not.toContain("Test:");
+  });
 });
 
 describe("formatCounts", () => {

@@ -50,6 +50,7 @@ app/
   routes/404.tsx          Not found
   failures.ts             Failure counts and "Send a report" (see below)
   failure-codes.ts        The failures we hear about; shared with the Worker
+  browser-check.ts        The playground's test of what a browser can do
   watchdog.ts             Counts a page that never starts
   turnstile.ts            The Turnstile widget, for Submit and reports
   playground/             The pattern playground: page, IndexedDB store, Submit,
@@ -62,6 +63,7 @@ app/
     photo-manifest.ts       generated: sizes of the web renditions
   components/GateRender.tsx  The live render: WebGL2 canvas, scene chips, pause
   components/ReportProblem.tsx  "Send a report": the button and its dialog
+  components/BrowserCheck.tsx   "What's missing?": the reduced-mode dialog
   gate/
     geometry.ts             64 spokes x 378 px, inner/outer radius
     shaders.ts              GLSL port of a slice of the gate's WGSL layer shader
@@ -494,6 +496,24 @@ row, and the note ("What went wrong?") first and required; the Worker
 refuses a `user-report` without one. It is a report code only
 (`REPORT_CODES`), never a count: `/api/failure` still takes just the failure
 codes.
+
+**Reduced mode.** When the playground has no live preview (no WebGPU, or
+it didn't start), a banner under the top bar says **Reduced mode**: no live
+preview and no previews on nodes, while building, saving and submitting
+still work. Its **What's missing?** opens a dialog that tests the browser
+in the page (`app/browser-check.ts`): a WebGPU compute shader read back and
+a frame on a WebGPU canvas, a WebGL2 triangle read back (WebGL1 too when
+WebGL2 is refused, with the browser's reason), a 2D canvas read back, and a
+small WebAssembly module. Each part is Works, Limited (a software renderer
+or fallback adapter, pixels altered on the way back) or Missing, with what
+it does on the site and, for a missing WebGPU, how to turn it on in the
+browser the user agent names. On a Linux desktop it also gives the
+commands for `scripts/linux-gpu-check.sh`, pinned to the build's commit.
+**Copy** puts the results on the clipboard; **Send the results** opens the
+report dialog with code `browser-check` (a report code, never counted) and
+the results in a `selftest` field, one line per test, cut at 2,000
+characters. A missing WebGL2 alone isn't reduced mode: the node previews
+draw on a 2D canvas instead.
 
 **A report can carry the pattern.** Every report sent from inside the
 playground (the top bar's and its failure screens') offers **Include my

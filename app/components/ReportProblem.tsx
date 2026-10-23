@@ -11,6 +11,9 @@
  * Given `patch` (the playground's), the dialog offers to include it,
  * unticked, saying what it holds.
  *
+ * The browser check (BrowserCheck.tsx) opens the dialog itself
+ * (`ReportDialog`), with its results as `selftest`.
+ *
  * The button is phrasing content, so it can sit inside a failure message's
  * paragraph; the dialog goes to the end of the body.
  */
@@ -73,14 +76,17 @@ type Phase =
   | { kind: "sent" }
   | { kind: "error"; message: string };
 
-function ReportDialog({
+export function ReportDialog({
   code,
   message,
+  selftest = "",
   patch,
   onClose,
 }: {
   code: ReportCode;
   message: string;
+  /** The browser check's results, as a report carries them. */
+  selftest?: string;
   patch: PatchDoc | null;
   onClose: () => void;
 }) {
@@ -99,13 +105,13 @@ function ReportDialog({
 
   useEffect(() => {
     let live = true;
-    void gatherReport(code, message).then((r) => {
+    void gatherReport(code, message, selftest).then((r) => {
       if (live) setReport(r);
     });
     return () => {
       live = false;
     };
-  }, [code, message]);
+  }, [code, message, selftest]);
 
   const send = async () => {
     if (!report || !turnstile.token || (own && !note.trim())) return;
@@ -177,7 +183,9 @@ function ReportDialog({
           <p className="report-intro">
             {own
               ? "This sends the crew your note and what's below, so we can work out what's wrong."
-              : "This sends the crew what's below, so we can work out what broke."}{" "}
+              : code === "browser-check"
+                ? "This sends the crew what's below, so we can work out what this browser needs."
+                : "This sends the crew what's below, so we can work out what broke."}{" "}
             Nothing else is sent, and nothing is sent until you press Send. See{" "}
             <Link to="/privacy">privacy</Link>.
           </p>

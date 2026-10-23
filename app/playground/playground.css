@@ -136,6 +136,29 @@
   cursor: pointer;
 }
 
+/* Reduced mode: no live preview here (no WebGPU, or it didn't start), so
+   no node previews either. "What's missing?" explains and tests. */
+.pg-reduced {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding: 0.5rem 1rem;
+  background: #2a2110;
+  color: var(--gold);
+  font-size: 0.9rem;
+}
+
+.pg-reduced .report-button {
+  color: var(--gold);
+  border-color: color-mix(in srgb, var(--gold) 45%, transparent);
+}
+
+.pg-reduced .report-button:hover {
+  border-color: var(--gold);
+}
+
 /* A failure the playground can't work around (the patch engine didn't
    load), with "Send a report" beside it. Not dismissable. */
 .pg-failure {

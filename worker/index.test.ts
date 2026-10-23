@@ -911,6 +911,41 @@ describe("reports", () => {
     });
   });
 
+  test("a browser check: its results kept, a line each, within their own limit", async () => {
+    await withTurnstile(true, async () => {
+      const { env: e, puts } = env();
+      const selftest =
+        "WebGPU: missing. No navigator.gpu (0 ms)\nWebGL2: works.";
+      const res = await worker.fetch(
+        postReport({
+          ...goodReport,
+          code: "browser-check",
+          note: "",
+          selftest,
+        }),
+        e,
+        ctx,
+      );
+      expect(res.status).toBe(200);
+      expect(JSON.parse(puts[0].value)).toMatchObject({
+        code: "browser-check",
+        summary: "A visitor sent the results of the browser check.",
+        selftest,
+      });
+      await worker.fetch(
+        postReport({ ...goodReport, selftest: "x".repeat(5000) }),
+        e,
+        ctx,
+      );
+      expect(JSON.parse(puts[1].value).selftest).toHaveLength(
+        REPORT_LIMITS.selftest,
+      );
+      // Any other report has none.
+      await worker.fetch(postReport(goodReport), e, ctx);
+      expect(JSON.parse(puts[2].value).selftest).toBeUndefined();
+    });
+  });
+
   test("cuts what the page gathered, refuses what the visitor typed too long", async () => {
     await withTurnstile(true, async () => {
       const { env: e, puts } = env();

@@ -42,6 +42,8 @@ export interface ReportRecord {
   webgpu: string;
   webgl: string;
   screen: string;
+  /** The browser check's results, a line per test (`browser-check`). */
+  selftest?: string;
   note: string;
   contact: string;
   site: string;
@@ -87,6 +89,8 @@ export function describeReport(r: ReportRecord): string {
     ...(r.message ? [`  ${r.message}`] : []),
     `  ${r.browser}`,
     `  WebGPU: ${r.webgpu}  |  ${r.webgl}  |  ${r.screen}`,
+    // The browser check's results, a line per test.
+    ...(r.selftest ? r.selftest.split("\n").map((l) => `  Test: ${l}`) : []),
   ];
   if (r.note) lines.push(`  Note: “${r.note.replace(/\s+/g, " ")}”`);
   if (r.contact) lines.push(`  Contact: ${r.contact}`);

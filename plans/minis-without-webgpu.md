@@ -42,7 +42,8 @@ why, make the minis work where they can, and say clearly where they can't.
 1. Done: minis draw on a 2D canvas without WebGL2.
 2. Done: reports say why WebGL2 was refused.
 3. Done: `scripts/linux-gpu-check.sh` for the friend. **Current: waiting on
-   its output, or a report from that machine.**
+   its output, or a report from that machine** (now also What's missing? →
+   Send the results, from the playground's reduced-mode banner).
 4. Then, depending on what it shows: fix the setup there (Firefox pref,
    Mozilla's deb instead of the snap, a package), and/or the two open
    questions below.
@@ -73,13 +74,15 @@ why, make the minis work where they can, and say clearly where they can't.
       (a bound AMD card with no Vulkan driver and a snap Firefox; a card with no
       driver and no firmware)
 - [ ] The friend's script output or report
-- [ ] Open question 1
+- [x] Open question 1: covered by reduced mode (`plans/reduced-mode.md`):
+      the banner says node previews are gone too, and What's missing? gives
+      per-browser advice (Firefox's dom.webgpu.enabled) and, on Linux, the
+      script
 - [ ] Open question 2
 
 ## Open questions for the user
 
-1. Reword the no-WebGPU notice so it says node previews need WebGPU too, and
-   that on Linux it may need turning on in the browser? Recommended.
+1. (Answered by reduced mode, `plans/reduced-mode.md`.)
 2. Build meters and event strips that work without WebGPU (CPU-evaluated
    scalars and events)? Fields and textures would still need WebGPU.
 

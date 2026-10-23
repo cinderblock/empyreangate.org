@@ -69,6 +69,8 @@ test.describe("Pattern playground", () => {
     );
     if ((await stage.getAttribute("data-preview")) === "running") {
       await expect(page.locator("canvas.pg-gate")).toBeVisible();
+      // Nothing is missing, so no reduced mode.
+      await expect(page.locator(".pg-reduced")).toHaveCount(0);
       // The status beats with the frames, and says so on hover.
       const live = page.locator(".patch-toolbar .patch-live");
       await expect(live).toHaveAttribute("data-liveness", "live");
@@ -84,6 +86,7 @@ test.describe("Pattern playground", () => {
       await expect(details).toContainText(/Frame rate\s*\d+ fps/);
     } else {
       await expect(page.locator(".pg-nogpu")).toContainText("WebGPU");
+      await expect(page.locator(".pg-reduced")).toContainText("Reduced mode.");
       // The editor's status says it too, and why, on a tap.
       const status = page.locator(".patch-toolbar .patch-live");
       await expect(status).toHaveAttribute("data-liveness", "unavailable");

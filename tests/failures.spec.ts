@@ -178,6 +178,62 @@ test.describe("playground without WebGPU", () => {
   });
 });
 
+test.describe("playground in reduced mode", () => {
+  test("a banner says so; What's missing? tests the browser, and sends the results only when asked", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(Navigator.prototype, "gpu", {
+        get: () => undefined,
+        configurable: true,
+      });
+    });
+    await recordCounts(page);
+    const sent = await fakeReportBackend(page);
+    await page.goto("/playground");
+    const banner = page.locator(".pg-reduced");
+    await expect(banner).toContainText("Reduced mode.");
+    await expect(banner).toContainText("no previews on nodes");
+    await banner.getByRole("button", { name: "What's missing?" }).click();
+
+    const check = page.getByRole("dialog", { name: "What's missing" });
+    await expect(check).toBeVisible();
+    const row = (label: string) =>
+      check.locator(".check-list li").filter({
+        has: page.locator("strong", { hasText: new RegExp(`^${label}$`) }),
+      });
+    await expect(row("WebGPU")).toHaveAttribute("data-state", "missing");
+    await expect(row("WebGPU")).toContainText("No navigator.gpu");
+    // How to get it, for this browser.
+    await expect(row("WebGPU").locator(".check-advice")).not.toBeEmpty();
+    await expect(row("WebAssembly")).toHaveAttribute("data-state", "works");
+    await expect(row("2D canvas")).toHaveAttribute("data-state", "works");
+    await expect(row("WebGL2")).toHaveAttribute(
+      "data-state",
+      /^(works|limited|missing)$/,
+    );
+    expect(sent).toHaveLength(0);
+
+    await check.getByRole("button", { name: "Send the results…" }).click();
+    const dialog = page.getByRole("dialog", { name: "Send a report" });
+    const fields = dialog.locator(".report-fields");
+    await expect(fields).toContainText("Self-test");
+    await expect(fields).toContainText("WebGPU: missing. No navigator.gpu");
+    expect(sent).toHaveLength(0);
+    await dialog.getByRole("button", { name: "Send" }).click();
+    await expect(dialog).toContainText("Thank you");
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).toMatchObject({
+      code: "browser-check",
+      message: expect.stringContaining("no WebGPU"),
+      selftest: expect.stringContaining("WebGPU: missing. No navigator.gpu"),
+    });
+    expect(sent[0].selftest).toContain("WebAssembly: works.");
+    // Sending results isn't a failure: only the missing WebGPU is counted.
+    expect(await codesCounted(page)).toEqual(["webgpu-unavailable"]);
+  });
+});
+
 test.describe("reporting a problem from a working playground", () => {
   test("the top bar offers it; the note is required; nothing is counted", async ({
     page,
